@@ -1,0 +1,5 @@
+[workspace]
+members = ["solast"]
+
+[profile.release.package.solast]
+opt-level = "s"

@@ -1,0 +1,85 @@
+use super::AstVisitor;
+use crate::truffle;
+use std::io;
+
+pub struct UnusedReturnVisitor<'a> {
+    files: &'a [truffle::File],
+}
+
+impl<'a> UnusedReturnVisitor<'a> {
+    pub fn new(files: &'a [truffle::File]) -> Self {
+        Self { files }
+    }
+}
+
+impl AstVisitor for UnusedReturnVisitor<'_> {
+    fn visit_statement<'a>(
+        &mut self,
+        _source_unit: &'a solidity::ast::SourceUnit,
+        contract_definition: &'a solidity::ast::ContractDefinition,
+        function_definition: &'a solidity::ast::FunctionDefinition,
+        _blocks: &mut Vec<&'a solidity::ast::Block>,
+        statement: &'a solidity::ast::Statement,
+    ) -> io::Result<()> {
+        if let solidity::ast::Statement::ExpressionStatement(expression_statement) = statement {
+            if let solidity::ast::Expression::FunctionCall(solidity::ast::FunctionCall {
+                expression, ..
+            })
+            | solidity::ast::Expression::FunctionCallOptions(solidity::ast::FunctionCallOptions {
+                expression,
+                ..
+            }) = &expression_statement.expression
+            {
+                if let Some(solidity::ast::Expression::Identifier(identifier)) =
+                    expression.root_expression()
+                {
+                    for file in self.files.iter() {
+                        if let Some((called_contract_definition, called_function_definition)) =
+                            file.function_and_contract_definition(identifier.referenced_declaration)
+                        {
+                            if !called_function_definition
+                                .return_parameters
+                                .parameters
+                                .is_empty()
+                            {
+                                println!(
+                                    "\t{} {} {} makes a call to the {} {} {}, ignoring the returned {}",
+
+                                    format!("{:?}", function_definition.visibility),
+
+                                    if function_definition.name.is_empty() {
+                                        format!("{}", contract_definition.name)
+                                    } else {
+                                        format!("{}.{}", contract_definition.name, function_definition.name)
+                                    },
+
+                                    format!("{:?}", function_definition.kind).to_lowercase(),
+
+                                    format!("{:?}", called_function_definition.visibility),
+
+                                    if called_function_definition.name.is_empty() {
+                                        format!("{}", called_contract_definition.name)
+                                    } else {
+                                        format!("{}.{}", called_contract_definition.name, called_function_definition.name)
+                                    },
+
+                                    format!("{:?}", called_function_definition.kind).to_lowercase(),
+
+                                    if called_function_definition.return_parameters.parameters.len() > 1 {
+                                        "values"
+                                    } else {
+                                        "value"
+                                    }
+                                );
+
+                                return Ok(());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
