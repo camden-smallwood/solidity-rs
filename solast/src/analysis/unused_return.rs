@@ -55,7 +55,7 @@ impl AstVisitor for UnusedReturnVisitor<'_> {
 
                                     format!("{:?}", function_definition.kind).to_lowercase(),
 
-                                    format!("{:?}", called_function_definition.visibility),
+                                    format!("{:?}", called_function_definition.visibility).to_lowercase(),
 
                                     if called_function_definition.name.is_empty() {
                                         format!("{}", called_contract_definition.name)

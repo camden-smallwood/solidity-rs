@@ -122,6 +122,7 @@ fn main() -> io::Result<()> {
     walker.visitors.push(Box::new(analysis::RawAddressTransferVisitor::new(files.as_slice())));
     walker.visitors.push(Box::new(analysis::SafeERC20FunctionsVisitor::new(files.as_slice())));
     walker.visitors.push(Box::new(analysis::UncheckedERC20TransferVisitor::new(files.as_slice())));
+    walker.visitors.push(Box::new(analysis::UnpaidPayableFunctionsVisitor::new(files.as_slice())));
     walker.visitors.push(Box::new(analysis::DivideBeforeMultiplyVisitor::new(files.as_slice())));
     walker.visitors.push(Box::new(analysis::ComparisonUtilizationVisitor));
 
