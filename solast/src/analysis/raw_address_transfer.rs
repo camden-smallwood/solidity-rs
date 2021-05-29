@@ -22,6 +22,7 @@ impl AstVisitor for RawAddressTransferVisitor<'_> {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         _contract_definition: &solidity::ast::ContractDefinition,
+        _definition_node: &solidity::ast::ContractDefinitionNode,
         function_definition: &solidity::ast::FunctionDefinition,
     ) -> io::Result<()> {
         if !self
@@ -38,6 +39,7 @@ impl AstVisitor for RawAddressTransferVisitor<'_> {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         contract_definition: &solidity::ast::ContractDefinition,
+        _definition_node: &solidity::ast::ContractDefinitionNode,
         function_definition: &solidity::ast::FunctionDefinition,
     ) -> io::Result<()> {
         if let Some(&transfer_count) = self.functions_transfer.get(&function_definition.id) {
@@ -67,14 +69,15 @@ impl AstVisitor for RawAddressTransferVisitor<'_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         _contract_definition: &'a solidity::ast::ContractDefinition,
-        function_definition: Option<&'a solidity::ast::FunctionDefinition>,
+        definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         _statement: Option<&'a solidity::ast::Statement>,
         function_call: &'a solidity::ast::FunctionCall,
     ) -> io::Result<()> {
-        let function_definition = match function_definition {
-            Some(function_definition) => function_definition,
-            None => return Ok(()),
+        let definition_id = match definition_node {
+            solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
+            solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,
+            _ => return Ok(())
         };
 
         if let solidity::ast::Expression::MemberAccess(member_access) =
@@ -89,7 +92,7 @@ impl AstVisitor for RawAddressTransferVisitor<'_> {
             {
                 *self
                     .functions_transfer
-                    .get_mut(&function_definition.id)
+                    .get_mut(&definition_id)
                     .unwrap() += 1;
             }
         }
@@ -101,14 +104,15 @@ impl AstVisitor for RawAddressTransferVisitor<'_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         _contract_definition: &'a solidity::ast::ContractDefinition,
-        function_definition: Option<&'a solidity::ast::FunctionDefinition>,
+        definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         _statement: Option<&'a solidity::ast::Statement>,
         function_call_options: &'a solidity::ast::FunctionCallOptions,
     ) -> io::Result<()> {
-        let function_definition = match function_definition {
-            Some(function_definition) => function_definition,
-            None => return Ok(()),
+        let definition_id = match definition_node {
+            solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
+            solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,
+            _ => return Ok(())
         };
 
         if let solidity::ast::Expression::MemberAccess(member_access) =
@@ -123,7 +127,7 @@ impl AstVisitor for RawAddressTransferVisitor<'_> {
             {
                 *self
                     .functions_transfer
-                    .get_mut(&function_definition.id)
+                    .get_mut(&definition_id)
                     .unwrap() += 1;
             }
         }

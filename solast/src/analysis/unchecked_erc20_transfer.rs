@@ -35,7 +35,7 @@ impl AstVisitor for UncheckedERC20TransferVisitor<'_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         _contract_definition: &'a solidity::ast::ContractDefinition,
-        _function_definition: &'a solidity::ast::FunctionDefinition,
+        _definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         block: &'a solidity::ast::Block,
     ) -> io::Result<()> {
@@ -55,6 +55,7 @@ impl AstVisitor for UncheckedERC20TransferVisitor<'_> {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         _contract_definition: &solidity::ast::ContractDefinition,
+        _definition_node: &solidity::ast::ContractDefinitionNode,
         function_definition: &solidity::ast::FunctionDefinition,
     ) -> io::Result<()> {
         if !self.function_info.contains_key(&function_definition.id) {
@@ -69,6 +70,7 @@ impl AstVisitor for UncheckedERC20TransferVisitor<'_> {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         contract_definition: &solidity::ast::ContractDefinition,
+        _definition_node: &solidity::ast::ContractDefinitionNode,
         function_definition: &solidity::ast::FunctionDefinition,
     ) -> io::Result<()> {
         let function_info = self.function_info.get(&function_definition.id).unwrap();
@@ -108,7 +110,7 @@ impl AstVisitor for UncheckedERC20TransferVisitor<'_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         _contract_definition: &'a solidity::ast::ContractDefinition,
-        _function_definition: &'a solidity::ast::FunctionDefinition,
+        _definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         if_statement: &'a solidity::ast::IfStatement,
     ) -> io::Result<()> {
@@ -182,14 +184,15 @@ impl AstVisitor for UncheckedERC20TransferVisitor<'_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         _contract_definition: &'a solidity::ast::ContractDefinition,
-        function_definition: Option<&'a solidity::ast::FunctionDefinition>,
+        definition_node: &'a solidity::ast::ContractDefinitionNode,
         blocks: &mut Vec<&'a solidity::ast::Block>,
         _statement: Option<&'a solidity::ast::Statement>,
         function_call: &'a solidity::ast::FunctionCall,
     ) -> io::Result<()> {
-        let function_definition = match function_definition {
-            Some(function_definition) => function_definition,
-            None => return Ok(()),
+        let definition_id = match definition_node {
+            solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
+            solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,
+            _ => return Ok(())
         };
 
         for referenced_declaration in function_call.expression.referenced_declarations() {
@@ -220,7 +223,7 @@ impl AstVisitor for UncheckedERC20TransferVisitor<'_> {
                                         ) =>
                                     {
                                         self.function_info
-                                            .get_mut(&function_definition.id)
+                                            .get_mut(&definition_id)
                                             .unwrap()
                                             .occurance_count += 1;
                                     }

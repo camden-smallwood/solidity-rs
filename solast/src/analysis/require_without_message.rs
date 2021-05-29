@@ -22,6 +22,7 @@ impl AstVisitor for RequireWithoutMessageVisitor<'_> {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         contract_definition: &solidity::ast::ContractDefinition,
+        _definition_node: &solidity::ast::ContractDefinitionNode,
         function_definition: &solidity::ast::FunctionDefinition,
     ) -> io::Result<()> {
         if let Some(&requirement_count) = self
@@ -57,14 +58,15 @@ impl AstVisitor for RequireWithoutMessageVisitor<'_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         _contract_definition: &'a solidity::ast::ContractDefinition,
-        function_definition: Option<&'a solidity::ast::FunctionDefinition>,
+        definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         _statement: Option<&'a solidity::ast::Statement>,
         function_call: &'a solidity::ast::FunctionCall,
     ) -> io::Result<()> {
-        let function_definition = match function_definition {
-            Some(function_definition) => function_definition,
-            None => return Ok(()),
+        let definition_id = match definition_node {
+            solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
+            solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,
+            _ => return Ok(())
         };
 
         match function_call.expression.as_ref() {
@@ -75,15 +77,15 @@ impl AstVisitor for RequireWithoutMessageVisitor<'_> {
         if function_call.arguments.len() < 2 {
             if !self
                 .function_requirement_counts
-                .contains_key(&function_definition.id)
+                .contains_key(&definition_id)
             {
                 self.function_requirement_counts
-                    .insert(function_definition.id, 0);
+                    .insert(definition_id, 0);
             }
 
             *self
                 .function_requirement_counts
-                .get_mut(&function_definition.id)
+                .get_mut(&definition_id)
                 .unwrap() += 1;
         }
 

@@ -19,6 +19,7 @@ impl AstVisitor for LargeLiteralsVisitor {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         contract_definition: &solidity::ast::ContractDefinition,
+        _definition_node: &solidity::ast::ContractDefinitionNode,
         function_definition: &solidity::ast::FunctionDefinition,
     ) -> io::Result<()> {
         if self.functions.contains(&function_definition.id) {
@@ -41,17 +42,21 @@ impl AstVisitor for LargeLiteralsVisitor {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         _contract_definition: &solidity::ast::ContractDefinition,
-        function_definition: Option<&solidity::ast::FunctionDefinition>,
+        definition_node: &solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&solidity::ast::Block>,
         _statement: Option<&solidity::ast::Statement>,
         literal: &solidity::ast::Literal,
     ) -> io::Result<()> {
-        if let (Some(function_definition), Some(value)) =
-            (function_definition, literal.value.as_ref())
-        {
+        let definition_id = match definition_node {
+            solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition.id,
+            solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => modifier_definition.id,
+            _ => return Ok(())
+        };
+
+        if let Some(value) = literal.value.as_ref() {
             if value.chars().all(char::is_numeric) && (|n| (n > 6) && ((n % 3) != 0))(value.len()) {
-                if !self.functions.contains(&function_definition.id) {
-                    self.functions.insert(function_definition.id);
+                if !self.functions.contains(&definition_id) {
+                    self.functions.insert(definition_id);
                 }
             }
         }

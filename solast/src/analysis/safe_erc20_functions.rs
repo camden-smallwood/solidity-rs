@@ -28,6 +28,7 @@ impl AstVisitor for SafeERC20FunctionsVisitor<'_> {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         _contract_definition: &solidity::ast::ContractDefinition,
+        _definition_node: &solidity::ast::ContractDefinitionNode,
         function_definition: &solidity::ast::FunctionDefinition,
     ) -> io::Result<()> {
         if !self.functions.contains_key(&function_definition.id) {
@@ -48,6 +49,7 @@ impl AstVisitor for SafeERC20FunctionsVisitor<'_> {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         contract_definition: &solidity::ast::ContractDefinition,
+        _definition_node: &solidity::ast::ContractDefinitionNode,
         function_definition: &solidity::ast::FunctionDefinition,
     ) -> io::Result<()> {
         let function_info = self.functions.get(&function_definition.id).unwrap();
@@ -98,21 +100,25 @@ impl AstVisitor for SafeERC20FunctionsVisitor<'_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         contract_definition: &'a solidity::ast::ContractDefinition,
-        function_definition: Option<&'a solidity::ast::FunctionDefinition>,
+        definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         _statement: Option<&'a solidity::ast::Statement>,
         function_call: &'a solidity::ast::FunctionCall,
     ) -> io::Result<()> {
-        let function_definition = match function_definition {
-            Some(function_definition) => function_definition,
-            None => return Ok(()),
+        let definition_id = match definition_node {
+            solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
+            solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,
+            _ => return Ok(())
         };
 
         if contract_definition.name == "SafeERC20" {
             return Ok(());
         }
 
-        let function_info = self.functions.get_mut(&function_definition.id).unwrap();
+        let function_info = match self.functions.get_mut(&definition_id) {
+            Some(function_info) => function_info,
+            None => return Ok(())
+        };
 
         for referenced_declaration in function_call.expression.referenced_declarations() {
             for file in self.files.iter() {

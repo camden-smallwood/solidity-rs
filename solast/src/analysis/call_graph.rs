@@ -1,8 +1,9 @@
 use super::AstVisitor;
 use crate::truffle;
 use solidity::ast::{
-    Block, ContractDefinition, Expression, FunctionCall, FunctionCallKind, FunctionCallOptions,
-    FunctionDefinition, Identifier, MemberAccess, NodeID, SourceUnit, Statement, Visibility,
+    Block, ContractDefinition, ContractDefinitionNode, Expression, FunctionCall, FunctionCallKind,
+    FunctionCallOptions, FunctionDefinition, Identifier, MemberAccess, NodeID, SourceUnit,
+    Statement, Visibility,
 };
 use std::{collections::HashMap, io};
 
@@ -140,7 +141,7 @@ impl CallGraph {
         &self,
         files: &[truffle::File],
         contract_definition: &ContractDefinition,
-        function_definition: &FunctionDefinition,
+        definition_node: &ContractDefinitionNode,
         expression: &Expression,
     ) -> io::Result<Vec<NodeID>> {
         let mut ids = vec![];
@@ -160,7 +161,7 @@ impl CallGraph {
                 ids.extend(self.get_assigned_state_variables(
                     files,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     assignment.left_hand_side.as_ref(),
                 )?);
             }
@@ -169,7 +170,7 @@ impl CallGraph {
                 ids.extend(self.get_assigned_state_variables(
                     files,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     index_access.base_expression.as_ref(),
                 )?);
             }
@@ -178,7 +179,7 @@ impl CallGraph {
                 ids.extend(self.get_assigned_state_variables(
                     files,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     index_range_access.base_expression.as_ref(),
                 )?);
             }
@@ -187,7 +188,7 @@ impl CallGraph {
                 ids.extend(self.get_assigned_state_variables(
                     files,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     member_access.expression.as_ref(),
                 )?);
             }
@@ -198,7 +199,7 @@ impl CallGraph {
                         ids.extend(self.get_assigned_state_variables(
                             files,
                             contract_definition,
-                            function_definition,
+                            definition_node,
                             component,
                         )?);
                     }
@@ -235,6 +236,7 @@ impl AstVisitor for CallGraph {
         &mut self,
         _source_unit: &SourceUnit,
         contract_definition: &ContractDefinition,
+        _definition_node: &ContractDefinitionNode,
         function_definition: &FunctionDefinition,
     ) -> io::Result<()> {
         let contract_info = self.contracts.get_mut(&contract_definition.id).unwrap();
@@ -260,21 +262,26 @@ impl AstVisitor for CallGraph {
         &mut self,
         _source_unit: &SourceUnit,
         contract_definition: &ContractDefinition,
-        function_definition: Option<&FunctionDefinition>,
+        definition_node: &ContractDefinitionNode,
         _blocks: &mut Vec<&Block>,
         _statement: Option<&Statement>,
         identifier: &Identifier,
     ) -> io::Result<()> {
-        let function_definition = match function_definition {
-            Some(function_definition) => function_definition,
-            None => return Ok(()),
+        let definition_id = match definition_node {
+            ContractDefinitionNode::FunctionDefinition(function_definition) => {
+                function_definition.id
+            }
+            ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
+                modifier_definition.id
+            }
+            _ => return Ok(()),
         };
 
         let contract_info = self.contracts.get_mut(&contract_definition.id).unwrap();
-        let function_info = contract_info
-            .functions
-            .get_mut(&function_definition.id)
-            .unwrap();
+        let function_info = match contract_info.functions.get_mut(&definition_id) {
+            Some(function_info) => function_info,
+            None => return Ok(()),
+        };
 
         if let Some(arguments) = self.current_call_arguments.as_ref() {
             if identifier.argument_types.is_some()
@@ -295,7 +302,7 @@ impl AstVisitor for CallGraph {
         &mut self,
         _source_unit: &SourceUnit,
         contract_definition: &ContractDefinition,
-        function_definition: Option<&FunctionDefinition>,
+        definition_node: &ContractDefinitionNode,
         _blocks: &mut Vec<&Block>,
         _statement: Option<&Statement>,
         function_call: &FunctionCall,
@@ -304,17 +311,22 @@ impl AstVisitor for CallGraph {
             return Ok(());
         }
 
-        let function_definition = match function_definition {
-            Some(function_definition) => function_definition,
-            None => return Ok(()),
+        let function_definition = match definition_node {
+            ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition,
+            _ => return Ok(()),
         };
 
         let contract_info = self.contracts.get_mut(&contract_definition.id).unwrap();
-        let function_info = contract_info.functions.get_mut(&function_definition.id).unwrap();
-        
+        let function_info = contract_info
+            .functions
+            .get_mut(&function_definition.id)
+            .unwrap();
+
         if function_definition.name == "transfer" {
             if let Expression::MemberAccess(member_access) = function_call.expression.as_ref() {
-                if member_access.referenced_declaration.is_none() && member_access.member_name == "sender" {
+                if member_access.referenced_declaration.is_none()
+                    && member_access.member_name == "sender"
+                {
                     function_info.sends_value = true;
                 }
             }
@@ -354,14 +366,14 @@ impl AstVisitor for CallGraph {
         &mut self,
         _source_unit: &SourceUnit,
         contract_definition: &ContractDefinition,
-        function_definition: Option<&FunctionDefinition>,
+        definition_node: &ContractDefinitionNode,
         _blocks: &mut Vec<&Block>,
         _statement: Option<&Statement>,
         function_call_options: &FunctionCallOptions,
     ) -> io::Result<()> {
-        let function_definition = match function_definition {
-            Some(function_definition) => function_definition,
-            None => return Ok(()),
+        let function_definition = match definition_node {
+            ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition,
+            _ => return Ok(()),
         };
 
         let contract_info = self.contracts.get_mut(&contract_definition.id).unwrap();
@@ -386,14 +398,14 @@ impl AstVisitor for CallGraph {
         &mut self,
         _source_unit: &SourceUnit,
         contract_definition: &ContractDefinition,
-        function_definition: Option<&FunctionDefinition>,
+        definition_node: &ContractDefinitionNode,
         _blocks: &mut Vec<&Block>,
         _statement: Option<&Statement>,
         member_access: &MemberAccess,
     ) -> io::Result<()> {
-        let function_definition = match function_definition {
-            Some(function_definition) => function_definition,
-            None => return Ok(()),
+        let function_definition = match definition_node {
+            ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition,
+            _ => return Ok(()),
         };
 
         let contract_info = self.contracts.get_mut(&contract_definition.id).unwrap();

@@ -19,10 +19,7 @@ impl<'a> Default for AstWalker<'a> {
 }
 
 impl AstWalker<'_> {
-    pub fn analyze(
-        &mut self,
-        files: &[truffle::File]
-    ) -> io::Result<()> {
+    pub fn analyze(&mut self, files: &[truffle::File]) -> io::Result<()> {
         for file in files.iter() {
             self.analyze_file(file)?;
         }
@@ -30,10 +27,7 @@ impl AstWalker<'_> {
         Ok(())
     }
 
-    pub fn analyze_file(
-        &mut self,
-        file: &truffle::File
-    ) -> io::Result<()> {
+    pub fn analyze_file(&mut self, file: &truffle::File) -> io::Result<()> {
         let source_path = match file.source_path.as_ref() {
             Some(source_path) => source_path,
             None => return Ok(()),
@@ -58,10 +52,7 @@ impl AstWalker<'_> {
 }
 
 impl AstVisitor for AstWalker<'_> {
-    fn visit_source_unit(
-        &mut self,
-        source_unit: &SourceUnit
-    ) -> io::Result<()> {
+    fn visit_source_unit(&mut self, source_unit: &SourceUnit) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.visit_source_unit(source_unit)?;
         }
@@ -93,10 +84,7 @@ impl AstVisitor for AstWalker<'_> {
         Ok(())
     }
 
-    fn leave_source_unit(
-        &mut self,
-        source_unit: &SourceUnit
-    ) -> io::Result<()> {
+    fn leave_source_unit(&mut self, source_unit: &SourceUnit) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.leave_source_unit(source_unit)?;
         }
@@ -161,8 +149,8 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_contract_definition(source_unit, contract_definition)?;
         }
 
-        for node in contract_definition.nodes.iter() {
-            match node {
+        for definition_node in contract_definition.nodes.iter() {
+            match definition_node {
                 ContractDefinitionNode::UsingForDirective(using_for_directive) => self
                     .visit_using_for_directive(
                         source_unit,
@@ -182,7 +170,7 @@ impl AstVisitor for AstWalker<'_> {
                     self.visit_variable_declaration(
                         source_unit,
                         contract_definition,
-                        None,
+                        definition_node,
                         &mut vec![],
                         variable_declaration,
                     )?;
@@ -195,7 +183,7 @@ impl AstVisitor for AstWalker<'_> {
                         event_definition,
                     )?;
                 }
-                
+
                 ContractDefinitionNode::ErrorDefinition(error_definition) => {
                     self.visit_error_definition(source_unit, &error_definition)?
                 }
@@ -204,6 +192,7 @@ impl AstVisitor for AstWalker<'_> {
                     self.visit_function_definition(
                         source_unit,
                         contract_definition,
+                        definition_node,
                         function_definition,
                     )?;
                 }
@@ -212,6 +201,7 @@ impl AstVisitor for AstWalker<'_> {
                     self.visit_modifier_definition(
                         source_unit,
                         contract_definition,
+                        definition_node,
                         modifier_definition,
                     )?;
                 }
@@ -246,15 +236,15 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
-        variable_declaration: &'a VariableDeclaration
+        variable_declaration: &'a VariableDeclaration,
     ) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.visit_variable_declaration(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 variable_declaration,
             )?;
@@ -270,11 +260,7 @@ impl AstVisitor for AstWalker<'_> {
         event_definition: &EventDefinition,
     ) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_event_definition(
-                source_unit,
-                contract_definition,
-                event_definition,
-            )?;
+            visitor.visit_event_definition(source_unit, contract_definition, event_definition)?;
         }
 
         Ok(())
@@ -296,12 +282,41 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &SourceUnit,
         contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
         modifier_definition: &ModifierDefinition,
     ) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.visit_modifier_definition(
                 source_unit,
                 contract_definition,
+                definition_node,
+                modifier_definition,
+            )?;
+        }
+
+        self.visit_block(
+            source_unit,
+            contract_definition,
+            definition_node,
+            &mut vec![],
+            &modifier_definition.body,
+        )?;
+
+        Ok(())
+    }
+
+    fn leave_modifier_definition(
+        &mut self,
+        source_unit: &SourceUnit,
+        contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
+        modifier_definition: &ModifierDefinition,
+    ) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_modifier_definition(
+                source_unit,
+                contract_definition,
+                definition_node,
                 modifier_definition,
             )?;
         }
@@ -313,12 +328,14 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &SourceUnit,
         contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
         function_definition: &FunctionDefinition,
     ) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.visit_function_definition(
                 source_unit,
                 contract_definition,
+                definition_node,
                 function_definition,
             )?;
         }
@@ -327,16 +344,27 @@ impl AstVisitor for AstWalker<'_> {
             self.visit_block(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 &mut vec![],
                 block,
             )?;
         }
 
+        Ok(())
+    }
+
+    fn leave_function_definition(
+        &mut self,
+        source_unit: &SourceUnit,
+        contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
+        function_definition: &FunctionDefinition,
+    ) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.leave_function_definition(
                 source_unit,
                 contract_definition,
+                definition_node,
                 function_definition,
             )?;
         }
@@ -348,7 +376,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         block: &'a Block,
     ) -> io::Result<()> {
@@ -356,7 +384,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_block(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 block,
             )?;
@@ -368,7 +396,7 @@ impl AstVisitor for AstWalker<'_> {
             self.visit_statement(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
             )?;
@@ -383,7 +411,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: &'a Statement,
     ) -> io::Result<()> {
@@ -391,7 +419,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_statement(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
             )?;
@@ -402,7 +430,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_variable_declaration_statement(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     variable_declaration_statement,
                 )?;
@@ -412,7 +440,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_if_statement(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     if_statement,
                 )?;
@@ -422,7 +450,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_for_statement(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     for_statement,
                 )?;
@@ -430,7 +458,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.leave_for_statement(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     for_statement,
                 )?;
@@ -440,15 +468,15 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_while_statement(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     while_statement,
                 )?;
-                
+
                 self.leave_while_statement(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     while_statement,
                 )?;
@@ -458,7 +486,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_emit_statement(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     emit_statement,
                 )?;
@@ -468,7 +496,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_try_statement(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     try_statement,
                 )?;
@@ -478,7 +506,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_revert_statement(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     revert_statement,
                 )?;
@@ -488,7 +516,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_block(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     block,
                 )?;
@@ -498,7 +526,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_return(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     return_statement,
                 )?;
@@ -508,7 +536,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_expression(
                     source_unit,
                     contract_definition,
-                    Some(function_definition),
+                    definition_node,
                     blocks,
                     Some(statement),
                     &expression_statement.expression,
@@ -519,18 +547,13 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_inline_assembly(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     inline_assembly,
                 )?;
             }
 
             Statement::UnhandledStatement { node_type, src, id } => {
-                self.visit_unhandled_statement(
-                    source_unit,
-                    node_type,
-                    src,
-                    id,
-                )?;
+                self.visit_unhandled_statement(source_unit, node_type, src, id)?;
             }
         }
 
@@ -541,7 +564,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         variable_declaration_statement: &'a VariableDeclarationStatement,
     ) -> io::Result<()> {
@@ -549,7 +572,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_variable_declaration_statement(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 variable_declaration_statement,
             )?;
@@ -559,7 +582,7 @@ impl AstVisitor for AstWalker<'_> {
             self.visit_expression(
                 source_unit,
                 contract_definition,
-                Some(function_definition),
+                definition_node,
                 blocks,
                 None,
                 initial_value,
@@ -573,15 +596,15 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
-        if_statement: &'a IfStatement
+        if_statement: &'a IfStatement,
     ) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.visit_if_statement(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 if_statement,
             )?;
@@ -590,19 +613,19 @@ impl AstVisitor for AstWalker<'_> {
         self.visit_block_or_statement(
             source_unit,
             contract_definition,
-            function_definition,
+            definition_node,
             blocks,
-            &if_statement.true_body
+            &if_statement.true_body,
         )?;
 
         if let Some(false_body) = if_statement.false_body.as_ref() {
             self.visit_block_or_statement(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
-                false_body
-            )?;    
+                false_body,
+            )?;
         }
 
         Ok(())
@@ -612,15 +635,15 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
-        for_statement: &'a ForStatement
+        for_statement: &'a ForStatement,
     ) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.visit_for_statement(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 for_statement,
             )?;
@@ -630,7 +653,7 @@ impl AstVisitor for AstWalker<'_> {
             self.visit_statement(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
             )?;
@@ -640,7 +663,7 @@ impl AstVisitor for AstWalker<'_> {
             self.visit_expression(
                 source_unit,
                 contract_definition,
-                Some(function_definition),
+                definition_node,
                 blocks,
                 None,
                 expression,
@@ -651,7 +674,7 @@ impl AstVisitor for AstWalker<'_> {
             self.visit_statement(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
             )?;
@@ -660,7 +683,7 @@ impl AstVisitor for AstWalker<'_> {
         self.visit_block_or_statement(
             source_unit,
             contract_definition,
-            function_definition,
+            definition_node,
             blocks,
             &for_statement.body,
         )?;
@@ -672,7 +695,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         for_statement: &'a ForStatement,
     ) -> io::Result<()> {
@@ -680,7 +703,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.leave_for_statement(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 for_statement,
             )?;
@@ -693,7 +716,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         while_statement: &'a WhileStatement,
     ) -> io::Result<()> {
@@ -701,7 +724,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_while_statement(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 while_statement,
             )?;
@@ -710,7 +733,7 @@ impl AstVisitor for AstWalker<'_> {
         self.visit_expression(
             source_unit,
             contract_definition,
-            Some(function_definition),
+            definition_node,
             blocks,
             None,
             &while_statement.condition,
@@ -719,7 +742,7 @@ impl AstVisitor for AstWalker<'_> {
         self.visit_block_or_statement(
             source_unit,
             contract_definition,
-            function_definition,
+            definition_node,
             blocks,
             &while_statement.body,
         )?;
@@ -731,7 +754,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         while_statement: &'a WhileStatement,
     ) -> io::Result<()> {
@@ -739,7 +762,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.leave_while_statement(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 while_statement,
             )?;
@@ -752,7 +775,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         emit_statement: &'a EmitStatement,
     ) -> io::Result<()> {
@@ -760,7 +783,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_emit_statement(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 emit_statement,
             )?;
@@ -773,7 +796,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         try_statement: &'a TryStatement,
     ) -> io::Result<()> {
@@ -781,7 +804,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_try_statement(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 try_statement,
             )?;
@@ -791,7 +814,7 @@ impl AstVisitor for AstWalker<'_> {
             self.visit_block(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 &clause.block,
             )?;
@@ -804,7 +827,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         revert_statement: &'a RevertStatement,
     ) -> io::Result<()> {
@@ -812,9 +835,9 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_revert_statement(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
-                revert_statement
+                revert_statement,
             )?;
         }
 
@@ -825,7 +848,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         block_or_statement: &'a BlockOrStatement,
     ) -> io::Result<()> {
@@ -833,7 +856,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_block_or_statement(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 block_or_statement,
             )?;
@@ -843,19 +866,18 @@ impl AstVisitor for AstWalker<'_> {
             BlockOrStatement::Block(block) => self.visit_block(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 block,
             ),
 
-            BlockOrStatement::Statement(statement) => self
-                .visit_statement(
-                    source_unit,
-                    contract_definition,
-                    function_definition,
-                    blocks,
-                    statement,
-                ),
+            BlockOrStatement::Statement(statement) => self.visit_statement(
+                source_unit,
+                contract_definition,
+                definition_node,
+                blocks,
+                statement,
+            ),
         }
     }
 
@@ -863,7 +885,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         return_statement: &'a Return,
     ) -> io::Result<()> {
@@ -871,7 +893,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_return(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 return_statement,
             )?;
@@ -884,16 +906,16 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
-        expression: &'a Expression
+        expression: &'a Expression,
     ) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.visit_expression(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
                 expression,
@@ -905,7 +927,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_literal(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     statement,
                     literal,
@@ -915,7 +937,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_identifier(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     statement,
                     identifier,
@@ -925,7 +947,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_unary_operation(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     statement,
                     unary_operation,
@@ -935,7 +957,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_binary_operation(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     statement,
                     binary_operation,
@@ -945,7 +967,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_conditional(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     statement,
                     conditional,
@@ -955,7 +977,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_assignment(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     statement,
                     assignment,
@@ -965,7 +987,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_function_call(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     statement,
                     function_call,
@@ -975,7 +997,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_function_call_options(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     statement,
                     function_call_options,
@@ -985,7 +1007,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_index_access(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     statement,
                     index_access,
@@ -995,7 +1017,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_index_range_access(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     statement,
                     index_range_access,
@@ -1005,7 +1027,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_member_access(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     statement,
                     member_access,
@@ -1015,7 +1037,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_elementary_type_name_expression(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     statement,
                     elementary_type_name_expression,
@@ -1025,7 +1047,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_tuple_expression(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     statement,
                     tuple_expression,
@@ -1035,7 +1057,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_new_expression(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     statement,
                     new_expression,
@@ -1053,16 +1075,16 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &SourceUnit,
         contract_definition: &ContractDefinition,
-        function_definition: Option<&FunctionDefinition>,
+        definition_node: &ContractDefinitionNode,
         blocks: &mut Vec<&Block>,
         statement: Option<&Statement>,
-        literal: &Literal
+        literal: &Literal,
     ) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.visit_literal(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
                 literal,
@@ -1076,16 +1098,16 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &SourceUnit,
         contract_definition: &ContractDefinition,
-        function_definition: Option<&FunctionDefinition>,
+        definition_node: &ContractDefinitionNode,
         blocks: &mut Vec<&Block>,
         statement: Option<&Statement>,
-        identifier: &Identifier
+        identifier: &Identifier,
     ) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.visit_identifier(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
                 identifier,
@@ -1099,16 +1121,16 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
-        unary_operation: &'a UnaryOperation
+        unary_operation: &'a UnaryOperation,
     ) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.visit_unary_operation(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
                 unary_operation,
@@ -1118,7 +1140,7 @@ impl AstVisitor for AstWalker<'_> {
         self.visit_expression(
             source_unit,
             contract_definition,
-            function_definition,
+            definition_node,
             blocks,
             statement,
             unary_operation.sub_expression.as_ref(),
@@ -1131,16 +1153,16 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
-        binary_operation: &'a BinaryOperation
+        binary_operation: &'a BinaryOperation,
     ) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.visit_binary_operation(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
                 binary_operation,
@@ -1150,7 +1172,7 @@ impl AstVisitor for AstWalker<'_> {
         self.visit_expression(
             source_unit,
             contract_definition,
-            function_definition,
+            definition_node,
             blocks,
             statement,
             binary_operation.left_expression.as_ref(),
@@ -1158,7 +1180,7 @@ impl AstVisitor for AstWalker<'_> {
         self.visit_expression(
             source_unit,
             contract_definition,
-            function_definition,
+            definition_node,
             blocks,
             statement,
             binary_operation.right_expression.as_ref(),
@@ -1171,7 +1193,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         conditional: &'a Conditional,
@@ -1180,7 +1202,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_conditional(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
                 conditional,
@@ -1190,7 +1212,7 @@ impl AstVisitor for AstWalker<'_> {
         self.visit_expression(
             source_unit,
             contract_definition,
-            function_definition,
+            definition_node,
             blocks,
             statement,
             conditional.condition.as_ref(),
@@ -1199,7 +1221,7 @@ impl AstVisitor for AstWalker<'_> {
         self.visit_expression(
             source_unit,
             contract_definition,
-            function_definition,
+            definition_node,
             blocks,
             statement,
             conditional.true_expression.as_ref(),
@@ -1208,7 +1230,7 @@ impl AstVisitor for AstWalker<'_> {
         self.visit_expression(
             source_unit,
             contract_definition,
-            function_definition,
+            definition_node,
             blocks,
             statement,
             conditional.false_expression.as_ref(),
@@ -1221,7 +1243,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         assignment: &'a Assignment,
@@ -1230,7 +1252,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_assignment(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
                 assignment,
@@ -1240,7 +1262,7 @@ impl AstVisitor for AstWalker<'_> {
         self.visit_expression(
             source_unit,
             contract_definition,
-            function_definition,
+            definition_node,
             blocks,
             statement,
             assignment.left_hand_side.as_ref(),
@@ -1249,7 +1271,7 @@ impl AstVisitor for AstWalker<'_> {
         self.visit_expression(
             source_unit,
             contract_definition,
-            function_definition,
+            definition_node,
             blocks,
             statement,
             assignment.right_hand_side.as_ref(),
@@ -1262,7 +1284,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         function_call: &'a FunctionCall,
@@ -1271,7 +1293,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_function_call(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
                 function_call,
@@ -1281,7 +1303,7 @@ impl AstVisitor for AstWalker<'_> {
         self.visit_expression(
             source_unit,
             contract_definition,
-            function_definition,
+            definition_node,
             blocks,
             statement,
             function_call.expression.as_ref(),
@@ -1291,7 +1313,7 @@ impl AstVisitor for AstWalker<'_> {
             self.visit_expression(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
                 argument,
@@ -1305,7 +1327,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         function_call_options: &'a FunctionCallOptions,
@@ -1314,7 +1336,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_function_call_options(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
                 function_call_options,
@@ -1324,7 +1346,7 @@ impl AstVisitor for AstWalker<'_> {
         self.visit_expression(
             source_unit,
             contract_definition,
-            function_definition,
+            definition_node,
             blocks,
             statement,
             function_call_options.expression.as_ref(),
@@ -1334,7 +1356,7 @@ impl AstVisitor for AstWalker<'_> {
             self.visit_expression(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
                 option,
@@ -1348,7 +1370,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         index_access: &'a IndexAccess,
@@ -1357,7 +1379,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_index_access(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
                 index_access,
@@ -1367,7 +1389,7 @@ impl AstVisitor for AstWalker<'_> {
         self.visit_expression(
             source_unit,
             contract_definition,
-            function_definition,
+            definition_node,
             blocks,
             statement,
             index_access.base_expression.as_ref(),
@@ -1376,7 +1398,7 @@ impl AstVisitor for AstWalker<'_> {
         self.visit_expression(
             source_unit,
             contract_definition,
-            function_definition,
+            definition_node,
             blocks,
             statement,
             index_access.index_expression.as_ref(),
@@ -1389,7 +1411,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         index_range_access: &'a IndexRangeAccess,
@@ -1398,7 +1420,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_index_range_access(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
                 index_range_access,
@@ -1408,7 +1430,7 @@ impl AstVisitor for AstWalker<'_> {
         self.visit_expression(
             source_unit,
             contract_definition,
-            function_definition,
+            definition_node,
             blocks,
             statement,
             index_range_access.base_expression.as_ref(),
@@ -1418,7 +1440,7 @@ impl AstVisitor for AstWalker<'_> {
             self.visit_expression(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
                 start_expression.as_ref(),
@@ -1429,7 +1451,7 @@ impl AstVisitor for AstWalker<'_> {
             self.visit_expression(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
                 end_expression.as_ref(),
@@ -1443,7 +1465,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         member_access: &'a MemberAccess,
@@ -1452,7 +1474,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_member_access(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
                 member_access,
@@ -1462,7 +1484,7 @@ impl AstVisitor for AstWalker<'_> {
         self.visit_expression(
             source_unit,
             contract_definition,
-            function_definition,
+            definition_node,
             blocks,
             statement,
             member_access.expression.as_ref(),
@@ -1475,7 +1497,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         elementary_type_name_expression: &'a ElementaryTypeNameExpression,
@@ -1484,7 +1506,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_elementary_type_name_expression(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
                 elementary_type_name_expression,
@@ -1498,7 +1520,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         tuple_expression: &'a TupleExpression,
@@ -1507,7 +1529,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_tuple_expression(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
                 tuple_expression,
@@ -1519,7 +1541,7 @@ impl AstVisitor for AstWalker<'_> {
                 self.visit_expression(
                     source_unit,
                     contract_definition,
-                    function_definition,
+                    definition_node,
                     blocks,
                     statement,
                     component,
@@ -1534,7 +1556,7 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         new_expression: &'a NewExpression,
@@ -1543,7 +1565,7 @@ impl AstVisitor for AstWalker<'_> {
             visitor.visit_new_expression(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 blocks,
                 statement,
                 new_expression,
@@ -1566,9 +1588,12 @@ impl AstVisitor for AstWalker<'_> {
 
         match node_type {
             NodeType::PlaceholderStatement => Ok(()),
-            
+
             _ => {
-                println!("WARNING: Unhandled expression: {:?} {:?} {:?}", node_type, src, id);
+                println!(
+                    "WARNING: Unhandled expression: {:?} {:?} {:?}",
+                    node_type, src, id
+                );
                 Ok(())
             }
         }
@@ -1578,14 +1603,14 @@ impl AstVisitor for AstWalker<'_> {
         &mut self,
         source_unit: &SourceUnit,
         contract_definition: &ContractDefinition,
-        function_definition: &FunctionDefinition,
+        definition_node: &ContractDefinitionNode,
         inline_assembly: &InlineAssembly,
     ) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.visit_inline_assembly(
                 source_unit,
                 contract_definition,
-                function_definition,
+                definition_node,
                 inline_assembly,
             )?;
         }
@@ -1606,9 +1631,12 @@ impl AstVisitor for AstWalker<'_> {
 
         match node_type {
             NodeType::Break | NodeType::Continue | NodeType::PlaceholderStatement => Ok(()),
-            
+
             _ => {
-                println!("WARNING: Unhandled statement: {:?} {:?} {:?}", node_type, src, id);
+                println!(
+                    "WARNING: Unhandled statement: {:?} {:?} {:?}",
+                    node_type, src, id
+                );
                 Ok(())
             }
         }

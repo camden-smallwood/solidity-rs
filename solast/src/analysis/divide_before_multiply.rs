@@ -27,6 +27,7 @@ impl AstVisitor for DivideBeforeMultiplyVisitor<'_> {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         _contract_definition: &solidity::ast::ContractDefinition,
+        _definition_node: &solidity::ast::ContractDefinitionNode,
         function_definition: &solidity::ast::FunctionDefinition,
     ) -> io::Result<()> {
         if !self
@@ -44,19 +45,27 @@ impl AstVisitor for DivideBeforeMultiplyVisitor<'_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         _contract_definition: &'a solidity::ast::ContractDefinition,
-        function_definition: Option<&'a solidity::ast::FunctionDefinition>,
+        definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         variable_declaration: &'a solidity::ast::VariableDeclaration,
     ) -> io::Result<()> {
-        if let Some(function_definition) = function_definition {
-            let variable_operations = self
-                .function_variable_operations
-                .get_mut(&function_definition.id)
-                .unwrap();
-
-            if !variable_operations.contains_key(&variable_declaration.id) {
-                variable_operations.insert(variable_declaration.id, vec![]);
+        let definition_id = match definition_node {
+            solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
+                function_definition.id
             }
+            solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
+                modifier_definition.id
+            }
+            _ => return Ok(()),
+        };
+
+        let variable_operations = self
+            .function_variable_operations
+            .get_mut(&definition_id)
+            .unwrap();
+
+        if !variable_operations.contains_key(&variable_declaration.id) {
+            variable_operations.insert(variable_declaration.id, vec![]);
         }
 
         Ok(())
@@ -66,14 +75,19 @@ impl AstVisitor for DivideBeforeMultiplyVisitor<'_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         contract_definition: &'a solidity::ast::ContractDefinition,
-        function_definition: Option<&'a solidity::ast::FunctionDefinition>,
+        definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         _statement: Option<&'a solidity::ast::Statement>,
         binary_operation: &'a solidity::ast::BinaryOperation,
     ) -> io::Result<()> {
-        let function_definition = match function_definition {
-            Some(function_definition) => function_definition,
-            None => return Ok(()),
+        let definition_id = match definition_node {
+            solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
+                function_definition.id
+            }
+            solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
+                modifier_definition.id
+            }
+            _ => return Ok(()),
         };
 
         if binary_operation.operator != "*" {
@@ -84,19 +98,37 @@ impl AstVisitor for DivideBeforeMultiplyVisitor<'_> {
             binary_operation.left_expression.as_ref()
         {
             if left_operation.contains_operation("/") {
-                if !self.reported_functions.contains(&function_definition.id) {
-                    self.reported_functions.insert(function_definition.id);
+                if !self.reported_functions.contains(&definition_id) {
+                    self.reported_functions.insert(definition_id);
 
-                    println!(
-                        "\t{} {} {} performs a multiplication on the result of a division",
-                        format!("{:?}", function_definition.visibility),
-                        if function_definition.name.is_empty() {
-                            format!("{}", contract_definition.name)
-                        } else {
-                            format!("{}.{}", contract_definition.name, function_definition.name)
-                        },
-                        format!("{:?}", function_definition.kind).to_lowercase()
-                    );
+                    match definition_node {
+                        solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
+                            println!(
+                                "\t{} {} {} performs a multiplication on the result of a division",
+                                format!("{:?}", function_definition.visibility),
+                                if function_definition.name.is_empty() {
+                                    format!("{}", contract_definition.name)
+                                } else {
+                                    format!("{}.{}", contract_definition.name, function_definition.name)
+                                },
+                                format!("{:?}", function_definition.kind).to_lowercase()
+                            );
+                        }
+
+                        solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
+                            println!(
+                                "\t{} {} modifier performs a multiplication on the result of a division",
+                                format!("{:?}", modifier_definition.visibility),
+                                if modifier_definition.name.is_empty() {
+                                    format!("{}", contract_definition.name)
+                                } else {
+                                    format!("{}.{}", contract_definition.name, modifier_definition.name)
+                                }
+                            );
+                        }
+
+                        _ => ()
+                    }
                 }
             }
         }
@@ -108,7 +140,7 @@ impl AstVisitor for DivideBeforeMultiplyVisitor<'_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         _contract_definition: &'a solidity::ast::ContractDefinition,
-        _function_definition: Option<&'a solidity::ast::FunctionDefinition>,
+        _definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         _statement: Option<&'a solidity::ast::Statement>,
         assignment: &'a solidity::ast::Assignment,

@@ -28,6 +28,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         _contract_definition: &solidity::ast::ContractDefinition,
+        _definition_node: &solidity::ast::ContractDefinitionNode,
         _function_definition: &solidity::ast::FunctionDefinition,
     ) -> io::Result<()> {
         self.makes_external_call = false;
@@ -40,6 +41,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         contract_definition: &solidity::ast::ContractDefinition,
+        _definition_node: &solidity::ast::ContractDefinitionNode,
         function_definition: &solidity::ast::FunctionDefinition,
     ) -> io::Result<()> {
         if let solidity::ast::FunctionKind::Constructor = function_definition.kind {
@@ -66,7 +68,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         contract_definition: &'a solidity::ast::ContractDefinition,
-        function_definition: &'a solidity::ast::FunctionDefinition,
+        definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         statement: &'a solidity::ast::Statement,
     ) -> io::Result<()> {
@@ -81,7 +83,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
             let ids = self.call_graph.get_assigned_state_variables(
                 self.files,
                 contract_definition,
-                function_definition,
+                definition_node,
                 expression,
             )?;
 
@@ -140,7 +142,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         _contract_definition: &solidity::ast::ContractDefinition,
-        _function_definition: Option<&solidity::ast::FunctionDefinition>,
+        _definition_node: &solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&solidity::ast::Block>,
         _statement: Option<&solidity::ast::Statement>,
         identifier: &solidity::ast::Identifier,
@@ -176,7 +178,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         _contract_definition: &'a solidity::ast::ContractDefinition,
-        _function_definition: Option<&'a solidity::ast::FunctionDefinition>,
+        _definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         _statement: Option<&'a solidity::ast::Statement>,
         member_access: &'a solidity::ast::MemberAccess,
@@ -209,14 +211,14 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         contract_definition: &'a solidity::ast::ContractDefinition,
-        function_definition: Option<&'a solidity::ast::FunctionDefinition>,
+        definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         _statement: Option<&'a solidity::ast::Statement>,
         assignment: &'a solidity::ast::Assignment,
     ) -> io::Result<()> {
-        let function_definition = match function_definition {
-            Some(function_definition) => function_definition,
-            None => return Ok(()),
+        let function_definition = match definition_node {
+            solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition,
+            _ => return Ok(())
         };
 
         if !self.makes_external_call {
@@ -239,7 +241,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
         let ids = self.call_graph.get_assigned_state_variables(
             self.files,
             contract_definition,
-            function_definition,
+            definition_node,
             assignment.left_hand_side.as_ref(),
         )?;
 

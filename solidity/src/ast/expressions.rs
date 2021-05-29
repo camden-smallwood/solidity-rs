@@ -243,7 +243,7 @@ pub struct Assignment {
 
 impl Assignment {
     pub fn contains_operation(&self, operator: &str) -> bool {
-        self.right_hand_side.contains_operation(operator)
+        self.operator == operator || self.right_hand_side.contains_operation(operator)
     }
 }
 

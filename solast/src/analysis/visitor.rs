@@ -73,7 +73,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         variable_declaration: &'a VariableDeclaration,
     ) -> io::Result<()> {
@@ -101,6 +101,17 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &SourceUnit,
         contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
+        modifier_definition: &ModifierDefinition,
+    ) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn leave_modifier_definition(
+        &mut self,
+        source_unit: &SourceUnit,
+        contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
         modifier_definition: &ModifierDefinition,
     ) -> io::Result<()> {
         Ok(())
@@ -110,6 +121,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &SourceUnit,
         contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
         function_definition: &FunctionDefinition,
     ) -> io::Result<()> {
         Ok(())
@@ -119,6 +131,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &SourceUnit,
         contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
         function_definition: &FunctionDefinition,
     ) -> io::Result<()> {
         Ok(())
@@ -128,7 +141,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         block: &'a Block,
     ) -> io::Result<()> {
@@ -139,7 +152,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: &'a Statement,
     ) -> io::Result<()> {
@@ -150,7 +163,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         variable_declaration_statement: &'a VariableDeclarationStatement,
     ) -> io::Result<()> {
@@ -161,7 +174,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         if_statement: &'a IfStatement
     ) -> io::Result<()> {
@@ -172,7 +185,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         for_statement: &'a ForStatement,
     ) -> io::Result<()> {
@@ -183,7 +196,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         for_statement: &'a ForStatement,
     ) -> io::Result<()> {
@@ -194,7 +207,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         while_statement: &'a WhileStatement,
     ) -> io::Result<()> {
@@ -205,7 +218,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         while_statement: &'a WhileStatement,
     ) -> io::Result<()> {
@@ -216,7 +229,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         emit_statement: &'a EmitStatement,
     ) -> io::Result<()> {
@@ -227,7 +240,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         try_statement: &'a TryStatement,
     ) -> io::Result<()> {
@@ -238,7 +251,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         revert_statement: &'a RevertStatement,
     ) -> io::Result<()> {
@@ -249,7 +262,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         block_or_statement: &'a BlockOrStatement,
     ) -> io::Result<()> {
@@ -260,7 +273,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: &'a FunctionDefinition,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         return_statement: &'a Return,
     ) -> io::Result<()> {
@@ -271,7 +284,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         expression: &'a Expression
@@ -283,7 +296,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &SourceUnit,
         contract_definition: &ContractDefinition,
-        function_definition: Option<&FunctionDefinition>,
+        definition_node: &ContractDefinitionNode,
         blocks: &mut Vec<&Block>,
         statement: Option<&Statement>,
         literal: &Literal,
@@ -295,7 +308,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &SourceUnit,
         contract_definition: &ContractDefinition,
-        function_definition: Option<&FunctionDefinition>,
+        definition_node: &ContractDefinitionNode,
         blocks: &mut Vec<&Block>,
         statement: Option<&Statement>,
         identifier: &Identifier,
@@ -307,7 +320,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         unary_operation: &'a UnaryOperation
@@ -319,7 +332,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         binary_operation: &'a BinaryOperation
@@ -331,7 +344,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         conditional: &'a Conditional,
@@ -343,7 +356,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         assignment: &'a Assignment,
@@ -355,7 +368,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         function_call: &'a FunctionCall,
@@ -367,7 +380,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         function_call_options: &'a FunctionCallOptions,
@@ -379,7 +392,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         index_access: &'a IndexAccess,
@@ -391,7 +404,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         index_range_access: &'a IndexRangeAccess,
@@ -403,7 +416,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         member_access: &'a MemberAccess,
@@ -415,7 +428,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         elementary_type_name_expression: &'a ElementaryTypeNameExpression,
@@ -427,7 +440,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         tuple_expression: &'a TupleExpression,
@@ -439,7 +452,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &'a SourceUnit,
         contract_definition: &'a ContractDefinition,
-        function_definition: Option<&'a FunctionDefinition>,
+        definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
         new_expression: &'a NewExpression,
@@ -461,7 +474,7 @@ pub trait AstVisitor {
         &mut self,
         source_unit: &SourceUnit,
         contract_definition: &ContractDefinition,
-        function_definition: &FunctionDefinition,
+        definition_node: &ContractDefinitionNode,
         inline_assembly: &InlineAssembly,
     ) -> io::Result<()> {
         Ok(())

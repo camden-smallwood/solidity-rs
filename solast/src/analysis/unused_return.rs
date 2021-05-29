@@ -17,7 +17,7 @@ impl AstVisitor for UnusedReturnVisitor<'_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         contract_definition: &'a solidity::ast::ContractDefinition,
-        function_definition: &'a solidity::ast::FunctionDefinition,
+        definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         statement: &'a solidity::ast::Statement,
     ) -> io::Result<()> {
@@ -42,35 +42,71 @@ impl AstVisitor for UnusedReturnVisitor<'_> {
                                 .parameters
                                 .is_empty()
                             {
-                                println!(
-                                    "\t{} {} {} makes a call to the {} {} {}, ignoring the returned {}",
+                                match definition_node {
+                                    solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
+                                        println!(
+                                            "\t{} {} {} makes a call to the {} {} {}, ignoring the returned {}",
 
-                                    format!("{:?}", function_definition.visibility),
+                                            format!("{:?}", function_definition.visibility),
 
-                                    if function_definition.name.is_empty() {
-                                        format!("{}", contract_definition.name)
-                                    } else {
-                                        format!("{}.{}", contract_definition.name, function_definition.name)
-                                    },
+                                            if function_definition.name.is_empty() {
+                                                format!("{}", contract_definition.name)
+                                            } else {
+                                                format!("{}.{}", contract_definition.name, function_definition.name)
+                                            },
 
-                                    format!("{:?}", function_definition.kind).to_lowercase(),
+                                            format!("{:?}", function_definition.kind).to_lowercase(),
 
-                                    format!("{:?}", called_function_definition.visibility).to_lowercase(),
+                                            format!("{:?}", called_function_definition.visibility).to_lowercase(),
 
-                                    if called_function_definition.name.is_empty() {
-                                        format!("{}", called_contract_definition.name)
-                                    } else {
-                                        format!("{}.{}", called_contract_definition.name, called_function_definition.name)
-                                    },
+                                            if called_function_definition.name.is_empty() {
+                                                format!("{}", called_contract_definition.name)
+                                            } else {
+                                                format!("{}.{}", called_contract_definition.name, called_function_definition.name)
+                                            },
 
-                                    format!("{:?}", called_function_definition.kind).to_lowercase(),
+                                            format!("{:?}", called_function_definition.kind).to_lowercase(),
 
-                                    if called_function_definition.return_parameters.parameters.len() > 1 {
-                                        "values"
-                                    } else {
-                                        "value"
+                                            if called_function_definition.return_parameters.parameters.len() > 1 {
+                                                "values"
+                                            } else {
+                                                "value"
+                                            }
+                                        );
                                     }
-                                );
+
+                                    solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
+                                        println!(
+                                            "\t{} {} modifier makes a call to the {} {} {}, ignoring the returned {}",
+
+                                            format!("{:?}", modifier_definition.visibility),
+
+                                            if modifier_definition.name.is_empty() {
+                                                format!("{}", contract_definition.name)
+                                            } else {
+                                                format!("{}.{}", contract_definition.name, modifier_definition.name)
+                                            },
+
+                                            format!("{:?}", called_function_definition.visibility).to_lowercase(),
+
+                                            if called_function_definition.name.is_empty() {
+                                                format!("{}", called_contract_definition.name)
+                                            } else {
+                                                format!("{}.{}", called_contract_definition.name, called_function_definition.name)
+                                            },
+
+                                            format!("{:?}", called_function_definition.kind).to_lowercase(),
+
+                                            if called_function_definition.return_parameters.parameters.len() > 1 {
+                                                "values"
+                                            } else {
+                                                "value"
+                                            }
+                                        );
+                                    }
+
+                                    _ => ()
+                                }
 
                                 return Ok(());
                             }

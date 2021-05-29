@@ -17,6 +17,7 @@ impl<'a> AstVisitor for RedundantGetterFunctionVisitor<'a> {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         contract_definition: &solidity::ast::ContractDefinition,
+        _definition_node: &solidity::ast::ContractDefinitionNode,
         function_definition: &solidity::ast::FunctionDefinition,
     ) -> io::Result<()> {
         if function_definition.name.is_empty() || function_definition.body.is_none() {

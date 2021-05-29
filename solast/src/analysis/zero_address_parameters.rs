@@ -373,6 +373,7 @@ impl AstVisitor for ZeroAddressParametersVisitor<'_, '_> {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         contract_definition: &solidity::ast::ContractDefinition,
+        _definition_node: &solidity::ast::ContractDefinitionNode,
         function_definition: &solidity::ast::FunctionDefinition,
     ) -> io::Result<()> {
         let contract_state = self
@@ -415,14 +416,15 @@ impl AstVisitor for ZeroAddressParametersVisitor<'_, '_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         contract_definition: &'a solidity::ast::ContractDefinition,
-        function_definition: Option<&'a solidity::ast::FunctionDefinition>,
+        definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         _statement: Option<&'a solidity::ast::Statement>,
         function_call: &'a solidity::ast::FunctionCall,
     ) -> io::Result<()> {
-        let function_definition = match function_definition {
-            Some(function_definition) => function_definition,
-            None => return Ok(()),
+        let definition_id = match definition_node {
+            solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
+            solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,
+            _ => return Ok(())
         };
 
         let contract_state = self
@@ -431,11 +433,10 @@ impl AstVisitor for ZeroAddressParametersVisitor<'_, '_> {
             .find(|contract_state| contract_state.id == contract_definition.id)
             .unwrap();
 
-        let function_state = contract_state
-            .function_states
-            .iter_mut()
-            .find(|function_state| function_state.id == function_definition.id)
-            .unwrap();
+        let function_state = match contract_state.function_states.iter_mut().find(|function_state| function_state.id == definition_id) {
+            Some(function_state) => function_state,
+            None => return Ok(())
+        };
 
         //
         // TODO: check for conditional equality/inequality to address(0) or address(0x0)
@@ -511,14 +512,32 @@ impl AstVisitor for ZeroAddressParametersVisitor<'_, '_> {
                         _ => continue,
                     }
 
-                    for (parameter_index, parameter) in
-                        function_definition.parameters.parameters.iter().enumerate()
-                    {
-                        if parameter.id == parameter_identifier.referenced_declaration {
-                            function_state.parameters_verified[parameter_index].2 = true;
-                            break;
+                    match definition_node {
+                        solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
+                            for (parameter_index, parameter) in
+                                function_definition.parameters.parameters.iter().enumerate()
+                            {
+                                if parameter.id == parameter_identifier.referenced_declaration {
+                                    function_state.parameters_verified[parameter_index].2 = true;
+                                    break;
+                                }
+                            }
                         }
+
+                        solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
+                            for (parameter_index, parameter) in
+                                modifier_definition.parameters.parameters.iter().enumerate()
+                            {
+                                if parameter.id == parameter_identifier.referenced_declaration {
+                                    function_state.parameters_verified[parameter_index].2 = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        _ => ()
                     }
+
                 }
 
                 _ => {}

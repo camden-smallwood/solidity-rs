@@ -88,6 +88,7 @@ impl AstVisitor for StorageArrayLoopVisitor<'_> {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         _contract_definition: &solidity::ast::ContractDefinition,
+        _definition_node: &solidity::ast::ContractDefinitionNode,
         function_definition: &solidity::ast::FunctionDefinition,
     ) -> io::Result<()> {
         if !self.functions.contains_key(&function_definition.id) {
@@ -116,6 +117,7 @@ impl AstVisitor for StorageArrayLoopVisitor<'_> {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         contract_definition: &solidity::ast::ContractDefinition,
+        _definition_node: &solidity::ast::ContractDefinitionNode,
         function_definition: &solidity::ast::FunctionDefinition,
     ) -> io::Result<()> {
         if let Some(function_info) = self.functions.get(&function_definition.id) {
@@ -143,7 +145,7 @@ impl AstVisitor for StorageArrayLoopVisitor<'_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         _contract_definition: &'a solidity::ast::ContractDefinition,
-        _function_definition: Option<&'a solidity::ast::FunctionDefinition>,
+        _definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         variable_declaration: &'a solidity::ast::VariableDeclaration,
     ) -> io::Result<()> {
@@ -169,14 +171,20 @@ impl AstVisitor for StorageArrayLoopVisitor<'_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         _contract_definition: &'a solidity::ast::ContractDefinition,
-        function_definition: &'a solidity::ast::FunctionDefinition,
+        definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         for_statement: &'a solidity::ast::ForStatement,
     ) -> io::Result<()> {
+        let definition_id = match definition_node {
+            solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
+            solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,
+            _ => return Ok(())
+        };
+
         if let Some(expression) = for_statement.condition.as_ref() {
             if self.expression_contains_storage_array_length(expression) {
                 self.functions
-                    .get_mut(&function_definition.id)
+                    .get_mut(&definition_id)
                     .unwrap()
                     .loops_over_storage_array = true;
             }
@@ -189,13 +197,19 @@ impl AstVisitor for StorageArrayLoopVisitor<'_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         _contract_definition: &'a solidity::ast::ContractDefinition,
-        function_definition: &'a solidity::ast::FunctionDefinition,
+        definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         while_statement: &solidity::ast::WhileStatement,
     ) -> io::Result<()> {
+        let definition_id = match definition_node {
+            solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
+            solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,
+            _ => return Ok(())
+        };
+
         if self.expression_contains_storage_array_length(&while_statement.condition) {
             self.functions
-                .get_mut(&function_definition.id)
+                .get_mut(&definition_id)
                 .unwrap()
                 .loops_over_storage_array = true;
         }

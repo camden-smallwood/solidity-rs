@@ -8,7 +8,7 @@ impl AstVisitor for ComparisonUtilizationVisitor {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         _contract_definition: &'a solidity::ast::ContractDefinition,
-        _function_definition: &'a solidity::ast::FunctionDefinition,
+        _definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         _if_statement: &'a solidity::ast::IfStatement,
     ) -> io::Result<()> {

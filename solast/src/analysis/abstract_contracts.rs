@@ -1,5 +1,5 @@
 use super::AstVisitor;
-use solidity::ast::{ContractDefinition, FunctionDefinition, FunctionKind, SourceUnit, Visibility};
+use solidity::ast::{ContractDefinition, ContractDefinitionNode, FunctionDefinition, FunctionKind, SourceUnit, Visibility};
 use std::io;
 
 pub struct AbstractContractsVisitor;
@@ -9,6 +9,7 @@ impl AstVisitor for AbstractContractsVisitor {
         &mut self,
         _source_unit: &SourceUnit,
         contract_definition: &ContractDefinition,
+        _definition_node: &ContractDefinitionNode,
         function_definition: &FunctionDefinition,
     ) -> io::Result<()> {
         if function_definition.kind != FunctionKind::Constructor {

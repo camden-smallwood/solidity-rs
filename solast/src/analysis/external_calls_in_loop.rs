@@ -26,6 +26,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_, '_> {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         _contract_definition: &solidity::ast::ContractDefinition,
+        _definition_node: &solidity::ast::ContractDefinitionNode,
         _function_definition: &solidity::ast::FunctionDefinition,
     ) -> io::Result<()> {
         self.loop_ids.clear();
@@ -38,6 +39,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_, '_> {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         contract_definition: &solidity::ast::ContractDefinition,
+        _definition_node: &solidity::ast::ContractDefinitionNode,
         function_definition: &solidity::ast::FunctionDefinition,
     ) -> io::Result<()> {
         if self.makes_external_call {
@@ -60,7 +62,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_, '_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         _contract_definition: &'a solidity::ast::ContractDefinition,
-        _function_definition: &'a solidity::ast::FunctionDefinition,
+        _definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         for_statement: &'a solidity::ast::ForStatement,
     ) -> io::Result<()> {
@@ -73,7 +75,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_, '_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         _contract_definition: &'a solidity::ast::ContractDefinition,
-        _function_definition: &'a solidity::ast::FunctionDefinition,
+        _definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         for_statement: &'a solidity::ast::ForStatement,
     ) -> io::Result<()> {
@@ -99,7 +101,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_, '_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         _contract_definition: &'a solidity::ast::ContractDefinition,
-        _function_definition: &'a solidity::ast::FunctionDefinition,
+        _definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         while_statement: &'a solidity::ast::WhileStatement,
     ) -> io::Result<()> {
@@ -112,7 +114,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_, '_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         _contract_definition: &'a solidity::ast::ContractDefinition,
-        _function_definition: &'a solidity::ast::FunctionDefinition,
+        _definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         while_statement: &'a solidity::ast::WhileStatement,
     ) -> io::Result<()> {
@@ -138,7 +140,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_, '_> {
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
         _contract_definition: &solidity::ast::ContractDefinition,
-        _function_definition: Option<&solidity::ast::FunctionDefinition>,
+        _definition_node: &solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&solidity::ast::Block>,
         _statement: Option<&solidity::ast::Statement>,
         identifier: &solidity::ast::Identifier,
@@ -174,7 +176,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_, '_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         _contract_definition: &'a solidity::ast::ContractDefinition,
-        _function_definition: Option<&'a solidity::ast::FunctionDefinition>,
+        _definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         _statement: Option<&'a solidity::ast::Statement>,
         member_access: &'a solidity::ast::MemberAccess,

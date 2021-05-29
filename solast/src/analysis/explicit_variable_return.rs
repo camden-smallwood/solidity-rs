@@ -24,10 +24,20 @@ impl AstVisitor for ExplicitVariableReturnVisitor<'_> {
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,
         contract_definition: &'a solidity::ast::ContractDefinition,
-        function_definition: &'a solidity::ast::FunctionDefinition,
+        definition_node: &'a solidity::ast::ContractDefinitionNode,
         _blocks: &mut Vec<&'a solidity::ast::Block>,
         statement: &'a solidity::ast::Statement,
     ) -> io::Result<()> {
+        let definition_id = match definition_node {
+            solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
+                function_definition.id
+            }
+            solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
+                modifier_definition.id
+            }
+            _ => return Ok(()),
+        };
+
         match statement {
             solidity::ast::Statement::VariableDeclarationStatement(variable_declaration_statement) => {
                 for declaration in variable_declaration_statement.declarations.iter() {
@@ -46,23 +56,45 @@ impl AstVisitor for ExplicitVariableReturnVisitor<'_> {
                             .variable_declarations
                             .contains(&identifier.referenced_declaration)
                         {
-                            if !self.reported_functions.contains(&function_definition.id) {
-                                self.reported_functions.insert(function_definition.id);
+                            if !self.reported_functions.contains(&definition_id) {
+                                self.reported_functions.insert(definition_id);
 
-                                println!(
-                                    "\t{} {} {} returns local '{}' variable explicitly",
-                                    format!("{:?}", function_definition.visibility),
-                                    if function_definition.name.is_empty() {
-                                        format!("{}", contract_definition.name)
-                                    } else {
-                                        format!(
-                                            "{}.{}",
-                                            contract_definition.name, function_definition.name
-                                        )
-                                    },
-                                    format!("{:?}", function_definition.kind).to_lowercase(),
-                                    identifier.name
-                                );
+                                match definition_node {
+                                    solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
+                                        println!(
+                                            "\t{} {} {} returns local '{}' variable explicitly",
+                                            format!("{:?}", function_definition.visibility),
+                                            if function_definition.name.is_empty() {
+                                                format!("{}", contract_definition.name)
+                                            } else {
+                                                format!(
+                                                    "{}.{}",
+                                                    contract_definition.name, function_definition.name
+                                                )
+                                            },
+                                            format!("{:?}", function_definition.kind).to_lowercase(),
+                                            identifier.name
+                                        );
+                                    }
+
+                                    solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
+                                        println!(
+                                            "\t{} {} modifier returns local '{}' variable explicitly",
+                                            format!("{:?}", modifier_definition.visibility),
+                                            if modifier_definition.name.is_empty() {
+                                                format!("{}", contract_definition.name)
+                                            } else {
+                                                format!(
+                                                    "{}.{}",
+                                                    contract_definition.name, modifier_definition.name
+                                                )
+                                            },
+                                            identifier.name
+                                        );
+                                    }
+
+                                    _ => ()
+                                }
                             }
                         }
                     }
@@ -92,23 +124,45 @@ impl AstVisitor for ExplicitVariableReturnVisitor<'_> {
                         }
 
                         if all_local_variables {
-                            if !self.reported_functions.contains(&function_definition.id) {
-                                self.reported_functions.insert(function_definition.id);
+                            if !self.reported_functions.contains(&definition_id) {
+                                self.reported_functions.insert(definition_id);
 
-                                println!(
-                                    "\t{} {} {} returns local {} variables explicitly",
-                                    format!("{:?}", function_definition.visibility),
-                                    if function_definition.name.is_empty() {
-                                        format!("{}", contract_definition.name)
-                                    } else {
-                                        format!(
-                                            "{}.{}",
-                                            contract_definition.name, function_definition.name
-                                        )
-                                    },
-                                    format!("{:?}", function_definition.kind).to_lowercase(),
-                                    local_variable_names.join(", ")
-                                );
+                                match definition_node {
+                                    solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
+                                        println!(
+                                            "\t{} {} {} returns local {} variables explicitly",
+                                            format!("{:?}", function_definition.visibility),
+                                            if function_definition.name.is_empty() {
+                                                format!("{}", contract_definition.name)
+                                            } else {
+                                                format!(
+                                                    "{}.{}",
+                                                    contract_definition.name, function_definition.name
+                                                )
+                                            },
+                                            format!("{:?}", function_definition.kind).to_lowercase(),
+                                            local_variable_names.join(", ")
+                                        );
+                                    }
+
+                                    solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
+                                        println!(
+                                            "\t{} {} modifier returns local {} variables explicitly",
+                                            format!("{:?}", modifier_definition.visibility),
+                                            if modifier_definition.name.is_empty() {
+                                                format!("{}", contract_definition.name)
+                                            } else {
+                                                format!(
+                                                    "{}.{}",
+                                                    contract_definition.name, modifier_definition.name
+                                                )
+                                            },
+                                            local_variable_names.join(", ")
+                                        );
+                                    }
+
+                                    _ => ()
+                                }
                             }
                         }
                     }

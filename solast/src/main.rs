@@ -125,6 +125,7 @@ fn main() -> io::Result<()> {
     walker.visitors.push(Box::new(analysis::UnpaidPayableFunctionsVisitor::new(files.as_slice())));
     walker.visitors.push(Box::new(analysis::DivideBeforeMultiplyVisitor::new(files.as_slice())));
     walker.visitors.push(Box::new(analysis::ComparisonUtilizationVisitor));
+    walker.visitors.push(Box::new(analysis::AssignmentComparisonsVisitor));
 
     walker.analyze(files.as_slice())
 }
