@@ -24,7 +24,7 @@ Some legacy versions of Solidity are inherently supported, but the focus is 0.8.
 - [x] `unchecked-erc20-transfer`
 - [ ] ~~`divide-before-multiply`~~ (WIP)
 - [ ] ~~`comparison-utilization`~~ (WIP)
-- [ ] ~~`assignment-comparisons`~~ (WIP)
+- [x] `assignment-comparisons`
 
 ## Usage
 
