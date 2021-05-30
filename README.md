@@ -17,7 +17,6 @@ Some legacy versions of Solidity are inherently supported, but the focus is 0.8.
 - [x] `unused-return`
 - [x] `storage-array-loop`
 - [x] `external-calls-in-loop`
-- [x] `contract-locking-ether`
 - [x] `check-effects-interactions`
 - [x] `raw-address-transfer`
 - [x] `safe-erc20-functions`
