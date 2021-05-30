@@ -23,24 +23,22 @@ impl<'a> UnpaidPayableFunctionsVisitor<'a> {
     ) {
         println!(
             "\t{} {} {} makes a call to the {} payable {} {} without paying",
+
             format!(
                 "{:?}",
                 match definition_node {
-                    ContractDefinitionNode::FunctionDefinition(function_definition) =>
-                        function_definition.visibility,
-                    ContractDefinitionNode::ModifierDefinition(modifier_definition) =>
-                        modifier_definition.visibility,
+                    ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition.visibility,
+                    ContractDefinitionNode::ModifierDefinition(modifier_definition) => modifier_definition.visibility,
                     _ => unimplemented!("{:?}", definition_node),
                 }
             ),
+
             {
                 let name = format!(
                     "{:?}",
                     match definition_node {
-                        ContractDefinitionNode::FunctionDefinition(function_definition) =>
-                            function_definition.name.as_str(),
-                        ContractDefinitionNode::ModifierDefinition(modifier_definition) =>
-                            modifier_definition.name.as_str(),
+                        ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition.name.as_str(),
+                        ContractDefinitionNode::ModifierDefinition(modifier_definition) => modifier_definition.name.as_str(),
                         _ => unimplemented!("{:?}", definition_node),
                     }
                 );
@@ -51,31 +49,28 @@ impl<'a> UnpaidPayableFunctionsVisitor<'a> {
                     format!("{}.{}", contract_definition.name, name)
                 }
             },
+
             match definition_node {
-                ContractDefinitionNode::FunctionDefinition(function_definition) =>
-                    format!("{}", function_definition.kind),
+                ContractDefinitionNode::FunctionDefinition(function_definition) => format!("{}", function_definition.kind),
                 ContractDefinitionNode::ModifierDefinition(_) => "modifier".into(),
                 _ => unimplemented!("{:?}", definition_node),
             },
+
             format!(
                 "{:?}",
                 match called_definition_node {
-                    ContractDefinitionNode::FunctionDefinition(called_function_definition) =>
-                        called_function_definition.visibility,
-                    ContractDefinitionNode::ModifierDefinition(called_modifier_definition) =>
-                        called_modifier_definition.visibility,
+                    ContractDefinitionNode::FunctionDefinition(called_function_definition) => called_function_definition.visibility,
+                    ContractDefinitionNode::ModifierDefinition(called_modifier_definition) => called_modifier_definition.visibility,
                     _ => unimplemented!("{:?}", called_definition_node),
                 }
-            )
-            .to_lowercase(),
+            ).to_lowercase(),
+
             {
                 let name = format!(
                     "{:?}",
                     match called_definition_node {
-                        ContractDefinitionNode::FunctionDefinition(called_function_definition) =>
-                            called_function_definition.name.as_str(),
-                        ContractDefinitionNode::ModifierDefinition(called_modifier_definition) =>
-                            called_modifier_definition.name.as_str(),
+                        ContractDefinitionNode::FunctionDefinition(called_function_definition) => called_function_definition.name.as_str(),
+                        ContractDefinitionNode::ModifierDefinition(called_modifier_definition) => called_modifier_definition.name.as_str(),
                         _ => unimplemented!("{:?}", called_definition_node),
                     }
                 );
@@ -86,9 +81,9 @@ impl<'a> UnpaidPayableFunctionsVisitor<'a> {
                     format!("{}.{}", called_contract_definition.name, name)
                 }
             },
+
             match called_definition_node {
-                ContractDefinitionNode::FunctionDefinition(called_function_definition) =>
-                    format!("{}", called_function_definition.kind),
+                ContractDefinitionNode::FunctionDefinition(called_function_definition) => format!("{}", called_function_definition.kind),
                 ContractDefinitionNode::ModifierDefinition(_) => "modifier".into(),
                 _ => unimplemented!("{:?}", called_definition_node),
             }
@@ -109,14 +104,11 @@ impl AstVisitor for UnpaidPayableFunctionsVisitor<'_> {
         match function_call.expression.as_ref() {
             solidity::ast::Expression::Identifier(identifier) => {
                 for source_unit in self.source_units.iter() {
-                    if let Some((called_contract_definition, called_definition_node)) =
-                        source_unit.find_contract_definition_node(identifier.referenced_declaration)
-                    {
+                    if let Some((called_contract_definition, called_definition_node)) = source_unit.find_contract_definition_node(identifier.referenced_declaration) {
                         if let ContractDefinitionNode::FunctionDefinition(FunctionDefinition {
                             state_mutability: StateMutability::Payable,
                             ..
-                        }) = called_definition_node
-                        {
+                        }) = called_definition_node {
                             self.print_message(
                                 contract_definition,
                                 definition_node,
@@ -136,14 +128,11 @@ impl AstVisitor for UnpaidPayableFunctionsVisitor<'_> {
                 };
 
                 for source_unit in self.source_units.iter() {
-                    if let Some((called_contract_definition, called_definition_node)) =
-                        source_unit.find_contract_definition_node(referenced_declaration)
-                    {
+                    if let Some((called_contract_definition, called_definition_node)) = source_unit.find_contract_definition_node(referenced_declaration) {
                         if let ContractDefinitionNode::FunctionDefinition(FunctionDefinition {
                             state_mutability: StateMutability::Payable,
                             ..
-                        }) = called_definition_node
-                        {
+                        }) = called_definition_node {
                             self.print_message(
                                 contract_definition,
                                 definition_node,
@@ -156,7 +145,7 @@ impl AstVisitor for UnpaidPayableFunctionsVisitor<'_> {
                 }
             }
 
-            _ => (),
+            _ => {}
         }
 
         Ok(())
