@@ -1,24 +1,22 @@
 use super::AstVisitor;
-use solidity::ast::{NodeID, SourceUnit};
+use solidity::ast::NodeID;
 use std::{collections::HashSet, io};
 
-pub struct ExplicitVariableReturnVisitor<'a> {
-    pub source_units: &'a [SourceUnit],
+pub struct ExplicitVariableReturnVisitor{
     variable_declarations: HashSet<NodeID>,
     reported_functions: HashSet<NodeID>,
 }
 
-impl<'a> ExplicitVariableReturnVisitor<'a> {
-    pub fn new(source_units: &'a [SourceUnit]) -> Self {
+impl Default for ExplicitVariableReturnVisitor {
+    fn default() -> Self {
         Self {
-            source_units,
             variable_declarations: HashSet::new(),
             reported_functions: HashSet::new(),
         }
     }
 }
 
-impl AstVisitor for ExplicitVariableReturnVisitor<'_> {
+impl AstVisitor for ExplicitVariableReturnVisitor {
     fn visit_statement<'a>(
         &mut self,
         _source_unit: &'a solidity::ast::SourceUnit,

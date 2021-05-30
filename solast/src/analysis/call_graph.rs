@@ -30,6 +30,7 @@ impl CallInfo {
 pub struct FunctionInfo {
     pub id: NodeID,
     pub calls: Vec<CallInfo>,
+    pub is_payable: bool,
     pub sends_value: bool,
 }
 
@@ -235,18 +236,13 @@ impl AstVisitor for CallGraph {
     ) -> io::Result<()> {
         let contract_info = self.contracts.get_mut(&contract_definition.id).unwrap();
 
-        if !contract_info
-            .functions
-            .contains_key(&function_definition.id)
-        {
-            contract_info.functions.insert(
-                function_definition.id,
-                FunctionInfo {
-                    id: function_definition.id,
-                    calls: vec![],
-                    sends_value: false,
-                },
-            );
+        if !contract_info.functions.contains_key(&function_definition.id) {
+            contract_info.functions.insert(function_definition.id, FunctionInfo {
+                id: function_definition.id,
+                calls: vec![],
+                is_payable: function_definition.state_mutability == solidity::ast::StateMutability::Payable,
+                sends_value: false,
+            });
         }
 
         Ok(())
@@ -318,9 +314,7 @@ impl AstVisitor for CallGraph {
 
         if function_definition.name == "transfer" {
             if let Expression::MemberAccess(member_access) = function_call.expression.as_ref() {
-                if member_access.referenced_declaration.is_none()
-                    && member_access.member_name == "sender"
-                {
+                if member_access.referenced_declaration.is_none() && member_access.member_name == "sender" {
                     function_info.sends_value = true;
                 }
             }
@@ -376,12 +370,7 @@ impl AstVisitor for CallGraph {
             .get_mut(&function_definition.id)
             .unwrap();
 
-        if self.current_call_arguments.is_some()
-            && function_call_options
-                .names
-                .iter()
-                .any(|name| name == "value")
-        {
+        if self.current_call_arguments.is_some() && function_call_options.names.iter().any(|name| name == "value") {
             function_info.sends_value = true;
         }
 

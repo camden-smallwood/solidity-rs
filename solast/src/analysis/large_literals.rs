@@ -6,8 +6,8 @@ pub struct LargeLiteralsVisitor {
     functions: HashSet<NodeID>,
 }
 
-impl LargeLiteralsVisitor {
-    pub fn new() -> Self {
+impl Default for LargeLiteralsVisitor {
+    fn default() -> Self {
         Self {
             functions: HashSet::new(),
         }
