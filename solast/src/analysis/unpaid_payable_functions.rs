@@ -115,8 +115,8 @@ impl AstVisitor for UnpaidPayableFunctionsVisitor<'_> {
                                 called_contract_definition,
                                 called_definition_node,
                             );
-                            break;
                         }
+                        break;
                     }
                 }
             }
@@ -139,8 +139,8 @@ impl AstVisitor for UnpaidPayableFunctionsVisitor<'_> {
                                 called_contract_definition,
                                 called_definition_node,
                             );
-                            break;
                         }
+                        break;
                     }
                 }
             }
