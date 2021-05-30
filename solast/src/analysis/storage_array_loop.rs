@@ -1,6 +1,5 @@
 use super::AstVisitor;
-use crate::truffle;
-use solidity::ast::NodeID;
+use solidity::ast::{NodeID, SourceUnit};
 use std::{
     collections::{HashMap, HashSet},
     io,
@@ -11,15 +10,15 @@ struct FunctionInfo {
 }
 
 pub struct StorageArrayLoopVisitor<'a> {
-    pub files: &'a [truffle::File],
+    pub source_units: &'a [SourceUnit],
     storage_arrays: HashSet<NodeID>,
     functions: HashMap<NodeID, FunctionInfo>,
 }
 
 impl<'a> StorageArrayLoopVisitor<'a> {
-    pub fn new(files: &'a [truffle::File]) -> Self {
+    pub fn new(source_units: &'a [SourceUnit]) -> Self {
         Self {
-            files,
+            source_units,
             storage_arrays: HashSet::new(),
             functions: HashMap::new(),
         }

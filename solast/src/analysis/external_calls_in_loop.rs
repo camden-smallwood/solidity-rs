@@ -1,19 +1,18 @@
 use super::{AstVisitor, CallGraph};
-use crate::truffle;
-use solidity::ast::NodeID;
+use solidity::ast::{NodeID, SourceUnit};
 use std::io;
 
 pub struct ExternalCallsInLoopVisitor<'a, 'b> {
-    files: &'a [truffle::File],
+    source_units: &'a [SourceUnit],
     call_graph: &'b CallGraph,
     loop_ids: Vec<NodeID>,
     makes_external_call: bool,
 }
 
 impl<'a, 'b> ExternalCallsInLoopVisitor<'a, 'b> {
-    pub fn new(files: &'a [truffle::File], call_graph: &'b CallGraph) -> Self {
+    pub fn new(source_units: &'a [SourceUnit], call_graph: &'b CallGraph) -> Self {
         Self {
-            files,
+            source_units,
             call_graph,
             loop_ids: vec![],
             makes_external_call: false,
@@ -149,9 +148,9 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_, '_> {
             return Ok(());
         }
 
-        for file in self.files.iter() {
+        for source_unit in self.source_units.iter() {
             if let Some(function_definition) =
-                file.function_definition(identifier.referenced_declaration)
+                source_unit.function_definition(identifier.referenced_declaration)
             {
                 if let solidity::ast::Visibility::External = function_definition.visibility {
                     self.makes_external_call = true;
@@ -164,7 +163,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_, '_> {
             .call_graph
             .function_info(identifier.referenced_declaration)
         {
-            if function_info.makes_external_call(self.files) {
+            if function_info.makes_external_call(self.source_units) {
                 self.makes_external_call = true;
             }
         }
@@ -186,8 +185,8 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_, '_> {
         }
 
         if let Some(referenced_declaration) = member_access.referenced_declaration {
-            for file in self.files.iter() {
-                if let Some(function_definition) = file.function_definition(referenced_declaration)
+            for source_unit in self.source_units.iter() {
+                if let Some(function_definition) = source_unit.function_definition(referenced_declaration)
                 {
                     if let solidity::ast::Visibility::External = function_definition.visibility {
                         self.makes_external_call = true;
@@ -197,7 +196,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_, '_> {
             }
 
             if let Some(function_info) = self.call_graph.function_info(referenced_declaration) {
-                if function_info.makes_external_call(self.files) {
+                if function_info.makes_external_call(self.source_units) {
                     self.makes_external_call = true;
                 }
             }

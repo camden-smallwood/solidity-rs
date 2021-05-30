@@ -1,5 +1,4 @@
 use super::AstVisitor;
-use crate::truffle;
 use solidity::ast::{
     Block, ContractDefinition, ContractDefinitionNode, Expression, FunctionCall, FunctionCallKind,
     FunctionCallOptions, FunctionDefinition, Identifier, MemberAccess, NodeID, SourceUnit,
@@ -14,13 +13,8 @@ pub struct CallInfo {
 }
 
 impl CallInfo {
-    pub fn makes_external_call(&self, files: &[truffle::File]) -> bool {
-        for file in files.iter() {
-            let source_unit = match file.ast.as_ref() {
-                Some(source_unit) => source_unit,
-                None => continue,
-            };
-
+    pub fn makes_external_call(&self, source_units: &[SourceUnit]) -> bool {
+        for source_unit in source_units.iter() {
             if let Some(function_definition) = source_unit.function_definition(self.function_id) {
                 if let Visibility::External = function_definition.visibility {
                     return true;
@@ -40,9 +34,9 @@ pub struct FunctionInfo {
 }
 
 impl FunctionInfo {
-    pub fn makes_external_call(&self, files: &[truffle::File]) -> bool {
+    pub fn makes_external_call(&self, source_units: &[SourceUnit]) -> bool {
         for call_info in self.calls.iter() {
-            if call_info.makes_external_call(files) {
+            if call_info.makes_external_call(source_units) {
                 return true;
             }
         }
@@ -73,11 +67,11 @@ impl Default for CallGraph {
 }
 
 impl CallGraph {
-    pub fn build(files: &[truffle::File]) -> io::Result<Self> {
+    pub fn build(source_units: &[SourceUnit]) -> io::Result<Self> {
         let mut analyzer = super::AstWalker::default();
 
         analyzer.visitors.push(Box::new(Self::default()));
-        analyzer.analyze(files)?;
+        analyzer.analyze(source_units)?;
 
         Ok(unsafe {
             (&*(analyzer.visitors.pop().unwrap().as_ref() as *const _ as *const Self)).clone()
@@ -113,16 +107,16 @@ impl CallGraph {
 
     pub fn hierarchy_contains_state_variable(
         &self,
-        files: &[truffle::File],
+        source_units: &[SourceUnit],
         contract_definition: &ContractDefinition,
         state_variable_id: NodeID,
     ) -> bool {
         // Loop through all of the contracts in the supplied contract's inheritance hierarchy
         for &contract_id in contract_definition.linearized_base_contracts.iter() {
-            // Loop through all of the schema files in the project
-            for file in files.iter() {
-                // Attempt to retrieve the current contract in the inheritance hierarchy from the current schema file
-                let contract_definition = match file.contract_definition(contract_id) {
+            // Loop through all of the schema source_units in the project
+            for source_unit in source_units.iter() {
+                // Attempt to retrieve the current contract in the inheritance hierarchy from the current schema source_unit
+                let contract_definition = match source_unit.contract_definition(contract_id) {
                     Some(contract_definition) => contract_definition,
                     None => continue,
                 };
@@ -139,7 +133,7 @@ impl CallGraph {
 
     pub fn get_assigned_state_variables(
         &self,
-        files: &[truffle::File],
+        source_units: &[SourceUnit],
         contract_definition: &ContractDefinition,
         definition_node: &ContractDefinitionNode,
         expression: &Expression,
@@ -149,7 +143,7 @@ impl CallGraph {
         match expression {
             Expression::Identifier(identifier) => {
                 if self.hierarchy_contains_state_variable(
-                    files,
+                    source_units,
                     contract_definition,
                     identifier.referenced_declaration,
                 ) {
@@ -159,7 +153,7 @@ impl CallGraph {
 
             Expression::Assignment(assignment) => {
                 ids.extend(self.get_assigned_state_variables(
-                    files,
+                    source_units,
                     contract_definition,
                     definition_node,
                     assignment.left_hand_side.as_ref(),
@@ -168,7 +162,7 @@ impl CallGraph {
 
             Expression::IndexAccess(index_access) => {
                 ids.extend(self.get_assigned_state_variables(
-                    files,
+                    source_units,
                     contract_definition,
                     definition_node,
                     index_access.base_expression.as_ref(),
@@ -177,7 +171,7 @@ impl CallGraph {
 
             Expression::IndexRangeAccess(index_range_access) => {
                 ids.extend(self.get_assigned_state_variables(
-                    files,
+                    source_units,
                     contract_definition,
                     definition_node,
                     index_range_access.base_expression.as_ref(),
@@ -186,7 +180,7 @@ impl CallGraph {
 
             Expression::MemberAccess(member_access) => {
                 ids.extend(self.get_assigned_state_variables(
-                    files,
+                    source_units,
                     contract_definition,
                     definition_node,
                     member_access.expression.as_ref(),
@@ -197,7 +191,7 @@ impl CallGraph {
                 for component in tuple_expression.components.iter() {
                     if let Some(component) = component {
                         ids.extend(self.get_assigned_state_variables(
-                            files,
+                            source_units,
                             contract_definition,
                             definition_node,
                             component,

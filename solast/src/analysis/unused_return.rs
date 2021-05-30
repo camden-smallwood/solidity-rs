@@ -1,14 +1,14 @@
 use super::AstVisitor;
-use crate::truffle;
+use solidity::ast::SourceUnit;
 use std::io;
 
 pub struct UnusedReturnVisitor<'a> {
-    files: &'a [truffle::File],
+    source_units: &'a [SourceUnit],
 }
 
 impl<'a> UnusedReturnVisitor<'a> {
-    pub fn new(files: &'a [truffle::File]) -> Self {
-        Self { files }
+    pub fn new(source_units: &'a [SourceUnit]) -> Self {
+        Self { source_units }
     }
 }
 
@@ -23,19 +23,20 @@ impl AstVisitor for UnusedReturnVisitor<'_> {
     ) -> io::Result<()> {
         if let solidity::ast::Statement::ExpressionStatement(expression_statement) = statement {
             if let solidity::ast::Expression::FunctionCall(solidity::ast::FunctionCall {
-                expression, ..
-            })
-            | solidity::ast::Expression::FunctionCallOptions(solidity::ast::FunctionCallOptions {
                 expression,
                 ..
-            }) = &expression_statement.expression
+            })
+            | solidity::ast::Expression::FunctionCallOptions(
+                solidity::ast::FunctionCallOptions { expression, .. },
+            ) = &expression_statement.expression
             {
                 if let Some(solidity::ast::Expression::Identifier(identifier)) =
                     expression.root_expression()
                 {
-                    for file in self.files.iter() {
+                    for source_unit in self.source_units.iter() {
                         if let Some((called_contract_definition, called_function_definition)) =
-                            file.function_and_contract_definition(identifier.referenced_declaration)
+                            source_unit
+                                .function_and_contract_definition(identifier.referenced_declaration)
                         {
                             if !called_function_definition
                                 .return_parameters
@@ -43,7 +44,9 @@ impl AstVisitor for UnusedReturnVisitor<'_> {
                                 .is_empty()
                             {
                                 match definition_node {
-                                    solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
+                                    solidity::ast::ContractDefinitionNode::FunctionDefinition(
+                                        function_definition,
+                                    ) => {
                                         println!(
                                             "\t{} {} {} makes a call to the {} {} {}, ignoring the returned {}",
 
@@ -75,7 +78,9 @@ impl AstVisitor for UnusedReturnVisitor<'_> {
                                         );
                                     }
 
-                                    solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
+                                    solidity::ast::ContractDefinitionNode::ModifierDefinition(
+                                        modifier_definition,
+                                    ) => {
                                         println!(
                                             "\t{} {} modifier makes a call to the {} {} {}, ignoring the returned {}",
 
@@ -105,7 +110,7 @@ impl AstVisitor for UnusedReturnVisitor<'_> {
                                         );
                                     }
 
-                                    _ => ()
+                                    _ => (),
                                 }
 
                                 return Ok(());

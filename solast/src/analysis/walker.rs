@@ -1,5 +1,4 @@
 use super::AstVisitor;
-use crate::truffle;
 use solidity::ast::*;
 use std::{collections::HashSet, io};
 use yul::InlineAssembly;
@@ -19,30 +18,20 @@ impl<'a> Default for AstWalker<'a> {
 }
 
 impl AstWalker<'_> {
-    pub fn analyze(&mut self, files: &[truffle::File]) -> io::Result<()> {
-        for file in files.iter() {
-            self.analyze_file(file)?;
+    pub fn analyze(&mut self, source_units: &[SourceUnit]) -> io::Result<()> {
+        for source_unit in source_units.iter() {
+            self.analyze_file(source_unit)?;
         }
 
         Ok(())
     }
 
-    pub fn analyze_file(&mut self, file: &truffle::File) -> io::Result<()> {
-        let source_path = match file.source_path.as_ref() {
-            Some(source_path) => source_path,
-            None => return Ok(()),
-        };
-
-        if self.analyzed_paths.contains(source_path) {
+    pub fn analyze_file(&mut self, source_unit: &SourceUnit) -> io::Result<()> {
+        if self.analyzed_paths.contains(&source_unit.absolute_path) {
             return Ok(());
         }
 
-        self.analyzed_paths.insert(source_path.clone());
-
-        let source_unit = match file.ast.as_ref() {
-            Some(ast) => ast,
-            None => return Ok(()),
-        };
+        self.analyzed_paths.insert(source_unit.absolute_path.clone());
 
         self.visit_source_unit(source_unit)?;
         self.leave_source_unit(source_unit)?;

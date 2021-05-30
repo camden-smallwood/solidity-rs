@@ -9,7 +9,7 @@ impl AstVisitor for NoSpdxIdentifierVisitor {
         source_unit: &solidity::ast::SourceUnit
     ) -> io::Result<()> {
         if source_unit.license.is_none() {
-            println!("\tSPDX license identifier not provided in source file; Consider adding one before deployment");
+            println!("\tSPDX license identifier not provided in source source_unit; Consider adding one before deployment");
         }
 
         Ok(())

@@ -1,16 +1,16 @@
 use super::AstVisitor;
-use crate::truffle;
+use solidity::ast::SourceUnit;
 use std::io;
 
 pub struct SourceUnitVisitor<'a> {
-    pub files: &'a [truffle::File],
+    pub source_units: &'a [SourceUnit],
     pub first_file: bool,
 }
 
 impl<'a> SourceUnitVisitor<'a> {
-    pub fn new(files: &'a [truffle::File]) -> Self {
+    pub fn new(source_units: &'a [SourceUnit]) -> Self {
         Self {
-            files,
+            source_units,
             first_file: true,
         }
     }

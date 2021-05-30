@@ -143,4 +143,30 @@ impl SourceUnit {
 
         None
     }
+
+    pub fn find_contract_definition_node(
+        &self,
+        id: NodeID,
+    ) -> Option<(&ContractDefinition, &ContractDefinitionNode)> {
+        for node in self.nodes.iter() {
+            if let SourceUnitNode::ContractDefinition(contract_definition) = node {
+                for node in contract_definition.nodes.iter() {
+                    if id == match node {
+                        ContractDefinitionNode::UsingForDirective(node) => node.id,
+                        ContractDefinitionNode::StructDefinition(node) => node.id,
+                        ContractDefinitionNode::EnumDefinition(node) => node.id,
+                        ContractDefinitionNode::VariableDeclaration(node) => node.id,
+                        ContractDefinitionNode::EventDefinition(node) => node.id,
+                        ContractDefinitionNode::FunctionDefinition(node) => node.id,
+                        ContractDefinitionNode::ModifierDefinition(node) => node.id,
+                        ContractDefinitionNode::ErrorDefinition(node) => node.id,
+                    } {
+                        return Some((contract_definition, node));
+                    }
+                }
+            }
+        }
+
+        None
+    }
 }

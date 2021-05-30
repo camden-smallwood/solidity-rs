@@ -1,17 +1,16 @@
 use super::AstVisitor;
-use crate::truffle;
-use solidity::ast::NodeID;
+use solidity::ast::{NodeID, SourceUnit};
 use std::{collections::HashMap, io};
 
 pub struct RequireWithoutMessageVisitor<'a> {
-    pub files: &'a [truffle::File],
+    pub source_units: &'a [SourceUnit],
     pub function_requirement_counts: HashMap<NodeID, usize>,
 }
 
 impl<'a> RequireWithoutMessageVisitor<'a> {
-    pub fn new(files: &'a [truffle::File]) -> Self {
+    pub fn new(source_units: &'a [SourceUnit]) -> Self {
         Self {
-            files,
+            source_units,
             function_requirement_counts: HashMap::new(),
         }
     }

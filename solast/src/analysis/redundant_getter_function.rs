@@ -1,14 +1,14 @@
 use super::AstVisitor;
-use crate::truffle;
+use solidity::ast::SourceUnit;
 use std::io;
 
 pub struct RedundantGetterFunctionVisitor<'a> {
-    pub files: &'a [truffle::File],
+    pub source_units: &'a [SourceUnit],
 }
 
 impl<'a> RedundantGetterFunctionVisitor<'a> {
-    pub fn new(files: &'a [truffle::File]) -> Self {
-        Self { files }
+    pub fn new(source_units: &'a [SourceUnit]) -> Self {
+        Self { source_units }
     }
 }
 

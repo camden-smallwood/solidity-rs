@@ -1,21 +1,20 @@
 use super::AstVisitor;
-use crate::truffle;
-use solidity::ast::NodeID;
+use solidity::ast::{NodeID, SourceUnit};
 use std::{
     collections::{HashMap, HashSet},
     io,
 };
 
 pub struct DivideBeforeMultiplyVisitor<'a> {
-    pub files: &'a [truffle::File],
+    pub source_units: &'a [SourceUnit],
     reported_functions: HashSet<NodeID>,
     function_variable_operations: HashMap<NodeID, HashMap<NodeID, Vec<String>>>,
 }
 
 impl<'a> DivideBeforeMultiplyVisitor<'a> {
-    pub fn new(files: &'a [truffle::File]) -> Self {
+    pub fn new(source_units: &'a [SourceUnit]) -> Self {
         Self {
-            files,
+            source_units,
             reported_functions: HashSet::new(),
             function_variable_operations: HashMap::new(),
         }

@@ -1,6 +1,5 @@
 use super::AstVisitor;
-use crate::truffle;
-use solidity::ast::NodeID;
+use solidity::ast::{NodeID, SourceUnit};
 use std::{
     collections::{HashMap, HashSet},
     io,
@@ -15,15 +14,15 @@ struct FunctionInfo {
 }
 
 pub struct UncheckedERC20TransferVisitor<'a> {
-    files: &'a [truffle::File],
+    source_units: &'a [SourceUnit],
     block_info: HashMap<NodeID, BlockInfo>,
     function_info: HashMap<NodeID, FunctionInfo>,
 }
 
 impl<'a> UncheckedERC20TransferVisitor<'a> {
-    pub fn new(files: &'a [truffle::File]) -> Self {
+    pub fn new(source_units: &'a [SourceUnit]) -> Self {
         Self {
-            files,
+            source_units,
             block_info: HashMap::new(),
             function_info: HashMap::new(),
         }
@@ -196,9 +195,9 @@ impl AstVisitor for UncheckedERC20TransferVisitor<'_> {
         };
 
         for referenced_declaration in function_call.expression.referenced_declarations() {
-            for file in self.files.iter() {
+            for source_unit in self.source_units.iter() {
                 if let Some((called_contract_definition, called_function_definition)) =
-                    file.function_and_contract_definition(referenced_declaration)
+                    source_unit.function_and_contract_definition(referenced_declaration)
                 {
                     if let "erc20" | "ierc20" = called_contract_definition
                         .name

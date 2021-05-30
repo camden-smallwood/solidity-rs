@@ -1,6 +1,5 @@
 use super::{AstVisitor, AstWalker, CallGraph};
-use crate::truffle;
-use solidity::ast::NodeID;
+use solidity::ast::{NodeID, SourceUnit};
 use std::{collections::HashSet, io};
 
 #[derive(Clone, Debug)]
@@ -18,7 +17,7 @@ struct ContractState {
 }
 
 pub struct ZeroAddressParametersVisitor<'a, 'b> {
-    files: &'a [truffle::File],
+    source_units: &'a [SourceUnit],
     call_graph: &'b CallGraph,
     contract_states: Vec<ContractState>,
     visited_imports: HashSet<NodeID>,
@@ -26,9 +25,9 @@ pub struct ZeroAddressParametersVisitor<'a, 'b> {
 }
 
 impl<'a, 'b> ZeroAddressParametersVisitor<'a, 'b> {
-    pub fn new(files: &'a [truffle::File], call_graph: &'b CallGraph) -> Self {
+    pub fn new(source_units: &'a [SourceUnit], call_graph: &'b CallGraph) -> Self {
         Self {
-            files,
+            source_units,
             call_graph,
             contract_states: vec![],
             visited_imports: HashSet::new(),
@@ -47,12 +46,7 @@ impl<'a, 'b> ZeroAddressParametersVisitor<'a, 'b> {
             let mut calling_contract_definition = None;
             let mut calling_function_definition = None;
 
-            for file in self.files.iter() {
-                let source_unit = match file.ast.as_ref() {
-                    Some(source_unit) => source_unit,
-                    None => continue,
-                };
-
+            for source_unit in self.source_units.iter() {
                 match source_unit.function_and_contract_definition(function_id) {
                     Some((contract_definition, function_definition)) => {
                         calling_contract_definition = Some(contract_definition);
@@ -86,12 +80,7 @@ impl<'a, 'b> ZeroAddressParametersVisitor<'a, 'b> {
                 let mut called_contract_definition = None;
                 let mut called_function_definition = None;
 
-                for file in self.files.iter() {
-                    let source_unit = match file.ast.as_ref() {
-                        Some(source_unit) => source_unit,
-                        None => continue,
-                    };
-
+                for source_unit in self.source_units.iter() {
                     match source_unit.function_and_contract_definition(call_info.function_id) {
                         Some((contract_definition, function_definition)) => {
                             called_contract_definition = Some(contract_definition);
@@ -189,23 +178,18 @@ impl AstVisitor for ZeroAddressParametersVisitor<'_, '_> {
 
         self.visited_imports.insert(import_directive.source_unit);
 
-        for file in self.files.iter() {
-            match file.ast.as_ref() {
-                Some(source_unit) if source_unit.id == import_directive.source_unit => (),
-                _ => continue,
-            };
-
+        for source_unit in self.source_units.iter() {
             let mut walker = AstWalker::default();
 
             let mut visitor = Box::new(ZeroAddressParametersVisitor::new(
-                self.files,
+                self.source_units,
                 self.call_graph,
             ));
             visitor.display_output = false;
 
             walker.visitors.push(visitor);
 
-            walker.analyze_file(file)?;
+            walker.analyze_file(source_unit)?;
 
             let visitor = unsafe {
                 &*(walker.visitors[0].as_ref() as *const _ as *const ZeroAddressParametersVisitor)

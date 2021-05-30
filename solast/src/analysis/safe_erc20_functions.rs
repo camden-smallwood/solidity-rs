@@ -1,6 +1,5 @@
 use super::AstVisitor;
-use crate::truffle;
-use solidity::ast::NodeID;
+use solidity::ast::{NodeID, SourceUnit};
 use std::{collections::HashMap, io};
 
 struct FunctionInfo {
@@ -10,14 +9,14 @@ struct FunctionInfo {
 }
 
 pub struct SafeERC20FunctionsVisitor<'a> {
-    pub files: &'a [truffle::File],
+    pub source_units: &'a [SourceUnit],
     functions: HashMap<NodeID, FunctionInfo>,
 }
 
 impl<'a> SafeERC20FunctionsVisitor<'a> {
-    pub fn new(files: &'a [truffle::File]) -> Self {
+    pub fn new(source_units: &'a [SourceUnit]) -> Self {
         Self {
-            files,
+            source_units,
             functions: HashMap::new(),
         }
     }
@@ -121,9 +120,9 @@ impl AstVisitor for SafeERC20FunctionsVisitor<'_> {
         };
 
         for referenced_declaration in function_call.expression.referenced_declarations() {
-            for file in self.files.iter() {
+            for source_unit in self.source_units.iter() {
                 if let Some((called_contract_definition, called_function_definition)) =
-                    file.function_and_contract_definition(referenced_declaration)
+                    source_unit.function_and_contract_definition(referenced_declaration)
                 {
                     if let "erc20" | "ierc20" = called_contract_definition
                         .name

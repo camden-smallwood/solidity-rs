@@ -1,14 +1,105 @@
-use crate::{analysis::AstVisitor, truffle};
-use solidity::ast::{Block, ContractDefinition, ContractDefinitionNode, FunctionCall, SourceUnit, Statement};
+use crate::analysis::AstVisitor;
+use solidity::ast::{
+    Block, ContractDefinition, ContractDefinitionNode, FunctionCall, FunctionDefinition,
+    SourceUnit, StateMutability, Statement,
+};
 use std::io;
 
 pub struct UnpaidPayableFunctionsVisitor<'a> {
-    files: &'a [truffle::File],
+    source_units: &'a [SourceUnit],
 }
 
 impl<'a> UnpaidPayableFunctionsVisitor<'a> {
-    pub fn new(files: &'a [truffle::File]) -> Self {
-        Self { files }
+    pub fn new(source_units: &'a [SourceUnit]) -> Self {
+        Self { source_units }
+    }
+
+    fn print_message(
+        &mut self,
+        contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
+        called_contract_definition: &ContractDefinition,
+        called_definition_node: &ContractDefinitionNode,
+    ) {
+        println!(
+            "\t{} {} {} makes a call to the {} payable {} {} without paying",
+
+            format!(
+                "{:?}",
+                match definition_node {
+                    ContractDefinitionNode::FunctionDefinition(function_definition) =>
+                        function_definition.visibility,
+                    ContractDefinitionNode::ModifierDefinition(modifier_definition) =>
+                        modifier_definition.visibility,
+                    _ => unimplemented!("{:?}", definition_node),
+                }
+            ),
+
+            {
+                let name = format!(
+                    "{:?}",
+                    match definition_node {
+                        ContractDefinitionNode::FunctionDefinition(function_definition) =>
+                            function_definition.name.as_str(),
+                        ContractDefinitionNode::ModifierDefinition(modifier_definition) =>
+                            modifier_definition.name.as_str(),
+                        _ => unimplemented!("{:?}", definition_node),
+                    }
+                );
+
+                if name.is_empty() {
+                    format!("{}", contract_definition.name)
+                } else {
+                    format!("{}.{}", contract_definition.name, name)
+                }
+            },
+
+            match definition_node {
+                ContractDefinitionNode::FunctionDefinition(function_definition) =>
+                    format!("{}", function_definition.kind),
+                ContractDefinitionNode::ModifierDefinition(_) =>
+                    "modifier".into(),
+                _ => unimplemented!("{:?}", definition_node),
+            },
+
+            format!(
+                "{:?}",
+                match called_definition_node {
+                    ContractDefinitionNode::FunctionDefinition(called_function_definition) =>
+                        called_function_definition.visibility,
+                    ContractDefinitionNode::ModifierDefinition(called_modifier_definition) =>
+                        called_modifier_definition.visibility,
+                    _ => unimplemented!("{:?}", called_definition_node),
+                }
+            ).to_lowercase(),
+
+            {
+                let name = format!(
+                    "{:?}",
+                    match called_definition_node {
+                        ContractDefinitionNode::FunctionDefinition(called_function_definition) =>
+                            called_function_definition.name.as_str(),
+                        ContractDefinitionNode::ModifierDefinition(called_modifier_definition) =>
+                            called_modifier_definition.name.as_str(),
+                        _ => unimplemented!("{:?}", called_definition_node),
+                    }
+                );
+
+                if name.is_empty() {
+                    format!("{}", called_contract_definition.name)
+                } else {
+                    format!("{}.{}", called_contract_definition.name, name)
+                }
+            },
+
+            match called_definition_node {
+                ContractDefinitionNode::FunctionDefinition(called_function_definition) =>
+                    format!("{}", called_function_definition.kind),
+                ContractDefinitionNode::ModifierDefinition(_) =>
+                    "modifier".into(),
+                _ => unimplemented!("{:?}", called_definition_node),
+            }
+        );
     }
 }
 
@@ -24,64 +115,20 @@ impl AstVisitor for UnpaidPayableFunctionsVisitor<'_> {
     ) -> io::Result<()> {
         match function_call.expression.as_ref() {
             solidity::ast::Expression::Identifier(identifier) => {
-                for file in self.files.iter() {
-                    if let Some((called_contract_definition, called_function_definition)) = file.function_and_contract_definition(identifier.referenced_declaration) {
-                        if called_function_definition.state_mutability == solidity::ast::StateMutability::Payable {
-                            match definition_node {
-                                ContractDefinitionNode::FunctionDefinition(function_definition) => {
-                                    println!(
-                                        "\t{} {} {} makes a call to the {} payable {} {} without paying",
-
-                                        format!("{:?}", function_definition.visibility),
-
-                                        if function_definition.name.is_empty() {
-                                            format!("{}", contract_definition.name)
-                                        } else {
-                                            format!("{}.{}", contract_definition.name, function_definition.name)
-                                        },
-
-                                        format!("{:?}", function_definition.kind).to_lowercase(),
-
-                                        format!("{:?}", called_function_definition.visibility).to_lowercase(),
-
-                                        if called_function_definition.name.is_empty() {
-                                            format!("{}", called_contract_definition.name)
-                                        } else {
-                                            format!("{}.{}", called_contract_definition.name, called_function_definition.name)
-                                        },
-
-                                        format!("{:?}", called_function_definition.kind).to_lowercase()
-                                    );
-                                }
-
-                                ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
-                                    println!(
-                                        "\t{} {} modifier makes a call to the {} payable {} {} without paying",
-
-                                        format!("{:?}", modifier_definition.visibility),
-
-                                        if modifier_definition.name.is_empty() {
-                                            format!("{}", contract_definition.name)
-                                        } else {
-                                            format!("{}.{}", contract_definition.name, modifier_definition.name)
-                                        },
-
-                                        format!("{:?}", called_function_definition.visibility).to_lowercase(),
-
-                                        if called_function_definition.name.is_empty() {
-                                            format!("{}", called_contract_definition.name)
-                                        } else {
-                                            format!("{}.{}", called_contract_definition.name, called_function_definition.name)
-                                        },
-
-                                        format!("{:?}", called_function_definition.kind).to_lowercase()
-                                    );
-                                }
-
-                                _ => ()
-                            }
+                for source_unit in self.source_units.iter() {
+                    if let Some((called_contract_definition, called_definition_node)) = source_unit.find_contract_definition_node(identifier.referenced_declaration) {
+                        if let ContractDefinitionNode::FunctionDefinition(FunctionDefinition {
+                            state_mutability: StateMutability::Payable,
+                            ..
+                        }) = called_definition_node {
+                            self.print_message(
+                                contract_definition,
+                                definition_node,
+                                called_contract_definition,
+                                called_definition_node,
+                            );
+                            break;
                         }
-                        break;
                     }
                 }
             }
@@ -89,72 +136,28 @@ impl AstVisitor for UnpaidPayableFunctionsVisitor<'_> {
             solidity::ast::Expression::MemberAccess(member_access) => {
                 let referenced_declaration = match member_access.referenced_declaration {
                     Some(id) => id,
-                    None => return Ok(())
+                    None => return Ok(()),
                 };
 
-                for file in self.files.iter() {
-                    if let Some((called_contract_definition, called_function_definition)) = file.function_and_contract_definition(referenced_declaration) {
-                        if called_function_definition.state_mutability == solidity::ast::StateMutability::Payable {
-                            match definition_node {
-                                ContractDefinitionNode::FunctionDefinition(function_definition) => {
-                                    println!(
-                                        "\t{} {} {} makes a call to the {} payable {} {} without paying",
-
-                                        format!("{:?}", function_definition.visibility),
-
-                                        if function_definition.name.is_empty() {
-                                            format!("{}", contract_definition.name)
-                                        } else {
-                                            format!("{}.{}", contract_definition.name, function_definition.name)
-                                        },
-
-                                        format!("{:?}", function_definition.kind).to_lowercase(),
-
-                                        format!("{:?}", called_function_definition.visibility).to_lowercase(),
-
-                                        if called_function_definition.name.is_empty() {
-                                            format!("{}", called_contract_definition.name)
-                                        } else {
-                                            format!("{}.{}", called_contract_definition.name, called_function_definition.name)
-                                        },
-
-                                        format!("{:?}", called_function_definition.kind).to_lowercase()
-                                    );
-                                }
-
-                                ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
-                                    println!(
-                                        "\t{} {} modifier makes a call to the {} payable {} {} without paying",
-
-                                        format!("{:?}", modifier_definition.visibility),
-
-                                        if modifier_definition.name.is_empty() {
-                                            format!("{}", contract_definition.name)
-                                        } else {
-                                            format!("{}.{}", contract_definition.name, modifier_definition.name)
-                                        },
-
-                                        format!("{:?}", called_function_definition.visibility).to_lowercase(),
-
-                                        if called_function_definition.name.is_empty() {
-                                            format!("{}", called_contract_definition.name)
-                                        } else {
-                                            format!("{}.{}", called_contract_definition.name, called_function_definition.name)
-                                        },
-
-                                        format!("{:?}", called_function_definition.kind).to_lowercase()
-                                    );
-                                }
-
-                                _ => ()
-                            }
+                for source_unit in self.source_units.iter() {
+                    if let Some((called_contract_definition, called_definition_node)) = source_unit.find_contract_definition_node(referenced_declaration) {
+                        if let ContractDefinitionNode::FunctionDefinition(FunctionDefinition {
+                            state_mutability: StateMutability::Payable,
+                            ..
+                        }) = called_definition_node {
+                            self.print_message(
+                                contract_definition,
+                                definition_node,
+                                called_contract_definition,
+                                called_definition_node,
+                            );
+                            break;
                         }
-                        break;
                     }
                 }
             }
 
-            _ => ()
+            _ => (),
         }
 
         Ok(())

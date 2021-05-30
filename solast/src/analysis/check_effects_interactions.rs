@@ -1,10 +1,9 @@
 use super::{AstVisitor, CallGraph};
-use crate::truffle;
-use solidity::ast::NodeID;
+use solidity::ast::{NodeID, SourceUnit};
 use std::{collections::HashMap, io};
 
 pub struct CheckEffectsInteractionsVisitor<'a, 'b> {
-    pub files: &'a [truffle::File],
+    pub source_units: &'a [SourceUnit],
     pub call_graph: &'b CallGraph,
     pub makes_external_call: bool,
     pub makes_post_external_call_assignment: bool,
@@ -12,9 +11,9 @@ pub struct CheckEffectsInteractionsVisitor<'a, 'b> {
 }
 
 impl<'a, 'b> CheckEffectsInteractionsVisitor<'a, 'b> {
-    pub fn new(files: &'a [truffle::File], call_graph: &'b CallGraph) -> Self {
+    pub fn new(source_units: &'a [SourceUnit], call_graph: &'b CallGraph) -> Self {
         Self {
-            files,
+            source_units,
             call_graph,
             makes_external_call: false,
             makes_post_external_call_assignment: false,
@@ -81,21 +80,21 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
         ) = statement
         {
             let ids = self.call_graph.get_assigned_state_variables(
-                self.files,
+                self.source_units,
                 contract_definition,
                 definition_node,
                 expression,
             )?;
 
             for &id in ids.iter() {
-                if self.call_graph.hierarchy_contains_state_variable(self.files, contract_definition, id) {
+                if self.call_graph.hierarchy_contains_state_variable(self.source_units, contract_definition, id) {
                     let state_variable = {
                         let mut state_variable = None;
 
                         for &contract_id in contract_definition.linearized_base_contracts.iter() {
-                            for file in self.files.iter() {
+                            for source_unit in self.source_units.iter() {
                                 if let Some(contract_definition) =
-                                    file.contract_definition(contract_id)
+                                    source_unit.contract_definition(contract_id)
                                 {
                                     if let Some(variable_declaration) =
                                         contract_definition.variable_declaration(id)
@@ -151,9 +150,9 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
             return Ok(());
         }
 
-        for file in self.files.iter() {
+        for source_unit in self.source_units.iter() {
             if let Some(function_definition) =
-                file.function_definition(identifier.referenced_declaration)
+                source_unit.function_definition(identifier.referenced_declaration)
             {
                 if let solidity::ast::Visibility::External = function_definition.visibility {
                     self.makes_external_call = true;
@@ -166,7 +165,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
             .call_graph
             .function_info(identifier.referenced_declaration)
         {
-            if function_info.makes_external_call(self.files) {
+            if function_info.makes_external_call(self.source_units) {
                 self.makes_external_call = true;
             }
         }
@@ -188,8 +187,8 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
         }
 
         if let Some(referenced_declaration) = member_access.referenced_declaration {
-            for file in self.files.iter() {
-                if let Some(function_definition) = file.function_definition(referenced_declaration)
+            for source_unit in self.source_units.iter() {
+                if let Some(function_definition) = source_unit.function_definition(referenced_declaration)
                 {
                     if let solidity::ast::Visibility::External = function_definition.visibility {
                         self.makes_external_call = true;
@@ -199,7 +198,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
             }
 
             if let Some(function_info) = self.call_graph.function_info(referenced_declaration) {
-                if function_info.makes_external_call(self.files) {
+                if function_info.makes_external_call(self.source_units) {
                     self.makes_external_call = true;
                 }
             }
@@ -239,7 +238,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
         }
 
         let ids = self.call_graph.get_assigned_state_variables(
-            self.files,
+            self.source_units,
             contract_definition,
             definition_node,
             assignment.left_hand_side.as_ref(),

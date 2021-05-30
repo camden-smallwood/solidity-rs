@@ -1,18 +1,17 @@
 use super::AstVisitor;
-use crate::truffle;
-use solidity::ast::NodeID;
+use solidity::ast::{NodeID, SourceUnit};
 use std::{collections::HashSet, io};
 
 pub struct ExplicitVariableReturnVisitor<'a> {
-    pub files: &'a [truffle::File],
+    pub source_units: &'a [SourceUnit],
     variable_declarations: HashSet<NodeID>,
     reported_functions: HashSet<NodeID>,
 }
 
 impl<'a> ExplicitVariableReturnVisitor<'a> {
-    pub fn new(files: &'a [truffle::File]) -> Self {
+    pub fn new(source_units: &'a [SourceUnit]) -> Self {
         Self {
-            files,
+            source_units,
             variable_declarations: HashSet::new(),
             reported_functions: HashSet::new(),
         }

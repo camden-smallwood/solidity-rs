@@ -1,7 +1,6 @@
 use super::{AstVisitor, AstWalker, CallGraph};
-use crate::truffle;
-use solidity::ast::NodeID;
-use std::{collections::{HashMap, HashSet}, io, path::PathBuf};
+use solidity::ast::{NodeID, SourceUnit};
+use std::{collections::{HashMap, HashSet}, io};
 
 #[derive(Clone, Debug)]
 struct FunctionState {
@@ -11,17 +10,17 @@ struct FunctionState {
 
 pub struct ContractLockingEtherVisitor<'a, 'b> {
     display_output: bool,
-    files: &'a [truffle::File],
+    source_units: &'a [SourceUnit],
     call_graph: &'b CallGraph,
     contract_states: HashMap<NodeID, HashMap<NodeID, FunctionState>>,
     visited_imports: HashSet<NodeID>,
 }
 
 impl<'a, 'b> ContractLockingEtherVisitor<'a, 'b> {
-    pub fn new(files: &'a [truffle::File], call_graph: &'b CallGraph) -> Self {
+    pub fn new(source_units: &'a [SourceUnit], call_graph: &'b CallGraph) -> Self {
         Self {
             display_output: true,
-            files,
+            source_units,
             call_graph,
             contract_states: HashMap::new(),
             visited_imports: HashSet::new(),
@@ -40,12 +39,7 @@ impl<'a, 'b> ContractLockingEtherVisitor<'a, 'b> {
 
         built_states.insert(function_id);
 
-        for file in self.files.iter() {
-            let source_unit = match file.ast.as_ref() {
-                Some(source_unit) => source_unit,
-                None => continue,
-            };
-
+        for source_unit in self.source_units.iter() {
             let (contract_definition, function_definition) =
                 match source_unit.function_and_contract_definition(function_id) {
                     Some(definitions) => definitions,
@@ -109,39 +103,18 @@ impl<'a, 'b> AstVisitor for ContractLockingEtherVisitor<'a, 'b> {
 
         self.visited_imports.insert(import_directive.source_unit);
 
-        for file in self.files.iter() {
-            match file.ast.as_ref() {
-                Some(source_unit) if source_unit.id == import_directive.source_unit => (),
-                Some(source_unit) if source_unit.absolute_path == import_directive.absolute_path => (),
-                
-                Some(source_unit) => {
-                    let import_path = PathBuf::from(import_directive.absolute_path.as_str());
-                    let source_path = PathBuf::from(source_unit.absolute_path.as_str());
-
-                    if import_path.file_stem() == source_path.file_stem() {
-                        println!("Found relative path: {} {}", import_directive.absolute_path, source_unit.absolute_path);
-                    } else {
-                        continue;
-                    }
-                }
-
-                None => {
-                    println!("WARNING: file has no AST: {}", file.source_path.as_ref().unwrap().as_str());
-                    continue;
-                }
-            }
-
+        for source_unit in self.source_units.iter() {
             let mut walker = AstWalker::default();
 
             let mut visitor = Box::new(ContractLockingEtherVisitor::new(
-                self.files,
+                self.source_units,
                 self.call_graph,
             ));
             visitor.display_output = false;
 
             walker.visitors.push(visitor);
 
-            walker.analyze_file(file)?;
+            walker.analyze_file(source_unit)?;
 
             let visitor = unsafe {
                 &*(walker.visitors[0].as_ref() as *const _ as *const ContractLockingEtherVisitor)
@@ -227,8 +200,8 @@ impl<'a, 'b> AstVisitor for ContractLockingEtherVisitor<'a, 'b> {
                 None => {
                     let mut nonloaded_contract = None;
 
-                    for file in self.files.iter() {
-                        if let Some(contract_definition) = file.contract_definition(contract_id) {
+                    for source_unit in self.source_units.iter() {
+                        if let Some(contract_definition) = source_unit.contract_definition(contract_id) {
                             nonloaded_contract = Some(contract_definition);
                             break;
                         }

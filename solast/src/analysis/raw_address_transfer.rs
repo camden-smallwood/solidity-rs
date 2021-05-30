@@ -1,17 +1,16 @@
 use super::AstVisitor;
-use crate::truffle;
-use solidity::ast::NodeID;
+use solidity::ast::{NodeID, SourceUnit};
 use std::{collections::HashMap, io};
 
 pub struct RawAddressTransferVisitor<'a> {
-    pub files: &'a [truffle::File],
+    pub source_units: &'a [SourceUnit],
     functions_transfer: HashMap<NodeID, usize>,
 }
 
 impl<'a> RawAddressTransferVisitor<'a> {
-    pub fn new(files: &'a [truffle::File]) -> Self {
+    pub fn new(source_units: &'a [SourceUnit]) -> Self {
         Self {
-            files,
+            source_units,
             functions_transfer: HashMap::new(),
         }
     }

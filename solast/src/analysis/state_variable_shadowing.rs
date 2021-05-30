@@ -1,15 +1,15 @@
-use crate::truffle;
 use super::AstVisitor;
+use solidity::ast::SourceUnit;
 use std::io;
 
 pub struct StateVariableShadowingVisitor<'a> {
-    pub files: &'a [truffle::File],
+    pub source_units: &'a [SourceUnit],
 
 }
 
 impl<'a> StateVariableShadowingVisitor<'a> {
-    pub fn new(files: &'a [truffle::File]) -> Self {
-        Self { files }
+    pub fn new(source_units: &'a [SourceUnit]) -> Self {
+        Self { source_units }
     }
 }
 
@@ -24,8 +24,8 @@ impl<'a> AstVisitor for StateVariableShadowingVisitor<'a> {
         for &base_contract_id in contract_definition.linearized_base_contracts.iter() {
             let mut base_contract_definition = None;
 
-            for file in self.files.iter() {
-                if let Some(contract_definition) = file.contract_definition(base_contract_id) {
+            for source_unit in self.source_units.iter() {
+                if let Some(contract_definition) = source_unit.contract_definition(base_contract_id) {
                     base_contract_definition = Some(contract_definition);
                     break;
                 }
