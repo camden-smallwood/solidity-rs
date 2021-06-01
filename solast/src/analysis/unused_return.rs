@@ -42,9 +42,9 @@ impl AstVisitor for UnusedReturnVisitor<'_> {
                             match definition_node {
                                 solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
                                     println!(
-                                        "\t{} {} {} makes a call to the {} {} {}, ignoring the returned {}",
+                                        "\tThe {} `{}` {} makes a call to the {} `{}` {}, ignoring the returned {}",
 
-                                        format!("{:?}", function_definition.visibility),
+                                        format!("{:?}", function_definition.visibility).to_lowercase(),
 
                                         if function_definition.name.is_empty() {
                                             format!("{}", contract_definition.name)
@@ -74,9 +74,9 @@ impl AstVisitor for UnusedReturnVisitor<'_> {
 
                                 solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
                                     println!(
-                                        "\t{} {} modifier makes a call to the {} {} {}, ignoring the returned {}",
+                                        "\tThe {} `{}` modifier makes a call to the {} `{}` {}, ignoring the returned {}",
 
-                                        format!("{:?}", modifier_definition.visibility),
+                                        format!("{:?}", modifier_definition.visibility).to_lowercase(),
 
                                         if modifier_definition.name.is_empty() {
                                             format!("{}", contract_definition.name)
