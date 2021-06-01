@@ -69,6 +69,7 @@ fn main() -> io::Result<()> {
             Box::new(analysis::DivideBeforeMultiplyVisitor::new(source_units.as_slice())),
             Box::new(analysis::ComparisonUtilizationVisitor),
             Box::new(analysis::AssignmentComparisonsVisitor),
+            Box::new(analysis::StateVariableMutabilityVisitor::new(source_units.as_slice(), &call_graph)),
         ],
         ..Default::default()
     };

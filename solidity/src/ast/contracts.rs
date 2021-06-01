@@ -6,7 +6,7 @@ use crate::ast::{
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum ContractKind {
     Contract,

@@ -15,6 +15,7 @@ mod redundant_getter_function;
 mod require_without_message;
 mod safe_erc20_functions;
 mod source_unit;
+mod state_variable_mutability;
 mod state_variable_shadowing;
 mod storage_array_loop;
 mod unchecked_erc20_transfer;
@@ -29,7 +30,7 @@ pub use self::{
     external_calls_in_loop::*, floating_solidity_version::*, large_literals::*,
     no_spdx_identifier::*, node_modules_imports::*, raw_address_transfer::*,
     redundant_getter_function::*, require_without_message::*, safe_erc20_functions::*,
-    source_unit::*, state_variable_shadowing::*, storage_array_loop::*,
-    unchecked_erc20_transfer::*, unpaid_payable_functions::*, unused_return::*, visitor::*,
-    walker::*,
+    source_unit::*, state_variable_mutability::*, state_variable_shadowing::*,
+    storage_array_loop::*, unchecked_erc20_transfer::*, unpaid_payable_functions::*,
+    unused_return::*, visitor::*, walker::*,
 };

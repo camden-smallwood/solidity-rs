@@ -24,6 +24,7 @@ Some legacy versions of Solidity are inherently supported, but the focus is 0.8.
 - [ ] ~~`divide-before-multiply`~~ (WIP)
 - [ ] ~~`comparison-utilization`~~ (WIP)
 - [x] `assignment-comparisons`
+- [x] `state-variable-mutability`
 
 ## Usage
 
