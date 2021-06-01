@@ -37,10 +37,11 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_, '_> {
 
                     if !assigned {
                         println!(
-                            "\tThe {} `{}.{}` state variable can be declared `immutable`",
+                            "\tThe {} `{}.{}` {} state variable can be declared `immutable`",
                             variable_declaration.visibility,
                             contract_definition.name,
                             variable_declaration.name,
+                            variable_declaration.type_name.as_ref().unwrap(),
                         );
                     }
                 }
