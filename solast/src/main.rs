@@ -56,7 +56,6 @@ fn main() -> io::Result<()> {
             Box::new(analysis::LargeLiteralsVisitor::default()),
             Box::new(analysis::RedundantGetterFunctionVisitor::new(source_units.as_slice())),
             Box::new(analysis::RequireWithoutMessageVisitor::new(source_units.as_slice())),
-            Box::new(analysis::ZeroAddressParametersVisitor::new(source_units.as_slice(), &call_graph)),
             Box::new(analysis::StateVariableShadowingVisitor::new(source_units.as_slice())),
             Box::new(analysis::ExplicitVariableReturnVisitor::default()),
             Box::new(analysis::UnusedReturnVisitor::new(source_units.as_slice())),

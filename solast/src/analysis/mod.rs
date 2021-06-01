@@ -22,7 +22,6 @@ mod unpaid_payable_functions;
 mod unused_return;
 mod visitor;
 mod walker;
-mod zero_address_parameters;
 
 pub use self::{
     abstract_contracts::*, assignment_comparisons::*, call_graph::*, check_effects_interactions::*,
@@ -32,5 +31,5 @@ pub use self::{
     redundant_getter_function::*, require_without_message::*, safe_erc20_functions::*,
     source_unit::*, state_variable_shadowing::*, storage_array_loop::*,
     unchecked_erc20_transfer::*, unpaid_payable_functions::*, unused_return::*, visitor::*,
-    walker::*, zero_address_parameters::*,
+    walker::*,
 };

@@ -35,10 +35,8 @@ impl Expression {
             Expression::TupleExpression(_) => Some(self),
             Expression::Assignment(assignment) => assignment.left_hand_side.root_expression(),
             Expression::IndexAccess(index_access) => index_access.base_expression.root_expression(),
-            Expression::IndexRangeAccess(index_range_access) => {
-                index_range_access.base_expression.root_expression()
-            }
-            Expression::MemberAccess(member_access) => member_access.expression.root_expression(),
+            Expression::IndexRangeAccess(index_range_access) => index_range_access.base_expression.root_expression(),
+            Expression::MemberAccess(_) => Some(self),
             _ => None,
         }
     }
