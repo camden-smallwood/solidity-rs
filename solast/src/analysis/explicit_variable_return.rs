@@ -59,8 +59,10 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                 match definition_node {
                                     solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
                                         println!(
-                                            "\t{} {} {} returns local '{}' variable explicitly",
-                                            format!("{:?}", function_definition.visibility),
+                                            "\tThe {} `{}` {} returns the local `{}` variable explicitly",
+                                            
+                                            format!("{:?}", function_definition.visibility).to_lowercase(),
+
                                             if function_definition.name.is_empty() {
                                                 format!("{}", contract_definition.name)
                                             } else {
@@ -69,15 +71,19 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                                     contract_definition.name, function_definition.name
                                                 )
                                             },
+
                                             format!("{:?}", function_definition.kind).to_lowercase(),
+                                            
                                             identifier.name
                                         );
                                     }
 
                                     solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
                                         println!(
-                                            "\t{} {} modifier returns local '{}' variable explicitly",
-                                            format!("{:?}", modifier_definition.visibility),
+                                            "\tThe {} `{}` modifier returns the local `{}` variable explicitly",
+
+                                            format!("{:?}", modifier_definition.visibility).to_lowercase(),
+
                                             if modifier_definition.name.is_empty() {
                                                 format!("{}", contract_definition.name)
                                             } else {
@@ -86,6 +92,7 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                                     contract_definition.name, modifier_definition.name
                                                 )
                                             },
+
                                             identifier.name
                                         );
                                     }
@@ -108,7 +115,7 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                         .contains(&identifier.referenced_declaration)
                                     {
                                         local_variable_names
-                                            .push(format!("'{}'", identifier.name.clone()));
+                                            .push(format!("`{}`", identifier.name.clone()));
                                     } else {
                                         all_local_variables = false;
                                         break;
@@ -127,8 +134,10 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                 match definition_node {
                                     solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
                                         println!(
-                                            "\t{} {} {} returns local {} variables explicitly",
-                                            format!("{:?}", function_definition.visibility),
+                                            "\tThe {} `{}` {} returns the local {} variables explicitly",
+                                            
+                                            format!("{:?}", function_definition.visibility).to_lowercase(),
+
                                             if function_definition.name.is_empty() {
                                                 format!("{}", contract_definition.name)
                                             } else {
@@ -137,15 +146,19 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                                     contract_definition.name, function_definition.name
                                                 )
                                             },
+
                                             format!("{:?}", function_definition.kind).to_lowercase(),
+
                                             local_variable_names.join(", ")
                                         );
                                     }
 
                                     solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
                                         println!(
-                                            "\t{} {} modifier returns local {} variables explicitly",
+                                            "\tThe {} `{}` modifier returns the local {} variables explicitly",
+
                                             format!("{:?}", modifier_definition.visibility),
+
                                             if modifier_definition.name.is_empty() {
                                                 format!("{}", contract_definition.name)
                                             } else {
@@ -154,6 +167,7 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                                     contract_definition.name, modifier_definition.name
                                                 )
                                             },
+
                                             local_variable_names.join(", ")
                                         );
                                     }
