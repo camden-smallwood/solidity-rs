@@ -35,7 +35,7 @@ impl<'a> UnpaidPayableFunctionsVisitor<'a> {
 
             {
                 let name = format!(
-                    "{:?}",
+                    "{}",
                     match definition_node {
                         ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition.name.as_str(),
                         ContractDefinitionNode::ModifierDefinition(modifier_definition) => modifier_definition.name.as_str(),
@@ -67,7 +67,7 @@ impl<'a> UnpaidPayableFunctionsVisitor<'a> {
 
             {
                 let name = format!(
-                    "{:?}",
+                    "{}",
                     match called_definition_node {
                         ContractDefinitionNode::FunctionDefinition(called_function_definition) => called_function_definition.name.as_str(),
                         ContractDefinitionNode::ModifierDefinition(called_modifier_definition) => called_modifier_definition.name.as_str(),
