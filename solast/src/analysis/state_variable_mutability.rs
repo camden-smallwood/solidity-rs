@@ -3,7 +3,7 @@ use solidity::ast::{Assignment, Block, ContractDefinition, ContractDefinitionNod
 use std::{collections::HashMap, io};
 
 pub struct ContractInfo {
-    assigned_state_variables: HashMap<NodeID, bool>,
+    variable_info: HashMap<NodeID, bool>,
 }
 
 pub struct StateVariableMutabilityVisitor<'a, 'b> {
@@ -29,7 +29,7 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_, '_> {
         contract_definition: &ContractDefinition,
     ) -> io::Result<()> {
         if let Some(contract_info) = self.contract_info.get(&contract_definition.id) {
-            for (&id, &assigned) in contract_info.assigned_state_variables.iter() {
+            for (&id, &assigned) in contract_info.variable_info.iter() {
                 if let Some(variable_declaration) = contract_definition.variable_declaration(id) {
                     if let Some(solidity::ast::Mutability::Constant) | Some(solidity::ast::Mutability::Immutable) = variable_declaration.mutability.as_ref() {
                         continue;
@@ -62,14 +62,14 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_, '_> {
         if let ContractDefinitionNode::VariableDeclaration(variable_declaration) = definition_node {
             if !self.contract_info.contains_key(&contract_definition.id) {
                 self.contract_info.insert(contract_definition.id, ContractInfo {
-                    assigned_state_variables: HashMap::new(),
+                    variable_info: HashMap::new(),
                 });
             }
 
             let contract_info = self.contract_info.get_mut(&contract_definition.id).unwrap();
 
-            if !contract_info.assigned_state_variables.contains_key(&variable_declaration.id) {
-                contract_info.assigned_state_variables.insert(variable_declaration.id, false);
+            if !contract_info.variable_info.contains_key(&variable_declaration.id) {
+                contract_info.variable_info.insert(variable_declaration.id, false);
             }
         }
 
@@ -102,8 +102,8 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_, '_> {
         for id in ids {
             let contract_info = self.contract_info.get_mut(&contract_definition.id).unwrap();
 
-            if contract_info.assigned_state_variables.contains_key(&id) {
-                *contract_info.assigned_state_variables.get_mut(&id).unwrap() = true;
+            if contract_info.variable_info.contains_key(&id) {
+                *contract_info.variable_info.get_mut(&id).unwrap() = true;
             }
         }
 
@@ -136,8 +136,8 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_, '_> {
         for id in ids {
             let contract_info = self.contract_info.get_mut(&contract_definition.id).unwrap();
 
-            if contract_info.assigned_state_variables.contains_key(&id) {
-                *contract_info.assigned_state_variables.get_mut(&id).unwrap() = true;
+            if contract_info.variable_info.contains_key(&id) {
+                *contract_info.variable_info.get_mut(&id).unwrap() = true;
             }
         }
 
@@ -172,8 +172,8 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_, '_> {
                 for id in ids {
                     let contract_info = self.contract_info.get_mut(&contract_definition.id).unwrap();
         
-                    if contract_info.assigned_state_variables.contains_key(&id) {
-                        *contract_info.assigned_state_variables.get_mut(&id).unwrap() = true;
+                    if contract_info.variable_info.contains_key(&id) {
+                        *contract_info.variable_info.get_mut(&id).unwrap() = true;
                     }
                 }        
             }

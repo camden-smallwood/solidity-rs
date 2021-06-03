@@ -70,6 +70,7 @@ fn main() -> io::Result<()> {
             Box::new(analysis::ComparisonUtilizationVisitor),
             Box::new(analysis::AssignmentComparisonsVisitor),
             Box::new(analysis::StateVariableMutabilityVisitor::new(source_units.as_slice(), &call_graph)),
+            Box::new(analysis::UnusedStateVariablesVisitor::default()),
         ],
         ..Default::default()
     };
