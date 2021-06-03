@@ -275,6 +275,7 @@ pub trait AstVisitor {
         contract_definition: &'a ContractDefinition,
         definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
+        statement: Option<&'a Statement>,
         return_statement: &'a Return,
     ) -> io::Result<()> {
         Ok(())

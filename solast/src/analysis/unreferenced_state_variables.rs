@@ -44,7 +44,7 @@ impl AstVisitor for UnusedStateVariablesVisitor {
         if let Some(contract_info) = self.contract_info.get(&contract_definition.id) {
             for (&id, &referenced) in contract_info.variable_info.iter() {
                 if let Some(variable_declaration) = contract_definition.variable_declaration(id) {
-                    if let Some(solidity::ast::Mutability::Constant) | Some(solidity::ast::Mutability::Immutable) = variable_declaration.mutability.as_ref() {
+                    if let Some(solidity::ast::Mutability::Constant) = variable_declaration.mutability.as_ref() {
                         continue;
                     }
 

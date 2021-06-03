@@ -517,6 +517,7 @@ impl AstVisitor for AstWalker<'_> {
                     contract_definition,
                     definition_node,
                     blocks,
+                    Some(statement),
                     return_statement,
                 )?;
             }
@@ -876,6 +877,7 @@ impl AstVisitor for AstWalker<'_> {
         contract_definition: &'a ContractDefinition,
         definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
+        statement: Option<&'a Statement>,
         return_statement: &'a Return,
     ) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
@@ -884,7 +886,19 @@ impl AstVisitor for AstWalker<'_> {
                 contract_definition,
                 definition_node,
                 blocks,
+                statement,
                 return_statement,
+            )?;
+        }
+
+        if let Some(expression) = return_statement.expression.as_ref() {
+            self.visit_expression(
+                source_unit,
+                contract_definition,
+                definition_node,
+                blocks,
+                statement,
+                expression
             )?;
         }
 
