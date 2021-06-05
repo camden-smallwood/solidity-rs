@@ -14,26 +14,10 @@ pub enum LiteralKind {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct LiteralSubdenomination {
-    pub r#type: Option<String>,
-}
-
-impl Display for LiteralSubdenomination {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Some(r#type) = self.r#type.as_ref() {
-            f.write_fmt(format_args!(" {}", r#type))?;
-        }
-
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
 pub struct Literal {
     pub hex_value: Option<String>,
     pub value: Option<String>,
-    pub subdenomination: Option<LiteralSubdenomination>,
+    pub subdenomination: Option<String>,
     pub kind: LiteralKind,
     pub argument_types: Option<Vec<TypeDescriptions>>,
     pub is_constant: bool,
