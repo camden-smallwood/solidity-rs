@@ -1,6 +1,5 @@
 mod abstract_contracts;
 mod assignment_comparisons;
-mod call_graph;
 mod check_effects_interactions;
 mod comparison_utilization;
 mod divide_before_multiply;
@@ -26,7 +25,7 @@ mod visitor;
 mod walker;
 
 pub use self::{
-    abstract_contracts::*, assignment_comparisons::*, call_graph::*, check_effects_interactions::*,
+    abstract_contracts::*, assignment_comparisons::*, check_effects_interactions::*,
     comparison_utilization::*, divide_before_multiply::*, explicit_variable_return::*,
     external_calls_in_loop::*, floating_solidity_version::*, large_literals::*,
     no_spdx_identifier::*, node_modules_imports::*, raw_address_transfer::*,

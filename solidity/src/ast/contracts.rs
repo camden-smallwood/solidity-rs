@@ -1,7 +1,7 @@
 use crate::ast::{
     Documentation, EnumDefinition, ErrorDefinition, EventDefinition, Expression,
-    FunctionDefinition, IdentifierPath, ModifierDefinition, NodeID, StructDefinition, TypeName,
-    VariableDeclaration,
+    FunctionDefinition, IdentifierPath, ModifierDefinition, NodeID, SourceUnit, StructDefinition,
+    TypeName, VariableDeclaration,
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
@@ -318,6 +318,103 @@ impl ContractDefinition {
         }
 
         result
+    }
+
+    pub fn hierarchy_contains_state_variable(
+        &self,
+        source_units: &[SourceUnit],
+        state_variable_id: NodeID,
+    ) -> bool {
+        // Loop through all of the contracts in the supplied contract's inheritance hierarchy
+        if let Some(contract_ids) = self.linearized_base_contracts.as_ref() {
+            for &contract_id in contract_ids.iter() {
+                // Loop through all of the schema source_units in the project
+                for source_unit in source_units.iter() {
+                    // Attempt to retrieve the current contract in the inheritance hierarchy from the current schema source_unit
+                    let contract_definition = match source_unit.contract_definition(contract_id) {
+                        Some(contract_definition) => contract_definition,
+                        None => continue,
+                    };
+
+                    // Attempt to retrieve the requested state variable from the current contract in the inheritance hierarchy
+                    if let Some(_) = contract_definition.variable_declaration(state_variable_id) {
+                        return true;
+                    }
+                }
+            }
+        } else if self.variable_declaration(state_variable_id).is_some() {
+            return true;
+        }
+
+        false
+    }
+
+    pub fn get_assigned_state_variables(
+        &self,
+        source_units: &[SourceUnit],
+        definition_node: &ContractDefinitionNode,
+        expression: &Expression,
+    ) -> Vec<NodeID> {
+        let mut ids = vec![];
+
+        match expression {
+            Expression::Identifier(identifier) => {
+                if self.hierarchy_contains_state_variable(
+                    source_units,
+                    identifier.referenced_declaration,
+                ) {
+                    ids.push(identifier.referenced_declaration);
+                }
+            }
+
+            Expression::Assignment(assignment) => {
+                ids.extend(self.get_assigned_state_variables(
+                    source_units,
+                    definition_node,
+                    assignment.left_hand_side.as_ref(),
+                ));
+            }
+
+            Expression::IndexAccess(index_access) => {
+                ids.extend(self.get_assigned_state_variables(
+                    source_units,
+                    definition_node,
+                    index_access.base_expression.as_ref(),
+                ));
+            }
+
+            Expression::IndexRangeAccess(index_range_access) => {
+                ids.extend(self.get_assigned_state_variables(
+                    source_units,
+                    definition_node,
+                    index_range_access.base_expression.as_ref(),
+                ));
+            }
+
+            Expression::MemberAccess(member_access) => {
+                ids.extend(self.get_assigned_state_variables(
+                    source_units,
+                    definition_node,
+                    member_access.expression.as_ref(),
+                ));
+            }
+
+            Expression::TupleExpression(tuple_expression) => {
+                for component in tuple_expression.components.iter() {
+                    if let Some(component) = component {
+                        ids.extend(self.get_assigned_state_variables(
+                            source_units,
+                            definition_node,
+                            component,
+                        ));
+                    }
+                }
+            }
+
+            _ => (),
+        }
+
+        ids
     }
 }
 

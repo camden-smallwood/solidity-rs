@@ -1,20 +1,18 @@
-use super::{AstVisitor, CallGraph};
+use super::AstVisitor;
 use solidity::ast::{NodeID, SourceUnit};
 use std::{collections::HashMap, io};
 
-pub struct CheckEffectsInteractionsVisitor<'a, 'b> {
+pub struct CheckEffectsInteractionsVisitor<'a> {
     pub source_units: &'a [SourceUnit],
-    pub call_graph: &'b CallGraph,
     pub makes_external_call: bool,
     pub makes_post_external_call_assignment: bool,
     pub bindings: HashMap<NodeID, Vec<NodeID>>,
 }
 
-impl<'a, 'b> CheckEffectsInteractionsVisitor<'a, 'b> {
-    pub fn new(source_units: &'a [SourceUnit], call_graph: &'b CallGraph) -> Self {
+impl<'a> CheckEffectsInteractionsVisitor<'a> {
+    pub fn new(source_units: &'a [SourceUnit]) -> Self {
         Self {
             source_units,
-            call_graph,
             makes_external_call: false,
             makes_post_external_call_assignment: false,
             bindings: HashMap::new(),
@@ -22,7 +20,7 @@ impl<'a, 'b> CheckEffectsInteractionsVisitor<'a, 'b> {
     }
 }
 
-impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
+impl AstVisitor for CheckEffectsInteractionsVisitor<'_> {
     fn visit_function_definition(
         &mut self,
         _source_unit: &solidity::ast::SourceUnit,
@@ -79,15 +77,14 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
             },
         ) = statement
         {
-            let ids = self.call_graph.get_assigned_state_variables(
+            let ids = contract_definition.get_assigned_state_variables(
                 self.source_units,
-                contract_definition,
                 definition_node,
                 expression,
-            )?;
+            );
 
             for &id in ids.iter() {
-                if self.call_graph.hierarchy_contains_state_variable(self.source_units, contract_definition, id) {
+                if contract_definition.hierarchy_contains_state_variable(self.source_units, id) {
                     let state_variable = {
                         let mut state_variable = None;
 
@@ -163,15 +160,6 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
             }
         }
 
-        if let Some(function_info) = self
-            .call_graph
-            .function_info(identifier.referenced_declaration)
-        {
-            if function_info.makes_external_call(self.source_units) {
-                self.makes_external_call = true;
-            }
-        }
-
         Ok(())
     }
 
@@ -198,13 +186,8 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
                     }
                 }
             }
-
-            if let Some(function_info) = self.call_graph.function_info(referenced_declaration) {
-                if function_info.makes_external_call(self.source_units) {
-                    self.makes_external_call = true;
-                }
-            }
         }
+
         Ok(())
     }
 
@@ -239,12 +222,11 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
             return Ok(());
         }
 
-        let ids = self.call_graph.get_assigned_state_variables(
+        let ids = contract_definition.get_assigned_state_variables(
             self.source_units,
-            contract_definition,
             definition_node,
             assignment.left_hand_side.as_ref(),
-        )?;
+        );
 
         if !ids.is_empty() {
             self.makes_post_external_call_assignment = true;

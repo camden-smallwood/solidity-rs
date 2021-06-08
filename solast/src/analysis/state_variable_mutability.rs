@@ -1,4 +1,4 @@
-use super::{AstVisitor, CallGraph};
+use super::AstVisitor;
 use solidity::ast::{Assignment, Block, ContractDefinition, ContractDefinitionNode, Expression, FunctionCall, FunctionDefinition, FunctionKind, NodeID, SourceUnit, Statement, UnaryOperation, VariableDeclaration};
 use std::{collections::HashMap, io};
 
@@ -6,23 +6,21 @@ pub struct ContractInfo {
     variable_info: HashMap<NodeID, bool>,
 }
 
-pub struct StateVariableMutabilityVisitor<'a, 'b> {
+pub struct StateVariableMutabilityVisitor<'a> {
     source_units: &'a [SourceUnit],
-    call_graph: &'b CallGraph,
     contract_info: HashMap<NodeID, ContractInfo>,
 }
 
-impl<'a, 'b> StateVariableMutabilityVisitor<'a, 'b> {
-    pub fn new(source_units: &'a [SourceUnit], call_graph: &'b CallGraph) -> Self {
+impl<'a> StateVariableMutabilityVisitor<'a> {
+    pub fn new(source_units: &'a [SourceUnit]) -> Self {
         Self {
             source_units,
-            call_graph,
             contract_info: HashMap::new(),
         }
     }
 }
 
-impl AstVisitor for StateVariableMutabilityVisitor<'_, '_> {
+impl AstVisitor for StateVariableMutabilityVisitor<'_> {
     fn leave_contract_definition(
         &mut self,
         _source_unit: &SourceUnit,
@@ -92,12 +90,11 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_, '_> {
             return Ok(())
         }
         
-        let ids = self.call_graph.get_assigned_state_variables(
+        let ids = contract_definition.get_assigned_state_variables(
             self.source_units,
-            contract_definition,
             definition_node,
             assignment.left_hand_side.as_ref(),
-        )?;
+        );
 
         for id in ids {
             let contract_info = self.contract_info.get_mut(&contract_definition.id).unwrap();
@@ -126,12 +123,11 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_, '_> {
             return Ok(())
         }
         
-        let ids = self.call_graph.get_assigned_state_variables(
+        let ids = contract_definition.get_assigned_state_variables(
             self.source_units,
-            contract_definition,
             definition_node,
             unary_operation.sub_expression.as_ref(),
-        )?;
+        );
 
         for id in ids {
             let contract_info = self.contract_info.get_mut(&contract_definition.id).unwrap();
@@ -162,12 +158,11 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_, '_> {
                     return Ok(())
                 }
                 
-                let ids = self.call_graph.get_assigned_state_variables(
+                let ids = contract_definition.get_assigned_state_variables(
                     self.source_units,
-                    contract_definition,
                     definition_node,
                     member_access.expression.as_ref(),
-                )?;
+                );
                 
                 for id in ids {
                     let contract_info = self.contract_info.get_mut(&contract_definition.id).unwrap();

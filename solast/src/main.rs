@@ -124,8 +124,6 @@ fn main() -> io::Result<()> {
         println!();
     }
 
-    let call_graph = analysis::CallGraph::build(source_units.as_slice())?;
-
     let mut walker = analysis::AstWalker {
         visitors: vec![
             Box::new(analysis::SourceUnitVisitor::new(source_units.as_slice())),
@@ -140,8 +138,8 @@ fn main() -> io::Result<()> {
             Box::new(analysis::ExplicitVariableReturnVisitor::default()),
             Box::new(analysis::UnusedReturnVisitor::new(source_units.as_slice())),
             Box::new(analysis::StorageArrayLoopVisitor::new(source_units.as_slice())),
-            Box::new(analysis::ExternalCallsInLoopVisitor::new(source_units.as_slice(), &call_graph)),
-            Box::new(analysis::CheckEffectsInteractionsVisitor::new(source_units.as_slice(), &call_graph)),
+            Box::new(analysis::ExternalCallsInLoopVisitor::new(source_units.as_slice())),
+            Box::new(analysis::CheckEffectsInteractionsVisitor::new(source_units.as_slice())),
             Box::new(analysis::RawAddressTransferVisitor::new(source_units.as_slice())),
             Box::new(analysis::SafeERC20FunctionsVisitor::new(source_units.as_slice())),
             Box::new(analysis::UncheckedERC20TransferVisitor::new(source_units.as_slice())),
@@ -149,7 +147,7 @@ fn main() -> io::Result<()> {
             Box::new(analysis::DivideBeforeMultiplyVisitor::new(source_units.as_slice())),
             Box::new(analysis::ComparisonUtilizationVisitor),
             Box::new(analysis::AssignmentComparisonsVisitor),
-            Box::new(analysis::StateVariableMutabilityVisitor::new(source_units.as_slice(), &call_graph)),
+            Box::new(analysis::StateVariableMutabilityVisitor::new(source_units.as_slice())),
             Box::new(analysis::UnusedStateVariablesVisitor::default()),
         ],
         ..Default::default()
