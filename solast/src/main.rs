@@ -7,9 +7,39 @@ fn main() -> io::Result<()> {
     let mut args = env::args();
     let _ = args.next().unwrap();
 
-    let path = match args.next() {
-        Some(arg) => PathBuf::from(arg),
-        None => return Ok(())
+    let mut path: Option<PathBuf> = None;
+    let mut todo_list = false;
+
+    loop {
+        let arg = match args.next() {
+            Some(arg) => arg,
+            None => break
+        };
+
+        if arg.starts_with("--") {
+            match &arg.as_str()[2..] {
+                "todo-list" => {
+                    todo_list = true;
+                }
+
+                _ => {
+                    return Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Invalid argument: {}", arg)));
+                }
+            }
+        } else {
+            if path.is_some() {
+                return Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Multiple paths specified: {} {}", path.unwrap().to_string_lossy(), arg)));
+            }
+
+            path = Some(PathBuf::from(arg));
+        }
+    }
+
+    let path = match path {
+        Some(path) => path,
+        None => {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, "Path not supplied"));
+        }
     };
 
     if !path.exists() {
@@ -42,6 +72,56 @@ fn main() -> io::Result<()> {
         }
     } else {
         todo!("truffle config not found; implement support for other project types")
+    }
+
+    if todo_list {
+        for source_unit in source_units.iter() {
+            for contract_definition in source_unit.contract_definitions() {
+                if let solidity::ast::ContractKind::Library | solidity::ast::ContractKind::Interface = contract_definition.kind {
+                    continue;
+                }
+
+                print!("### `");
+
+                if contract_definition.is_abstract.unwrap_or(false) {
+                    print!("abstract ");
+                }
+
+                print!("{} ", contract_definition.kind);
+
+                println!("{}`:", contract_definition.name);
+
+                for function_definition in contract_definition.function_definitions() {
+                    if function_definition.body.is_some() {
+                        print!("- [ ] `{}", function_definition.kind);
+
+                        if function_definition.kind != solidity::ast::FunctionKind::Constructor {
+                            print!(" {}", function_definition.name);
+                        }
+
+                        print!("{}", function_definition.parameters);
+
+                        print!(" {}", function_definition.visibility);
+
+                        for modifier in function_definition.modifiers.iter() {
+                            print!(" {}", modifier);
+                        }
+
+                        if !function_definition.return_parameters.parameters.is_empty() {
+                            print!(" returns {}", function_definition.return_parameters);
+                        }
+
+                        println!("`");
+                    }
+                }
+
+                println!();
+            }
+        }
+
+        println!();
+        println!("----------");
+        println!();
     }
 
     let call_graph = analysis::CallGraph::build(source_units.as_slice())?;

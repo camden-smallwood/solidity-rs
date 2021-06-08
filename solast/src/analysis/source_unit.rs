@@ -24,7 +24,7 @@ impl<'a> AstVisitor for SourceUnitVisitor<'a> {
             println!();
         }
 
-        println!("{}:", source_unit.absolute_path);
+        println!("{}:", source_unit.absolute_path.as_ref().map(|path| path.as_str()).unwrap_or("<ABSOLUTE_PATH_NOT_SET/>"));
 
         Ok(())
     }

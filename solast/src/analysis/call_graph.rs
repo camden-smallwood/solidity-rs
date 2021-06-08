@@ -113,20 +113,24 @@ impl CallGraph {
         state_variable_id: NodeID,
     ) -> bool {
         // Loop through all of the contracts in the supplied contract's inheritance hierarchy
-        for &contract_id in contract_definition.linearized_base_contracts.iter() {
-            // Loop through all of the schema source_units in the project
-            for source_unit in source_units.iter() {
-                // Attempt to retrieve the current contract in the inheritance hierarchy from the current schema source_unit
-                let contract_definition = match source_unit.contract_definition(contract_id) {
-                    Some(contract_definition) => contract_definition,
-                    None => continue,
-                };
+        if let Some(contract_ids) = contract_definition.linearized_base_contracts.as_ref() {
+            for &contract_id in contract_ids.iter() {
+                // Loop through all of the schema source_units in the project
+                for source_unit in source_units.iter() {
+                    // Attempt to retrieve the current contract in the inheritance hierarchy from the current schema source_unit
+                    let contract_definition = match source_unit.contract_definition(contract_id) {
+                        Some(contract_definition) => contract_definition,
+                        None => continue,
+                    };
 
-                // Attempt to retrieve the requested state variable from the current contract in the inheritance hierarchy
-                if let Some(_) = contract_definition.variable_declaration(state_variable_id) {
-                    return true;
+                    // Attempt to retrieve the requested state variable from the current contract in the inheritance hierarchy
+                    if let Some(_) = contract_definition.variable_declaration(state_variable_id) {
+                        return true;
+                    }
                 }
             }
+        } else if contract_definition.variable_declaration(state_variable_id).is_some() {
+            return true;
         }
 
         false

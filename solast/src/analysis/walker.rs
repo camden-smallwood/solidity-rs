@@ -27,11 +27,13 @@ impl AstWalker<'_> {
     }
 
     pub fn analyze_file(&mut self, source_unit: &SourceUnit) -> io::Result<()> {
-        if self.analyzed_paths.contains(&source_unit.absolute_path) {
-            return Ok(());
-        }
+        if let Some(path) = source_unit.absolute_path.as_ref() {
+            if self.analyzed_paths.contains(path) {
+                return Ok(());
+            }
 
-        self.analyzed_paths.insert(source_unit.absolute_path.clone());
+            self.analyzed_paths.insert(path.clone());
+        }
 
         self.visit_source_unit(source_unit)?;
         self.leave_source_unit(source_unit)?;

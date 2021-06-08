@@ -21,7 +21,12 @@ impl<'a> AstVisitor for StateVariableShadowingVisitor<'a> {
         _definition_node: &solidity::ast::ContractDefinitionNode,
         function_definition: &solidity::ast::FunctionDefinition
     ) -> io::Result<()> {
-        for &base_contract_id in contract_definition.linearized_base_contracts.iter() {
+        let contract_ids = match contract_definition.linearized_base_contracts.as_ref() {
+            Some(contract_ids) => contract_ids,
+            None => return Ok(()),
+        };
+        
+        for &base_contract_id in contract_ids.iter() {
             let mut base_contract_definition = None;
 
             for source_unit in self.source_units.iter() {

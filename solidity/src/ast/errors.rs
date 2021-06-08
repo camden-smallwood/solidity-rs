@@ -7,7 +7,7 @@ use std::fmt::Display;
 pub struct ErrorDefinition {
     pub documentation: Option<Documentation>,
     pub name: String,
-    pub name_location: String,
+    pub name_location: Option<String>,
     pub parameters: ParameterList,
     pub src: String,
     pub id: NodeID,

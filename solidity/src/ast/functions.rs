@@ -9,6 +9,8 @@ use std::fmt::Display;
 #[serde(rename_all = "camelCase")]
 pub struct ParameterList {
     pub parameters: Vec<VariableDeclaration>,
+    pub src: String,
+    pub id: NodeID,
 }
 
 impl Display for ParameterList {

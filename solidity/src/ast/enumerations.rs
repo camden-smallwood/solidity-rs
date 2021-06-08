@@ -7,6 +7,8 @@ use std::fmt::Display;
 pub struct EnumValue {
     pub name: String,
     pub name_location: Option<String>,
+    pub src: String,
+    pub id: NodeID,
 }
 
 impl Display for EnumValue {
@@ -18,10 +20,10 @@ impl Display for EnumValue {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EnumDefinition {
-    pub canonical_name: String,
-    pub members: Vec<EnumValue>,
     pub name: String,
     pub name_location: Option<String>,
+    pub members: Vec<EnumValue>,
+    pub canonical_name: Option<String>,
     pub src: String,
     pub id: NodeID,
 }

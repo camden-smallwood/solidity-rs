@@ -5,12 +5,12 @@ use std::fmt::Display;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StructDefinition {
-    pub canonical_name: String,
-    pub members: Vec<VariableDeclaration>,
     pub name: String,
     pub name_location: Option<String>,
-    pub scope: NodeID,
     pub visibility: Visibility,
+    pub members: Vec<VariableDeclaration>,
+    pub scope: NodeID,
+    pub canonical_name: Option<String>,
     pub src: String,
     pub id: NodeID,
 }

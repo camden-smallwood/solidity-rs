@@ -91,18 +91,20 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_, '_> {
                     let state_variable = {
                         let mut state_variable = None;
 
-                        for &contract_id in contract_definition.linearized_base_contracts.iter() {
-                            for source_unit in self.source_units.iter() {
-                                if let Some(contract_definition) =
-                                    source_unit.contract_definition(contract_id)
-                                {
-                                    if let Some(variable_declaration) =
-                                        contract_definition.variable_declaration(id)
-                                    {
-                                        state_variable = Some(variable_declaration);
-                                        break;
+                        if let Some(contract_ids) = contract_definition.linearized_base_contracts.as_ref() {
+                            for &contract_id in contract_ids.iter() {
+                                for source_unit in self.source_units.iter() {
+                                    if let Some(contract_definition) = source_unit.contract_definition(contract_id) {
+                                        if let Some(variable_declaration) = contract_definition.variable_declaration(id) {
+                                            state_variable = Some(variable_declaration);
+                                            break;
+                                        }
                                     }
                                 }
+                            }
+                        } else {
+                            if let Some(variable_declaration) = contract_definition.variable_declaration(id) {
+                                state_variable = Some(variable_declaration);
                             }
                         }
 

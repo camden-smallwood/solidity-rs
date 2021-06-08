@@ -24,7 +24,9 @@ impl Display for Identifier {
 #[serde(rename_all = "camelCase")]
 pub struct IdentifierPath {
     pub name: String,
-    pub referenced_declaration: NodeID,
+    pub referenced_declaration: Option<NodeID>,
+    pub src: String,
+    pub id: NodeID,
 }
 
 impl Display for IdentifierPath {

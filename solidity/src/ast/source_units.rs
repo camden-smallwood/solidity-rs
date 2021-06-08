@@ -6,6 +6,8 @@ use crate::ast::{ContractDefinition, ContractDefinitionNode, EnumDefinition, Exp
 #[serde(rename_all = "camelCase")]
 pub struct PragmaDirective {
     pub literals: Vec<String>,
+    pub src: String,
+    pub id: NodeID,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -13,18 +15,21 @@ pub struct PragmaDirective {
 pub struct SymbolAlias {
     pub foreign: Expression,
     pub local: Option<String>,
+    pub name_location: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ImportDirective {
-    pub absolute_path: String,
     pub file: String,
-    pub scope: NodeID,
     pub source_unit: NodeID,
-    pub symbol_aliases: Vec<SymbolAlias>,
+    pub scope: NodeID,
+    pub absolute_path: Option<String>,
     pub unit_alias: String,
+    pub name_location: Option<String>,
+    pub symbol_aliases: Vec<SymbolAlias>,
     pub src: String,
+    pub id: NodeID,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -40,10 +45,10 @@ pub enum SourceUnitNode {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SourceUnit {
-    pub absolute_path: String,
-    pub exported_symbols: HashMap<String, Vec<NodeID>>,
     pub license: Option<String>,
     pub nodes: Vec<SourceUnitNode>,
+    pub exported_symbols: Option<HashMap<String, Vec<NodeID>>>,
+    pub absolute_path: Option<String>,
     pub src: String,
     pub id: NodeID,
 }

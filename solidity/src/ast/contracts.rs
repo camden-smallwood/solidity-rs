@@ -59,8 +59,8 @@ impl Display for ContractDefinitionNode {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InheritanceSpecifier {
-    pub arguments: Option<Vec<Expression>>,
     pub base_name: IdentifierPath,
+    pub arguments: Option<Vec<Expression>>,
     pub src: String,
     pub id: NodeID,
 }
@@ -145,20 +145,20 @@ impl Display for UsingForDirective {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContractDefinition {
+    pub name: String,
+    pub name_location: Option<String>,
+    pub documentation: Option<Documentation>,
+    #[serde(rename = "contractKind")]
+    pub kind: ContractKind,
     #[serde(rename = "abstract")]
     pub is_abstract: Option<bool>,
     pub base_contracts: Vec<InheritanceSpecifier>,
     pub contract_dependencies: Vec<NodeID>,
-    #[serde(rename = "contractKind")]
-    pub kind: ContractKind,
-    pub documentation: Option<Documentation>,
-    pub fully_implemented: bool,
-    pub linearized_base_contracts: Vec<NodeID>,
     pub used_errors: Option<Vec<NodeID>>,
-    pub name: String,
-    pub name_location: Option<String>,
     pub nodes: Vec<ContractDefinitionNode>,
     pub scope: NodeID,
+    pub fully_implemented: Option<bool>,
+    pub linearized_base_contracts: Option<Vec<NodeID>>,
     pub src: String,
     pub id: NodeID,
 }
