@@ -115,15 +115,22 @@ dependencies = [
 
 [[package]]
 name = "simd-json"
-version = "0.4.4"
+version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a67f0d979df8d7f959397936199e21826cfe5b935b5c06c5763139fbe7e673d"
+checksum = "fb1a57c9b8d86a530aa9a69e18b75c2ad6a07164b4e979792897db514535a826"
 dependencies = [
  "halfbrown",
  "serde",
  "serde_json",
+ "simdutf8",
  "value-trait",
 ]
+
+[[package]]
+name = "simdutf8"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c970da16e7c682fa90a261cf0724dee241c9f7831635ecc4e988ae8f3b505559"
 
 [[package]]
 name = "solast"
@@ -163,9 +170,9 @@ checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
 
 [[package]]
 name = "value-trait"
-version = "0.2.4"
+version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6034fb7710bdb0f90669eb6b1ba37a15186872d61926dcf447f92c440a034f9b"
+checksum = "4b637f98040dfa411b01a85b238a8cadbd797b303c23007157dee4bbbd3a72af"
 dependencies = [
  "float-cmp",
  "halfbrown",

@@ -6,6 +6,7 @@ mod divide_before_multiply;
 mod explicit_variable_return;
 mod external_calls_in_loop;
 mod floating_solidity_version;
+mod ineffectual_statements;
 mod large_literals;
 mod no_spdx_identifier;
 mod node_modules_imports;
@@ -27,8 +28,8 @@ mod walker;
 pub use self::{
     abstract_contracts::*, assignment_comparisons::*, check_effects_interactions::*,
     comparison_utilization::*, divide_before_multiply::*, explicit_variable_return::*,
-    external_calls_in_loop::*, floating_solidity_version::*, large_literals::*,
-    no_spdx_identifier::*, node_modules_imports::*, raw_address_transfer::*,
+    external_calls_in_loop::*, floating_solidity_version::*, ineffectual_statements::*,
+    large_literals::*, no_spdx_identifier::*, node_modules_imports::*, raw_address_transfer::*,
     redundant_getter_function::*, require_without_message::*, safe_erc20_functions::*,
     source_unit::*, state_variable_mutability::*, state_variable_shadowing::*,
     storage_array_loop::*, unchecked_erc20_transfer::*, unpaid_payable_functions::*,

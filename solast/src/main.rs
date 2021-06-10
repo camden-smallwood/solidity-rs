@@ -149,6 +149,7 @@ fn main() -> io::Result<()> {
             Box::new(analysis::AssignmentComparisonsVisitor),
             Box::new(analysis::StateVariableMutabilityVisitor::new(source_units.as_slice())),
             Box::new(analysis::UnusedStateVariablesVisitor::default()),
+            Box::new(analysis::IneffectualStatementsVisitor),
         ],
         ..Default::default()
     };

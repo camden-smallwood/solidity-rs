@@ -26,6 +26,7 @@ Some legacy versions of Solidity are inherently supported, but the focus is 0.8.
 - [x] `assignment-comparisons`
 - [x] `state-variable-mutability`
 - [x] `unreferenced-state-variables`
+- [x] `ineffectual-statements`
 
 ## Usage
 
