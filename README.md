@@ -68,14 +68,14 @@ module.exports = {
 Compile your truffle project with `npm i && rm -rf build && truffle compile`.
 You should have a `build/contracts/` folder with `*.json` files inside of it afterwards.
 
-Now you can supply the path to this directory to SolAST with the following:
+Now you can supply the path to the truffle project directory to SolAST with the following:
 ```Shell
-cargo run --release -- /path/to/project/build/contracts
+cargo run --release -- /path/to/project/
 ```
 
 If you would like to save text output to an `out.txt` file instead of printing to the terminal, use the following:
 ```Shell
-cargo run --release -- /path/to/project/build/contracts > out.txt
+cargo run --release -- /path/to/project/ > out.txt
 ```
 
 On the first run it may take a few minutes to optimize and compile, but subsequent runs will be quite fast in release mode.
