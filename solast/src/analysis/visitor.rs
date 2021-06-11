@@ -148,6 +148,17 @@ pub trait AstVisitor {
         Ok(())
     }
 
+    fn leave_block<'a>(
+        &mut self,
+        source_unit: &'a SourceUnit,
+        contract_definition: &'a ContractDefinition,
+        definition_node: &'a ContractDefinitionNode,
+        blocks: &mut Vec<&'a Block>,
+        block: &'a Block,
+    ) -> io::Result<()> {
+        Ok(())
+    }
+
     fn visit_statement<'a>(
         &mut self,
         source_unit: &'a SourceUnit,

@@ -296,6 +296,14 @@ impl AstVisitor for AstWalker<'_> {
             &modifier_definition.body,
         )?;
 
+        self.leave_block(
+            source_unit,
+            contract_definition,
+            definition_node,
+            &mut vec![],
+            &modifier_definition.body,
+        )?;
+
         Ok(())
     }
 
@@ -336,6 +344,13 @@ impl AstVisitor for AstWalker<'_> {
 
         if let Some(block) = function_definition.body.as_ref() {
             self.visit_block(
+                source_unit,
+                contract_definition,
+                definition_node,
+                &mut vec![],
+                block,
+            )?;
+            self.leave_block(
                 source_unit,
                 contract_definition,
                 definition_node,
@@ -396,7 +411,28 @@ impl AstVisitor for AstWalker<'_> {
             )?;
         }
 
+        Ok(())
+    }
+
+    fn leave_block<'a>(
+        &mut self,
+        source_unit: &'a SourceUnit,
+        contract_definition: &'a ContractDefinition,
+        definition_node: &'a ContractDefinitionNode,
+        blocks: &mut Vec<&'a Block>,
+        block: &'a Block,
+    ) -> io::Result<()> {
         blocks.pop();
+
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_block(
+                source_unit,
+                contract_definition,
+                definition_node,
+                blocks,
+                block,
+            )?;
+        }
 
         Ok(())
     }
@@ -508,6 +544,13 @@ impl AstVisitor for AstWalker<'_> {
 
             Statement::UncheckedBlock(block) => {
                 self.visit_block(
+                    source_unit,
+                    contract_definition,
+                    definition_node,
+                    blocks,
+                    block,
+                )?;
+                self.leave_block(
                     source_unit,
                     contract_definition,
                     definition_node,
@@ -815,6 +858,13 @@ impl AstVisitor for AstWalker<'_> {
                 blocks,
                 &clause.block,
             )?;
+            self.leave_block(
+                source_unit,
+                contract_definition,
+                definition_node,
+                blocks,
+                &clause.block,
+            )?;
         }
 
         Ok(())
@@ -860,13 +910,22 @@ impl AstVisitor for AstWalker<'_> {
         }
 
         match block_or_statement {
-            BlockOrStatement::Block(block) => self.visit_block(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                block,
-            ),
+            BlockOrStatement::Block(block) => {
+                self.visit_block(
+                    source_unit,
+                    contract_definition,
+                    definition_node,
+                    blocks,
+                    block,
+                )?;
+                self.leave_block(
+                    source_unit,
+                    contract_definition,
+                    definition_node,
+                    blocks,
+                    block,
+                )
+            }
 
             BlockOrStatement::Statement(statement) => self.visit_statement(
                 source_unit,

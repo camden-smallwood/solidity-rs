@@ -231,7 +231,7 @@ fn main() -> io::Result<()> {
     }
 
     if analyzer_names.is_empty() || analyzer_names.contains("divide_before_multiply") {
-        walker.visitors.push(Box::new(analysis::DivideBeforeMultiplyVisitor::new(source_units.as_slice())));
+        walker.visitors.push(Box::new(analysis::DivideBeforeMultiplyVisitor::default()));
     }
 
     if analyzer_names.is_empty() || analyzer_names.contains("comparison_utilization") {
