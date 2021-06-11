@@ -5,28 +5,29 @@ Some legacy versions of Solidity are inherently supported, but the focus is 0.8.
 
 ## Analyzers
 
-- [x] `no-spdx-identifier`
-- [x] `floating-solidity-version`
-- [x] `node-modules-imports`
-- [x] `large-literals`
-- [x] `redundant-getter-function`
-- [x] `require-without-message`
-- [x] `zero-address-parameters`
-- [x] `state-variable-shadowing`
-- [x] `explicit-variable-return`
-- [x] `unused-return`
-- [x] `storage-array-loop`
-- [x] `external-calls-in-loop`
-- [x] `check-effects-interactions`
-- [x] `raw-address-transfer`
-- [x] `safe-erc20-functions`
-- [x] `unchecked-erc20-transfer`
-- [ ] ~~`divide-before-multiply`~~ (WIP)
-- [ ] ~~`comparison-utilization`~~ (WIP)
-- [x] `assignment-comparisons`
-- [x] `state-variable-mutability`
-- [x] `unreferenced-state-variables`
-- [x] `ineffectual-statements`
+- [x] `no_spdx_identifier`
+- [x] `floating_solidity_version`
+- [x] `node_modules_imports`
+- [x] `large_literals`
+- [x] `redundant_getter_function`
+- [x] `require_without_message`
+- [x] `zero_address_parameters`
+- [x] `state_variable_shadowing`
+- [x] `explicit_variable_return`
+- [x] `unused_return`
+- [x] `storage_array_loop`
+- [x] `external_calls_in_loop`
+- [x] `check_effects_interactions`
+- [x] `raw_address_transfer`
+- [x] `safe_erc20_functions`
+- [x] `unchecked_erc20_transfer`
+- [ ] ~~`divide_before_multiply`~~ (WIP)
+- [ ] ~~`comparison_utilization`~~ (WIP)
+- [x] `assignment_comparisons`
+- [x] `state_variable_mutability`
+- [x] `unreferenced_state_variables`
+- [x] `ineffectual_statements`
+- [x] `inline_assembly`
 
 ## Usage
 

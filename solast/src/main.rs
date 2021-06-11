@@ -45,7 +45,8 @@ fn main() -> io::Result<()> {
                     || s == "assignment_comparisons"
                     || s == "state_variable_mutability"
                     || s == "unused_state_variables"
-                    || s == "ineffectual_statements" =>
+                    || s == "ineffectual_statements"
+                    || s == "inline_assembly" =>
                 {
                     if !analyzer_names.contains(s) {
                         analyzer_names.insert(s.into());
@@ -251,6 +252,10 @@ fn main() -> io::Result<()> {
 
     if analyzer_names.is_empty() || analyzer_names.contains("ineffectual_statements") {
         walker.visitors.push(Box::new(analysis::IneffectualStatementsVisitor));
+    }
+
+    if analyzer_names.is_empty() || analyzer_names.contains("inline_assembly") {
+        walker.visitors.push(Box::new(analysis::InlineAssemblyVisitor));
     }
 
     walker.analyze(source_units.as_slice())
