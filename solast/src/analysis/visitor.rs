@@ -1,6 +1,6 @@
 use solidity::ast::*;
 use std::io;
-use yul::InlineAssembly;
+use yul::{InlineAssembly, YulAssignment, YulBlock, YulCase, YulExpression, YulExpressionStatement, YulFunctionCall, YulIdentifier, YulLiteral, YulStatement, YulSwitch, YulVariableDeclaration};
 
 #[allow(unused_variables)]
 pub trait AstVisitor {
@@ -461,6 +461,16 @@ pub trait AstVisitor {
         Ok(())
     }
 
+    fn visit_unhandled_statement(
+        &mut self,
+        source_unit: &SourceUnit,
+        node_type: &NodeType,
+        src: &Option<String>,
+        id: &Option<NodeID>,
+    ) -> io::Result<()> {
+        Ok(())
+    }
+
     fn visit_unhandled_expression(
         &mut self,
         source_unit: &SourceUnit,
@@ -471,22 +481,181 @@ pub trait AstVisitor {
         Ok(())
     }
 
-    fn visit_inline_assembly(
+    fn visit_inline_assembly<'a>(
         &mut self,
-        source_unit: &SourceUnit,
-        contract_definition: &ContractDefinition,
-        definition_node: &ContractDefinitionNode,
-        inline_assembly: &InlineAssembly,
+        source_unit: &'a SourceUnit,
+        contract_definition: &'a ContractDefinition,
+        definition_node: &'a ContractDefinitionNode,
+        blocks: &mut Vec<&'a Block>,
+        statement: &'a Statement,
+        inline_assembly: &'a InlineAssembly,
     ) -> io::Result<()> {
         Ok(())
     }
 
-    fn visit_unhandled_statement(
+    fn visit_yul_block<'a>(
         &mut self,
-        source_unit: &SourceUnit,
-        node_type: &NodeType,
-        src: &Option<String>,
-        id: &Option<NodeID>,
+        source_unit: &'a SourceUnit,
+        contract_definition: &'a ContractDefinition,
+        definition_node: &'a ContractDefinitionNode,
+        blocks: &mut Vec<&'a Block>,
+        statement: &'a Statement,
+        inline_assembly: &'a InlineAssembly,
+        yul_blocks: &mut Vec<&'a YulBlock>,
+        yul_block: &'a YulBlock,
+    ) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn visit_yul_statement<'a>(
+        &mut self,
+        source_unit: &'a SourceUnit,
+        contract_definition: &'a ContractDefinition,
+        definition_node: &'a ContractDefinitionNode,
+        blocks: &mut Vec<&'a Block>,
+        statement: &'a Statement,
+        inline_assembly: &'a InlineAssembly,
+        yul_blocks: &mut Vec<&'a YulBlock>,
+        yul_statement: &'a YulStatement,
+    ) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn visit_yul_switch<'a>(
+        &mut self,
+        source_unit: &'a SourceUnit,
+        contract_definition: &'a ContractDefinition,
+        definition_node: &'a ContractDefinitionNode,
+        blocks: &mut Vec<&'a Block>,
+        statement: &'a Statement,
+        inline_assembly: &'a InlineAssembly,
+        yul_blocks: &mut Vec<&'a YulBlock>,
+        yul_statement: &'a YulStatement,
+        yul_switch: &'a YulSwitch,
+    ) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn visit_yul_case<'a>(
+        &mut self,
+        source_unit: &'a SourceUnit,
+        contract_definition: &'a ContractDefinition,
+        definition_node: &'a ContractDefinitionNode,
+        blocks: &mut Vec<&'a Block>,
+        statement: &'a Statement,
+        inline_assembly: &'a InlineAssembly,
+        yul_blocks: &mut Vec<&'a YulBlock>,
+        yul_statement: &'a YulStatement,
+        yul_switch: &'a YulSwitch,
+        yul_case: &'a YulCase,
+    ) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn visit_yul_assignment<'a>(
+        &mut self,
+        source_unit: &'a SourceUnit,
+        contract_definition: &'a ContractDefinition,
+        definition_node: &'a ContractDefinitionNode,
+        blocks: &mut Vec<&'a Block>,
+        statement: &'a Statement,
+        inline_assembly: &'a InlineAssembly,
+        yul_blocks: &mut Vec<&'a YulBlock>,
+        yul_statement: &'a YulStatement,
+        yul_assignment: &'a YulAssignment,
+    ) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn visit_yul_variable_declaration<'a>(
+        &mut self,
+        source_unit: &'a SourceUnit,
+        contract_definition: &'a ContractDefinition,
+        definition_node: &'a ContractDefinitionNode,
+        blocks: &mut Vec<&'a Block>,
+        statement: &'a Statement,
+        inline_assembly: &'a InlineAssembly,
+        yul_blocks: &mut Vec<&'a YulBlock>,
+        yul_statement: &'a YulStatement,
+        yul_variable_declaration: &'a YulVariableDeclaration,
+    ) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn visit_yul_expression_statement<'a>(
+        &mut self,
+        source_unit: &'a SourceUnit,
+        contract_definition: &'a ContractDefinition,
+        definition_node: &'a ContractDefinitionNode,
+        blocks: &mut Vec<&'a Block>,
+        statement: &'a Statement,
+        inline_assembly: &'a InlineAssembly,
+        yul_blocks: &mut Vec<&'a YulBlock>,
+        yul_statement: &'a YulStatement,
+        yul_expression_statement: &'a YulExpressionStatement,
+    ) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn visit_yul_expression<'a>(
+        &mut self,
+        source_unit: &'a SourceUnit,
+        contract_definition: &'a ContractDefinition,
+        definition_node: &'a ContractDefinitionNode,
+        blocks: &mut Vec<&'a Block>,
+        statement: &'a Statement,
+        inline_assembly: &'a InlineAssembly,
+        yul_blocks: &mut Vec<&'a YulBlock>,
+        yul_statement: Option<&'a YulStatement>,
+        yul_expression: &'a YulExpression,
+    ) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn visit_yul_literal<'a>(
+        &mut self,
+        source_unit: &'a SourceUnit,
+        contract_definition: &'a ContractDefinition,
+        definition_node: &'a ContractDefinitionNode,
+        blocks: &mut Vec<&'a Block>,
+        statement: &'a Statement,
+        inline_assembly: &'a InlineAssembly,
+        yul_blocks: &mut Vec<&'a YulBlock>,
+        yul_statement: Option<&'a YulStatement>,
+        yul_expression: &'a YulExpression,
+        yul_literal: &'a YulLiteral,
+    ) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn visit_yul_identifier<'a>(
+        &mut self,
+        source_unit: &'a SourceUnit,
+        contract_definition: &'a ContractDefinition,
+        definition_node: &'a ContractDefinitionNode,
+        blocks: &mut Vec<&'a Block>,
+        statement: &'a Statement,
+        inline_assembly: &'a InlineAssembly,
+        yul_blocks: &mut Vec<&'a YulBlock>,
+        yul_statement: Option<&'a YulStatement>,
+        yul_expression: Option<&'a YulExpression>,
+        yul_identifier: &'a YulIdentifier,
+    ) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn visit_yul_function_call<'a>(
+        &mut self,
+        source_unit: &'a SourceUnit,
+        contract_definition: &'a ContractDefinition,
+        definition_node: &'a ContractDefinitionNode,
+        blocks: &mut Vec<&'a Block>,
+        statement: &'a Statement,
+        inline_assembly: &'a InlineAssembly,
+        yul_blocks: &mut Vec<&'a YulBlock>,
+        yul_statement: Option<&'a YulStatement>,
+        yul_expression: &'a YulExpression,
+        yul_function_call: &'a YulFunctionCall,
     ) -> io::Result<()> {
         Ok(())
     }
