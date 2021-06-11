@@ -174,7 +174,7 @@ impl AstVisitor for DivideBeforeMultiplyVisitor {
             for referenced_declaration in assignment.left_hand_side.referenced_declarations() {
                 block_info.assignments.push(AssignmentInfo {
                     referenced_declaration,
-                    operator: "*".into(),
+                    operator: assignment.operator.clone(),
                 });
             }
         }
