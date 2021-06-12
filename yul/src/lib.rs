@@ -85,6 +85,7 @@ pub struct YulBlock {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum YulStatement {
+    YulIf(YulIf),
     YulSwitch(YulSwitch),
     YulAssignment(YulAssignment),
     YulVariableDeclaration(YulVariableDeclaration),
@@ -96,6 +97,13 @@ pub enum YulStatement {
         src: Option<String>,
         id: Option<NodeID>,
     },
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct YulIf {
+    pub condition: YulExpression,
+    pub body: YulBlock,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

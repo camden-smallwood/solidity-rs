@@ -3,7 +3,8 @@ use solidity::ast::*;
 use std::{collections::HashSet, io};
 use yul::{
     InlineAssembly, YulAssignment, YulBlock, YulCase, YulExpression, YulExpressionStatement,
-    YulFunctionCall, YulIdentifier, YulLiteral, YulStatement, YulSwitch, YulVariableDeclaration,
+    YulFunctionCall, YulIdentifier, YulIf, YulLiteral, YulStatement, YulSwitch,
+    YulVariableDeclaration,
 };
 
 pub struct AstWalker<'a> {
@@ -1799,6 +1800,20 @@ impl AstVisitor for AstWalker<'_> {
         }
 
         match yul_statement {
+            YulStatement::YulIf(yul_if) => {
+                self.visit_yul_if(
+                    source_unit,
+                    contract_definition,
+                    definition_node,
+                    blocks,
+                    statement,
+                    inline_assembly,
+                    yul_blocks,
+                    yul_statement,
+                    yul_if,
+                )?;
+            }
+
             YulStatement::YulSwitch(yul_switch) => {
                 self.visit_yul_switch(
                     source_unit,
@@ -1862,6 +1877,58 @@ impl AstVisitor for AstWalker<'_> {
                 );
             }
         }
+
+        Ok(())
+    }
+
+    fn visit_yul_if<'a>(
+        &mut self,
+        source_unit: &'a SourceUnit,
+        contract_definition: &'a ContractDefinition,
+        definition_node: &'a ContractDefinitionNode,
+        blocks: &mut Vec<&'a Block>,
+        statement: &'a Statement,
+        inline_assembly: &'a InlineAssembly,
+        yul_blocks: &mut Vec<&'a YulBlock>,
+        yul_statement: &'a YulStatement,
+        yul_if: &'a YulIf,
+    ) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_yul_if(
+                source_unit,
+                contract_definition,
+                definition_node,
+                blocks,
+                statement,
+                inline_assembly,
+                yul_blocks,
+                yul_statement,
+                yul_if,
+            )?;
+        }
+
+        self.visit_yul_expression(
+            source_unit,
+            contract_definition,
+            definition_node,
+            blocks,
+            statement,
+            inline_assembly,
+            yul_blocks,
+            Some(yul_statement),
+            &yul_if.condition,
+        )?;
+
+        self.visit_yul_block(
+            source_unit,
+            contract_definition,
+            definition_node,
+            blocks,
+            statement,
+            inline_assembly,
+            yul_blocks,
+            &yul_if.body,
+        )?;
 
         Ok(())
     }

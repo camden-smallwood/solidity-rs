@@ -1,6 +1,6 @@
 use solidity::ast::*;
 use std::io;
-use yul::{InlineAssembly, YulAssignment, YulBlock, YulCase, YulExpression, YulExpressionStatement, YulFunctionCall, YulIdentifier, YulLiteral, YulStatement, YulSwitch, YulVariableDeclaration};
+use yul::{InlineAssembly, YulAssignment, YulBlock, YulCase, YulExpression, YulExpressionStatement, YulFunctionCall, YulIdentifier, YulIf, YulLiteral, YulStatement, YulSwitch, YulVariableDeclaration};
 
 #[allow(unused_variables)]
 pub trait AstVisitor {
@@ -528,6 +528,21 @@ pub trait AstVisitor {
         inline_assembly: &'a InlineAssembly,
         yul_blocks: &mut Vec<&'a YulBlock>,
         yul_statement: &'a YulStatement,
+    ) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn visit_yul_if<'a>(
+        &mut self,
+        source_unit: &'a SourceUnit,
+        contract_definition: &'a ContractDefinition,
+        definition_node: &'a ContractDefinitionNode,
+        blocks: &mut Vec<&'a Block>,
+        statement: &'a Statement,
+        inline_assembly: &'a InlineAssembly,
+        yul_blocks: &mut Vec<&'a YulBlock>,
+        yul_statement: &'a YulStatement,
+        yul_if: &'a YulIf,
     ) -> io::Result<()> {
         Ok(())
     }

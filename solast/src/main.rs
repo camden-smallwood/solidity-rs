@@ -231,7 +231,7 @@ fn main() -> io::Result<()> {
     }
 
     if analyzer_names.is_empty() || analyzer_names.contains("divide_before_multiply") {
-        walker.visitors.push(Box::new(analysis::DivideBeforeMultiplyVisitor::default()));
+        walker.visitors.push(Box::new(analysis::DivideBeforeMultiplyVisitor));
     }
 
     if analyzer_names.is_empty() || analyzer_names.contains("comparison_utilization") {
@@ -255,7 +255,7 @@ fn main() -> io::Result<()> {
     }
 
     if analyzer_names.is_empty() || analyzer_names.contains("inline_assembly") {
-        walker.visitors.push(Box::new(analysis::InlineAssemblyVisitor));
+        walker.visitors.push(Box::new(analysis::InlineAssemblyVisitor::default()));
     }
 
     walker.analyze(source_units.as_slice())
