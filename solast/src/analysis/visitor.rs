@@ -1,14 +1,24 @@
 use solidity::ast::*;
 use std::io;
-use yul::{InlineAssembly, YulAssignment, YulBlock, YulCase, YulExpression, YulExpressionStatement, YulFunctionCall, YulIdentifier, YulIf, YulLiteral, YulStatement, YulSwitch, YulVariableDeclaration};
+use yul::{
+    InlineAssembly, YulAssignment, YulBlock, YulCase, YulExpression, YulExpressionStatement,
+    YulFunctionCall, YulIdentifier, YulIf, YulLiteral, YulStatement, YulSwitch,
+    YulVariableDeclaration,
+};
 
 #[allow(unused_variables)]
 pub trait AstVisitor {
-    fn visit_source_unit(&mut self, source_unit: &SourceUnit) -> io::Result<()> {
+    fn visit_source_unit(
+        &mut self,
+        source_unit: &SourceUnit
+    ) -> io::Result<()> {
         Ok(())
     }
 
-    fn leave_source_unit(&mut self, source_unit: &SourceUnit) -> io::Result<()> {
+    fn leave_source_unit(
+        &mut self,
+        source_unit: &SourceUnit
+    ) -> io::Result<()> {
         Ok(())
     }
 
@@ -187,7 +197,7 @@ pub trait AstVisitor {
         contract_definition: &'a ContractDefinition,
         definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
-        if_statement: &'a IfStatement
+        if_statement: &'a IfStatement,
     ) -> io::Result<()> {
         Ok(())
     }
@@ -299,7 +309,7 @@ pub trait AstVisitor {
         definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
-        expression: &'a Expression
+        expression: &'a Expression,
     ) -> io::Result<()> {
         Ok(())
     }
@@ -335,7 +345,7 @@ pub trait AstVisitor {
         definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
-        unary_operation: &'a UnaryOperation
+        unary_operation: &'a UnaryOperation,
     ) -> io::Result<()> {
         Ok(())
     }
@@ -347,7 +357,7 @@ pub trait AstVisitor {
         definition_node: &'a ContractDefinitionNode,
         blocks: &mut Vec<&'a Block>,
         statement: Option<&'a Statement>,
-        binary_operation: &'a BinaryOperation
+        binary_operation: &'a BinaryOperation,
     ) -> io::Result<()> {
         Ok(())
     }
