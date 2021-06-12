@@ -49,7 +49,8 @@ pub enum YulExpression {
 #[serde(rename_all = "camelCase")]
 pub struct YulLiteral {
     pub kind: YulLiteralKind,
-    pub value: String,
+    pub value: Option<String>,
+    pub hex_value: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

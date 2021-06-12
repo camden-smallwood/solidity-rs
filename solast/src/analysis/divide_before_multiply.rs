@@ -38,8 +38,7 @@ impl AstVisitor for DivideBeforeMultiplyVisitor {
         function_definition: &solidity::ast::FunctionDefinition,
     ) -> io::Result<()> {
         if !self.functions.contains_key(&function_definition.id) {
-            self.functions
-                .insert(function_definition.id, FunctionInfo { blocks: vec![] });
+            self.functions.insert(function_definition.id, FunctionInfo { blocks: vec![] });
         }
 
         Ok(())
@@ -170,13 +169,23 @@ impl AstVisitor for DivideBeforeMultiplyVisitor {
 
         let block_info = block_info.unwrap();
 
-        if let "+=" | "-=" | "*=" | "/=" = assignment.operator.as_str() {
-            for referenced_declaration in assignment.left_hand_side.referenced_declarations() {
-                block_info.assignments.push(AssignmentInfo {
-                    referenced_declaration,
-                    operator: assignment.operator.clone(),
-                });
+        match assignment.operator.as_str() {
+            "+=" | "-=" | "*=" | "/=" => {
+                for referenced_declaration in assignment.left_hand_side.referenced_declarations() {
+                    block_info.assignments.push(AssignmentInfo {
+                        referenced_declaration,
+                        operator: assignment.operator.clone(),
+                    });
+                }
             }
+
+            "=" => {
+                if assignment.right_hand_side.contains_operation("*") {
+                    
+                }
+            }
+
+            _ => {}
         }
 
         Ok(())

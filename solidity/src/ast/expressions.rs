@@ -78,6 +78,14 @@ impl Expression {
                 }
             }
 
+            Expression::FunctionCall(function_call) => {
+                result.extend(function_call.expression.referenced_declarations());
+
+                for argument in function_call.arguments.iter() {
+                    result.extend(argument.referenced_declarations());
+                }
+            }
+
             _ => {}
         }
 
