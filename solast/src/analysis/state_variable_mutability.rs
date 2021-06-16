@@ -97,7 +97,10 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_> {
         );
 
         for id in ids {
-            let contract_info = self.contract_info.get_mut(&contract_definition.id).unwrap();
+            let contract_info = match self.contract_info.get_mut(&contract_definition.id) {
+                Some(contract_info) => contract_info,
+                None => continue,
+            };
 
             if contract_info.variable_info.contains_key(&id) {
                 *contract_info.variable_info.get_mut(&id).unwrap() = true;

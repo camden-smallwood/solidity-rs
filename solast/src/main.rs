@@ -46,7 +46,8 @@ fn main() -> io::Result<()> {
                     || s == "state_variable_mutability"
                     || s == "unused_state_variables"
                     || s == "ineffectual_statements"
-                    || s == "inline_assembly" =>
+                    || s == "inline_assembly"
+                    || s == "unchecked_casting" =>
                 {
                     if !analyzer_names.contains(s) {
                         analyzer_names.insert(s.into());
@@ -256,6 +257,10 @@ fn main() -> io::Result<()> {
 
     if analyzer_names.is_empty() || analyzer_names.contains("inline_assembly") {
         walker.visitors.push(Box::new(analysis::InlineAssemblyVisitor::default()));
+    }
+
+    if analyzer_names.is_empty() || analyzer_names.contains("unchecked_casting") {
+        walker.visitors.push(Box::new(analysis::UncheckedCastingVisitor));
     }
 
     walker.analyze(source_units.as_slice())

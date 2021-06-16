@@ -28,6 +28,7 @@ Some legacy versions of Solidity are inherently supported, but the focus is 0.8.
 - [x] `unreferenced_state_variables`
 - [x] `ineffectual_statements`
 - [x] `inline_assembly`
+- [ ] ~~`unchecked_casting`~~ (WIP)
 
 ## Usage
 

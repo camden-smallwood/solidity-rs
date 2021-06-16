@@ -70,104 +70,84 @@ impl AstVisitor for InlineAssemblyVisitor {
 
         match yul_function_call.function_name.name.as_str() {
             "mload" => {
-                if let Some(YulExpression::YulLiteral(yul_literal)) =
-                    yul_function_call.arguments.first()
-                {
-                    let mut is_free_ptr = false;
+                let value = match yul_function_call.arguments.first() {
+                    Some(YulExpression::YulLiteral(YulLiteral {
+                        value: Some(value),
+                        ..
+                    }))
+                    | Some(YulExpression::YulLiteral(YulLiteral {
+                        hex_value: Some(value),
+                        ..
+                    })) => value,
 
-                    if let Some(Ok(0x40)) = yul_literal.value.as_ref().map(|s| {
-                        if s.starts_with("0x") {
-                            i64::from_str_radix(s.trim_start_matches("0x"), 16)
+                    _ => return Ok(())
+                };
+
+                if let Ok(0x40) = if value.starts_with("0x") {
+                    i64::from_str_radix(value.trim_start_matches("0x"), 16)
+                } else {
+                    value.parse()
+                } {
+                    println!(
+                        "\t{} {} {} contains inline assembly which loads the free memory pointer",
+                        format!("{:?}", function_definition.visibility),
+                        if function_definition.kind == FunctionKind::Constructor {
+                            format!("{}", contract_definition.name)
                         } else {
-                            s.parse()
-                        }
-                    }) {
-                        is_free_ptr = true;
-                    }
-
-                    if let Some(Ok(0x40)) = yul_literal.hex_value.as_ref().map(|s| {
-                        if s.starts_with("0x") {
-                            i64::from_str_radix(s.trim_start_matches("0x"), 16)
-                        } else {
-                            s.parse()
-                        }
-                    }) {
-                        is_free_ptr = true;
-                    }
-
-                    if is_free_ptr {
-                        println!(
-                            "\t{} {} {} contains inline assembly which loads the free memory pointer",
-                            format!("{:?}", function_definition.visibility),
-                            if function_definition.kind == FunctionKind::Constructor {
-                                format!("{}", contract_definition.name)
-                            } else {
-                                format!("{}.{}", contract_definition.name, function_definition.name)
-                            },
-                            format!("{:?}", function_definition.kind).to_lowercase()
-                        );
-                    }
+                            format!("{}.{}", contract_definition.name, function_definition.name)
+                        },
+                        function_definition.kind
+                    );
                 }
             }
 
             "calldatacopy" => {
-                if let Some(YulExpression::YulFunctionCall(YulFunctionCall {
-                    function_name: YulIdentifier {
-                        name: function_name
-                    },
-                    arguments,
-                })) = yul_function_call.arguments.iter().nth(2) {
-                    if function_name == "sub" {
-                        if let Some(YulExpression::YulFunctionCall(YulFunctionCall {
-                            function_name: YulIdentifier {
-                                name: function_name
-                            },
-                            ..
-                        })) = arguments.iter().nth(0) {
-                            if function_name == "calldatasize" {
-                                if let Some(YulExpression::YulLiteral(YulLiteral {
-                                    value,
-                                    hex_value,
-                                    ..
-                                })) = arguments.iter().nth(1) {
-                                    let mut copies_arbitrary_arguments = false;
+                let arguments = match yul_function_call.arguments.iter().nth(2) {
+                    Some(YulExpression::YulFunctionCall(YulFunctionCall {
+                        function_name: YulIdentifier { name },
+                        arguments,
+                    })) if name == "sub" => arguments,
 
-                                    if let Some(Ok(0x4)) = value.as_ref().map(|s| {
-                                        if s.starts_with("0x") {
-                                            i64::from_str_radix(s.trim_start_matches("0x"), 16)
-                                        } else {
-                                            s.parse()
-                                        }
-                                    }) {
-                                        copies_arbitrary_arguments = true;
-                                    }
+                    _ => return Ok(())
+                };
 
-                                    if let Some(Ok(0x4)) = hex_value.as_ref().map(|s| {
-                                        if s.starts_with("0x") {
-                                            i64::from_str_radix(s.trim_start_matches("0x"), 16)
-                                        } else {
-                                            s.parse()
-                                        }
-                                    }) {
-                                        copies_arbitrary_arguments = true;
-                                    }
+                match arguments.iter().nth(0) {
+                    Some(YulExpression::YulFunctionCall(YulFunctionCall {
+                        function_name: YulIdentifier { name },
+                        ..
+                    })) if name == "calldatasize" => {}
 
-                                    if copies_arbitrary_arguments {
-                                        println!(
-                                            "\t{} {} {} contains inline assembly which copies arbitrary function arguments",
-                                            format!("{:?}", function_definition.visibility),
-                                            if function_definition.kind == FunctionKind::Constructor {
-                                                format!("{}", contract_definition.name)
-                                            } else {
-                                                format!("{}.{}", contract_definition.name, function_definition.name)
-                                            },
-                                            format!("{:?}", function_definition.kind).to_lowercase()
-                                        );
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    _ => return Ok(())
+                }
+
+                let value = match arguments.iter().nth(1) {
+                    Some(YulExpression::YulLiteral(YulLiteral {
+                        value: Some(value),
+                        ..
+                    }))
+                    | Some(YulExpression::YulLiteral(YulLiteral {
+                        hex_value: Some(value),
+                        ..
+                    })) => value,
+
+                    _ => return Ok(())
+                };
+                
+                if let Ok(0x4) = if value.starts_with("0x") {
+                    i64::from_str_radix(value.trim_start_matches("0x"), 16)
+                } else {
+                    value.parse()
+                } {
+                    println!(
+                        "\t{} {} {} contains inline assembly which copies arbitrary function arguments",
+                        format!("{:?}", function_definition.visibility),
+                        if function_definition.kind == FunctionKind::Constructor {
+                            format!("{}", contract_definition.name)
+                        } else {
+                            format!("{}.{}", contract_definition.name, function_definition.name)
+                        },
+                        function_definition.kind
+                    );
                 }
             }
 
