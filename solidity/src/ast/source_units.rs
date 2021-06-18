@@ -54,6 +54,18 @@ pub struct SourceUnit {
 }
 
 impl SourceUnit {
+    pub fn pragma_directives(&self) -> Vec<&PragmaDirective> {
+        let mut result = vec![];
+
+        for node in self.nodes.iter() {
+            if let SourceUnitNode::PragmaDirective(pragma_directive) = node {
+                result.push(pragma_directive);
+            }
+        }
+
+        result
+    }
+
     pub fn import_directives(&self) -> Vec<&ImportDirective> {
         let mut result = vec![];
 

@@ -47,7 +47,8 @@ fn main() -> io::Result<()> {
                     || s == "unused_state_variables"
                     || s == "ineffectual_statements"
                     || s == "inline_assembly"
-                    || s == "unchecked_casting" =>
+                    || s == "unchecked_casting"
+                    || s == "unnecessary_pragmas" =>
                 {
                     if !analyzer_names.contains(s) {
                         analyzer_names.insert(s.into());
@@ -261,6 +262,10 @@ fn main() -> io::Result<()> {
 
     if analyzer_names.is_empty() || analyzer_names.contains("unchecked_casting") {
         walker.visitors.push(Box::new(analysis::UncheckedCastingVisitor));
+    }
+
+    if analyzer_names.is_empty() || analyzer_names.contains("unnecessary_pragmas") {
+        walker.visitors.push(Box::new(analysis::UnnecessaryPragmasVisitor));
     }
 
     walker.analyze(source_units.as_slice())
