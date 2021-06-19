@@ -70,6 +70,10 @@ impl AstVisitor for MissingReturnVisitor {
             return Ok(())
         }
 
+        //
+        // TODO: check if last statement is an if/else which contain explicit returns and skip
+        //
+
         let mut assigned = vec![];
 
         for variable_declaration in function_definition.return_parameters.parameters.iter() {

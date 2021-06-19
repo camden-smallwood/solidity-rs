@@ -31,6 +31,7 @@ Some legacy versions of Solidity are inherently supported, but the focus is 0.8.
 - [ ] ~~`unchecked_casting`~~ (WIP)
 - [ ] ~~`unnecessary_pragmas`~~ (WIP)
 - [x] `missing_return`
+- [ ] ~~`redundant_state_variable_access`~~ (WIP)
 
 ## Usage
 

@@ -49,7 +49,8 @@ fn main() -> io::Result<()> {
                     || s == "inline_assembly"
                     || s == "unchecked_casting"
                     || s == "unnecessary_pragmas"
-                    || s == "missing_return" =>
+                    || s == "missing_return"
+                    || s == "redundant_state_variable_access" =>
                 {
                     if !analyzer_names.contains(s) {
                         analyzer_names.insert(s.into());
@@ -271,6 +272,10 @@ fn main() -> io::Result<()> {
 
     if analyzer_names.is_empty() || analyzer_names.contains("missing_return") {
         walker.visitors.push(Box::new(analysis::MissingReturnVisitor::default()));
+    }
+
+    if analyzer_names.is_empty() || analyzer_names.contains("redundant_state_variable_access") {
+        walker.visitors.push(Box::new(analysis::RedundantStateVariableAccessVisitor));
     }
 
     walker.analyze(source_units.as_slice())
