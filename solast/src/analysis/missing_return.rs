@@ -63,7 +63,7 @@ impl AstVisitor for MissingReturnVisitor {
     ) -> io::Result<()> {
         let function_info = match self.function_info.get(&function_definition.id) {
             Some(function_info) => function_info,
-            None => return Ok(()),
+            None => return Ok(())
         };
         
         if let Some(Statement::Return(Return { .. })) = function_definition.body.as_ref().unwrap().statements.last() {
@@ -92,7 +92,7 @@ impl AstVisitor for MissingReturnVisitor {
             );
         }
 
-        todo!()
+        Ok(())
     }
 
     fn visit_assignment<'a>(

@@ -190,10 +190,22 @@ impl AstVisitor for AstWalker<'_> {
                         definition_node,
                         function_definition,
                     )?;
+                    self.leave_function_definition(
+                        source_unit,
+                        contract_definition,
+                        definition_node,
+                        function_definition,
+                    )?;
                 }
 
                 ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
                     self.visit_modifier_definition(
+                        source_unit,
+                        contract_definition,
+                        definition_node,
+                        modifier_definition,
+                    )?;
+                    self.leave_modifier_definition(
                         source_unit,
                         contract_definition,
                         definition_node,
