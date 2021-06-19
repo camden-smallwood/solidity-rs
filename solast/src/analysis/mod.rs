@@ -23,6 +23,7 @@ mod state_variable_shadowing;
 mod storage_array_loop;
 mod unchecked_casting;
 mod unchecked_erc20_transfer;
+mod unnecessary_comparisons;
 mod unnecessary_pragmas;
 mod unpaid_payable_functions;
 mod unreferenced_state_variables;
@@ -39,6 +40,6 @@ pub use self::{
     redundant_state_variable_access::*, require_without_message::*, safe_erc20_functions::*,
     source_unit::*, state_variable_mutability::*, state_variable_shadowing::*,
     storage_array_loop::*, unchecked_casting::*, unchecked_erc20_transfer::*,
-    unnecessary_pragmas::*, unpaid_payable_functions::*, unreferenced_state_variables::*,
-    unused_return::*, visitor::*, walker::*,
+    unnecessary_comparisons::*, unnecessary_pragmas::*, unpaid_payable_functions::*,
+    unreferenced_state_variables::*, unused_return::*, visitor::*, walker::*,
 };

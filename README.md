@@ -32,6 +32,7 @@ Some legacy versions of Solidity are inherently supported, but the focus is 0.8.
 - [ ] ~~`unnecessary_pragmas`~~ (WIP)
 - [x] `missing_return`
 - [ ] ~~`redundant_state_variable_access`~~ (WIP)
+- [ ] ~~`unnecessary_comparisons`~~ (WIP)
 
 ## Usage
 
