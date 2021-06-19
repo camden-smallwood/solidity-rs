@@ -30,6 +30,7 @@ Some legacy versions of Solidity are inherently supported, but the focus is 0.8.
 - [x] `inline_assembly`
 - [ ] ~~`unchecked_casting`~~ (WIP)
 - [ ] ~~`unnecessary_pragmas`~~ (WIP)
+- [x] `missing_return`
 
 ## Usage
 

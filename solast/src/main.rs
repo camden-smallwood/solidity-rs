@@ -48,7 +48,8 @@ fn main() -> io::Result<()> {
                     || s == "ineffectual_statements"
                     || s == "inline_assembly"
                     || s == "unchecked_casting"
-                    || s == "unnecessary_pragmas" =>
+                    || s == "unnecessary_pragmas"
+                    || s == "missing_return" =>
                 {
                     if !analyzer_names.contains(s) {
                         analyzer_names.insert(s.into());
@@ -266,6 +267,10 @@ fn main() -> io::Result<()> {
 
     if analyzer_names.is_empty() || analyzer_names.contains("unnecessary_pragmas") {
         walker.visitors.push(Box::new(analysis::UnnecessaryPragmasVisitor));
+    }
+
+    if analyzer_names.is_empty() || analyzer_names.contains("missing_return") {
+        walker.visitors.push(Box::new(analysis::MissingReturnVisitor::default()));
     }
 
     walker.analyze(source_units.as_slice())

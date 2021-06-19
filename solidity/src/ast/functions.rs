@@ -1,7 +1,4 @@
-use crate::ast::{
-    Block, Documentation, ModifierInvocation, NodeID, OverrideSpecifier, StateMutability,
-    VariableDeclaration, Visibility,
-};
+use crate::ast::{Block, Documentation, Expression, ModifierInvocation, NodeID, OverrideSpecifier, StateMutability, VariableDeclaration, Visibility};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
@@ -66,6 +63,51 @@ pub struct FunctionDefinition {
     pub visibility: Visibility,
     pub src: String,
     pub id: NodeID,
+}
+
+impl FunctionDefinition {
+    pub fn get_assigned_return_variables(
+        &self,
+        expression: &Expression,
+    ) -> Vec<NodeID> {
+        let mut ids = vec![];
+
+        match expression {
+            Expression::Identifier(identifier) => {
+                if self.return_parameters.parameters.iter().find(|p| p.id == identifier.referenced_declaration).is_some() {
+                    ids.push(identifier.referenced_declaration);
+                }
+            }
+
+            Expression::Assignment(assignment) => {
+                ids.extend(self.get_assigned_return_variables(assignment.left_hand_side.as_ref()));
+            }
+
+            Expression::IndexAccess(index_access) => {
+                ids.extend(self.get_assigned_return_variables(index_access.base_expression.as_ref()));
+            }
+
+            Expression::IndexRangeAccess(index_range_access) => {
+                ids.extend(self.get_assigned_return_variables(index_range_access.base_expression.as_ref()));
+            }
+
+            Expression::MemberAccess(member_access) => {
+                ids.extend(self.get_assigned_return_variables(member_access.expression.as_ref()));
+            }
+
+            Expression::TupleExpression(tuple_expression) => {
+                for component in tuple_expression.components.iter() {
+                    if let Some(component) = component {
+                        ids.extend(self.get_assigned_return_variables(component));
+                    }
+                }
+            }
+
+            _ => (),
+        }
+
+        ids
+    }
 }
 
 impl Display for FunctionDefinition {
