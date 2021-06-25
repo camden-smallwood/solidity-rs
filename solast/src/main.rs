@@ -190,7 +190,7 @@ fn main() -> io::Result<()> {
     };
 
     for &(analyzer_name, analyzer_constructor_fn) in ANALYZERS {
-        if analyzer_names.contains(analyzer_name) {
+        if analyzer_names.is_empty() || analyzer_names.contains(analyzer_name) {
             walker.visitors.push(analyzer_constructor_fn(source_units.as_slice()));
         }
     }
