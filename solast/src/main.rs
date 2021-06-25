@@ -135,7 +135,7 @@ fn main() -> io::Result<()> {
     if todo_list {
         for source_unit in source_units.iter() {
             for contract_definition in source_unit.contract_definitions() {
-                if let solidity::ast::ContractKind::Library | solidity::ast::ContractKind::Interface = contract_definition.kind {
+                if let solidity::ast::ContractKind::Interface = contract_definition.kind {
                     continue;
                 }
 
