@@ -60,7 +60,7 @@ fn main() -> io::Result<()> {
 
                 s if s.starts_with("contract=") => {
                     if contract_name.is_some() {
-                        return Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Multiple paths specified: {} {}", path.unwrap().to_string_lossy(), arg)));
+                        return Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Multiple contracts specified: {} {}", path.unwrap().to_string_lossy(), arg)));
                     }
                     
                     contract_name = Some(s.trim_start_matches("contract=").into());
