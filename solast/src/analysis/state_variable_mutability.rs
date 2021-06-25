@@ -29,7 +29,7 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_> {
         if let Some(contract_info) = self.contract_info.get(&contract_definition.id) {
             for (&id, &assigned) in contract_info.variable_info.iter() {
                 if let Some(variable_declaration) = contract_definition.variable_declaration(id) {
-                    if let Some(solidity::ast::Mutability::Constant) | Some(solidity::ast::Mutability::Immutable) = variable_declaration.mutability.as_ref() {
+                    if let Some(solidity::ast::Mutability::Constant | solidity::ast::Mutability::Immutable) = variable_declaration.mutability.as_ref() {
                         continue;
                     }
 
@@ -64,7 +64,10 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_> {
                 });
             }
 
-            let contract_info = self.contract_info.get_mut(&contract_definition.id).unwrap();
+            let contract_info = match self.contract_info.get_mut(&contract_definition.id) {
+                Some(contract_info) => contract_info,
+                None => return Ok(())
+            };
 
             if !contract_info.variable_info.contains_key(&variable_declaration.id) {
                 contract_info.variable_info.insert(variable_declaration.id, false);
@@ -133,7 +136,10 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_> {
         );
 
         for id in ids {
-            let contract_info = self.contract_info.get_mut(&contract_definition.id).unwrap();
+            let contract_info = match self.contract_info.get_mut(&contract_definition.id) {
+                Some(contract_info) => contract_info,
+                None => continue
+            };
 
             if contract_info.variable_info.contains_key(&id) {
                 *contract_info.variable_info.get_mut(&id).unwrap() = true;
@@ -168,7 +174,10 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_> {
                 );
                 
                 for id in ids {
-                    let contract_info = self.contract_info.get_mut(&contract_definition.id).unwrap();
+                    let contract_info = match self.contract_info.get_mut(&contract_definition.id) {
+                        Some(contract_info) => contract_info,
+                        None => continue
+                    };
         
                     if contract_info.variable_info.contains_key(&id) {
                         *contract_info.variable_info.get_mut(&id).unwrap() = true;

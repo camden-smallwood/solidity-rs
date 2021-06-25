@@ -71,14 +71,16 @@ impl AstVisitor for InlineAssemblyVisitor {
         match yul_function_call.function_name.name.as_str() {
             "mload" => {
                 let value = match yul_function_call.arguments.first() {
-                    Some(YulExpression::YulLiteral(YulLiteral {
-                        value: Some(value),
-                        ..
-                    }))
-                    | Some(YulExpression::YulLiteral(YulLiteral {
-                        hex_value: Some(value),
-                        ..
-                    })) => value,
+                    Some(
+                        YulExpression::YulLiteral(YulLiteral {
+                            value: Some(value),
+                            ..
+                        })
+                        | YulExpression::YulLiteral(YulLiteral {
+                            hex_value: Some(value),
+                            ..
+                        })
+                    ) => value,
 
                     _ => return Ok(())
                 };
@@ -121,14 +123,16 @@ impl AstVisitor for InlineAssemblyVisitor {
                 }
 
                 let value = match arguments.iter().nth(1) {
-                    Some(YulExpression::YulLiteral(YulLiteral {
-                        value: Some(value),
-                        ..
-                    }))
-                    | Some(YulExpression::YulLiteral(YulLiteral {
-                        hex_value: Some(value),
-                        ..
-                    })) => value,
+                    Some(
+                        YulExpression::YulLiteral(YulLiteral {
+                            value: Some(value),
+                            ..
+                        })
+                        | YulExpression::YulLiteral(YulLiteral {
+                            hex_value: Some(value),
+                            ..
+                        })
+                    ) => value,
 
                     _ => return Ok(())
                 };

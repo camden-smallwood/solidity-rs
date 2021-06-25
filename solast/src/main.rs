@@ -3,6 +3,40 @@ use std::{collections::HashSet, env, fs::File, io, path::PathBuf};
 pub mod analysis;
 pub mod truffle;
 
+const ANALYZERS: &'static [(&'static str, for<'a> fn(&'a [solidity::ast::SourceUnit]) -> Box<dyn analysis::AstVisitor + 'a>)] = &[
+    ("no_spdx_identifier", |_| Box::new(analysis::NoSpdxIdentifierVisitor)),
+    ("floating_solidity_version", |_| Box::new(analysis::FloatingSolidityVersionVisitor)),
+    ("node_modules_imports", |_| Box::new(analysis::NodeModulesImportsVisitor)),
+    ("abstract_contracts", |_| Box::new(analysis::AbstractContractsVisitor)),
+    ("large_literals", |_| Box::new(analysis::LargeLiteralsVisitor::default())),
+    ("redundant_getter_function", |source_units| Box::new(analysis::RedundantGetterFunctionVisitor::new(source_units))),
+    ("require_without_message", |source_units| Box::new(analysis::RequireWithoutMessageVisitor::new(source_units))),
+    ("state_variable_shadowing", |source_units| Box::new(analysis::StateVariableShadowingVisitor::new(source_units))),
+    ("explicit_variable_return", |_| Box::new(analysis::ExplicitVariableReturnVisitor::default())),
+    ("unused_return", |source_units| Box::new(analysis::UnusedReturnVisitor::new(source_units))),
+    ("storage_array_loop", |source_units| Box::new(analysis::StorageArrayLoopVisitor::new(source_units))),
+    ("external_calls_in_loop", |source_units| Box::new(analysis::ExternalCallsInLoopVisitor::new(source_units))),
+    ("check_effects_interactions", |source_units| Box::new(analysis::CheckEffectsInteractionsVisitor::new(source_units))),
+    ("raw_address_transfer", |source_units| Box::new(analysis::RawAddressTransferVisitor::new(source_units))),
+    ("safe_erc20_functions", |source_units| Box::new(analysis::SafeERC20FunctionsVisitor::new(source_units))),
+    ("unchecked_erc20_transfer", |source_units| Box::new(analysis::UncheckedERC20TransferVisitor::new(source_units))),
+    ("unpaid_payable_functions", |source_units| Box::new(analysis::UnpaidPayableFunctionsVisitor::new(source_units))),
+    ("divide_before_multiply", |_| Box::new(analysis::DivideBeforeMultiplyVisitor)),
+    ("comparison_utilization", |_| Box::new(analysis::ComparisonUtilizationVisitor)),
+    ("assignment_comparisons", |_| Box::new(analysis::AssignmentComparisonsVisitor)),
+    ("state_variable_mutability", |source_units| Box::new(analysis::StateVariableMutabilityVisitor::new(source_units))),
+    ("unused_state_variables", |_| Box::new(analysis::UnusedStateVariablesVisitor::default())),
+    ("ineffectual_statements", |_| Box::new(analysis::IneffectualStatementsVisitor)),
+    ("inline_assembly", |_| Box::new(analysis::InlineAssemblyVisitor::default())),
+    ("unchecked_casting", |_| Box::new(analysis::UncheckedCastingVisitor)),
+    ("unnecessary_pragmas", |_| Box::new(analysis::UnnecessaryPragmasVisitor)),
+    ("missing_return", |_| Box::new(analysis::MissingReturnVisitor::default())),
+    ("redundant_state_variable_access", |_| Box::new(analysis::RedundantStateVariableAccessVisitor)),
+    ("unnecessary_comparisons", |_| Box::new(analysis::UnnecessaryComparisonsVisitor)),
+    ("assert_usage", |_| Box::new(analysis::AssertUsageVisitor::default())),
+    ("unrestricted_setter_functions", |_| Box::new(analysis::UnrestrictedSetterFunctionsVisitor)),
+];
+
 fn main() -> io::Result<()> {
     let mut args = env::args();
     let _ = args.next().unwrap();
@@ -10,6 +44,7 @@ fn main() -> io::Result<()> {
     let mut path: Option<PathBuf> = None;
     let mut todo_list = false;
     let mut analyzer_names: HashSet<String> = HashSet::new();
+    let mut contract_name: Option<String> = None;
 
     loop {
         let arg = match args.next() {
@@ -23,36 +58,15 @@ fn main() -> io::Result<()> {
                     todo_list = true;
                 }
 
-                s if s == "no_spdx_identifier"
-                    || s == "floating_solidity_version"
-                    || s == "node_modules_imports"
-                    || s == "abstract_contracts"
-                    || s == "large_literals"
-                    || s == "redundant_getter_function"
-                    || s == "require_without_message"
-                    || s == "state_variable_shadowing"
-                    || s == "explicit_variable_return"
-                    || s == "unused_return"
-                    || s == "storage_array_loop"
-                    || s == "external_calls_in_loop"
-                    || s == "check_effects_interactions"
-                    || s == "raw_address_transfer"
-                    || s == "safe_erc20_functions"
-                    || s == "unchecked_erc20_transfer"
-                    || s == "unpaid_payable_functions"
-                    || s == "divide_before_multiply"
-                    || s == "comparison_utilization"
-                    || s == "assignment_comparisons"
-                    || s == "state_variable_mutability"
-                    || s == "unused_state_variables"
-                    || s == "ineffectual_statements"
-                    || s == "inline_assembly"
-                    || s == "unchecked_casting"
-                    || s == "unnecessary_pragmas"
-                    || s == "missing_return"
-                    || s == "redundant_state_variable_access"
-                    || s == "unnecessary_comparisons" =>
-                {
+                s if s.starts_with("contract=") => {
+                    if contract_name.is_some() {
+                        return Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Multiple paths specified: {} {}", path.unwrap().to_string_lossy(), arg)));
+                    }
+                    
+                    contract_name = Some(s.trim_start_matches("contract=").into());
+                }
+
+                s if ANALYZERS.iter().find(|analyzer| analyzer.0 == s).is_some() => {
                     if !analyzer_names.contains(s) {
                         analyzer_names.insert(s.into());
                     }
@@ -103,9 +117,17 @@ fn main() -> io::Result<()> {
             let file: truffle::File = simd_json::from_reader(File::open(path)?)?;
 
             if let Some(source_unit) = file.ast {
+                if let Some(contract_name) = contract_name.as_ref().map(String::as_str) {
+                    if !source_unit.contract_definitions().iter().find(|c| c.name == contract_name).is_some() {
+                        continue;
+                    }
+                }
+                
                 source_units.push(source_unit);
             }
         }
+
+        source_units.sort_by(|lhs, rhs| lhs.absolute_path.as_ref().map(String::as_str).unwrap_or("").cmp(rhs.absolute_path.as_ref().map(String::as_str).unwrap_or("")));
     } else {
         todo!("truffle config not found; implement support for other project types")
     }
@@ -167,120 +189,10 @@ fn main() -> io::Result<()> {
         ..Default::default()
     };
 
-    if analyzer_names.is_empty() || analyzer_names.contains("no_spdx_identifier") {
-        walker.visitors.push(Box::new(analysis::NoSpdxIdentifierVisitor));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("floating_solidity_version") {
-        walker.visitors.push(Box::new(analysis::FloatingSolidityVersionVisitor));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("node_modules_imports") {
-        walker.visitors.push(Box::new(analysis::NodeModulesImportsVisitor));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("abstract_contracts") {
-        walker.visitors.push(Box::new(analysis::AbstractContractsVisitor));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("large_literals") {
-        walker.visitors.push(Box::new(analysis::LargeLiteralsVisitor::default()));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("redundant_getter_function") {
-        walker.visitors.push(Box::new(analysis::RedundantGetterFunctionVisitor::new(source_units.as_slice())));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("require_without_message") {
-        walker.visitors.push(Box::new(analysis::RequireWithoutMessageVisitor::new(source_units.as_slice())));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("state_variable_shadowing") {
-        walker.visitors.push(Box::new(analysis::StateVariableShadowingVisitor::new(source_units.as_slice())));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("explicit_variable_return") {
-        walker.visitors.push(Box::new(analysis::ExplicitVariableReturnVisitor::default()));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("unused_return") {
-        walker.visitors.push(Box::new(analysis::UnusedReturnVisitor::new(source_units.as_slice())));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("storage_array_loop") {
-        walker.visitors.push(Box::new(analysis::StorageArrayLoopVisitor::new(source_units.as_slice())));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("external_calls_in_loop") {
-        walker.visitors.push(Box::new(analysis::ExternalCallsInLoopVisitor::new(source_units.as_slice())));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("check_effects_interactions") {
-        walker.visitors.push(Box::new(analysis::CheckEffectsInteractionsVisitor::new(source_units.as_slice())));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("raw_address_transfer") {
-        walker.visitors.push(Box::new(analysis::RawAddressTransferVisitor::new(source_units.as_slice())));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("safe_erc20_functions") {
-        walker.visitors.push(Box::new(analysis::SafeERC20FunctionsVisitor::new(source_units.as_slice())));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("unchecked_erc20_transfer") {
-        walker.visitors.push(Box::new(analysis::UncheckedERC20TransferVisitor::new(source_units.as_slice())));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("unpaid_payable_functions") {
-        walker.visitors.push(Box::new(analysis::UnpaidPayableFunctionsVisitor::new(source_units.as_slice())));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("divide_before_multiply") {
-        walker.visitors.push(Box::new(analysis::DivideBeforeMultiplyVisitor));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("comparison_utilization") {
-        walker.visitors.push(Box::new(analysis::ComparisonUtilizationVisitor));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("assignment_comparisons") {
-        walker.visitors.push(Box::new(analysis::AssignmentComparisonsVisitor));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("state_variable_mutability") {
-        walker.visitors.push(Box::new(analysis::StateVariableMutabilityVisitor::new(source_units.as_slice())));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("unused_state_variables") {
-        walker.visitors.push(Box::new(analysis::UnusedStateVariablesVisitor::default()));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("ineffectual_statements") {
-        walker.visitors.push(Box::new(analysis::IneffectualStatementsVisitor));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("inline_assembly") {
-        walker.visitors.push(Box::new(analysis::InlineAssemblyVisitor::default()));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("unchecked_casting") {
-        walker.visitors.push(Box::new(analysis::UncheckedCastingVisitor));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("unnecessary_pragmas") {
-        walker.visitors.push(Box::new(analysis::UnnecessaryPragmasVisitor));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("missing_return") {
-        walker.visitors.push(Box::new(analysis::MissingReturnVisitor::default()));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("redundant_state_variable_access") {
-        walker.visitors.push(Box::new(analysis::RedundantStateVariableAccessVisitor));
-    }
-
-    if analyzer_names.is_empty() || analyzer_names.contains("unnecessary_comparisons") {
-        walker.visitors.push(Box::new(analysis::UnnecessaryComparisonsVisitor));
+    for &(analyzer_name, analyzer_constructor_fn) in ANALYZERS {
+        if analyzer_names.contains(analyzer_name) {
+            walker.visitors.push(analyzer_constructor_fn(source_units.as_slice()));
+        }
     }
 
     walker.analyze(source_units.as_slice())
