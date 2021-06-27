@@ -1,4 +1,4 @@
-use super::AstVisitor;
+use super::{AstVisitor, FunctionDefinitionContext};
 use solidity::ast::{NodeID, SourceUnit};
 use std::{
     collections::{HashMap, HashSet},
@@ -50,50 +50,48 @@ impl AstVisitor for UncheckedERC20TransferVisitor<'_> {
         Ok(())
     }
 
-    fn visit_function_definition(
-        &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        _contract_definition: &solidity::ast::ContractDefinition,
-        _definition_node: &solidity::ast::ContractDefinitionNode,
-        function_definition: &solidity::ast::FunctionDefinition,
-    ) -> io::Result<()> {
-        if !self.function_info.contains_key(&function_definition.id) {
-            self.function_info
-                .insert(function_definition.id, FunctionInfo { occurance_count: 0 });
+    fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
+        if !self.function_info.contains_key(&context.function_definition.id) {
+            self.function_info.insert(
+                context.function_definition.id,
+                FunctionInfo {
+                    occurance_count: 0
+                }
+            );
         }
 
         Ok(())
     }
 
-    fn leave_function_definition(
-        &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        contract_definition: &solidity::ast::ContractDefinition,
-        _definition_node: &solidity::ast::ContractDefinitionNode,
-        function_definition: &solidity::ast::FunctionDefinition,
-    ) -> io::Result<()> {
-        let function_info = self.function_info.get(&function_definition.id).unwrap();
+    fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
+        let function_info = self.function_info.get(&context.function_definition.id).unwrap();
 
         if function_info.occurance_count > 0 {
             println!(
                 "\t{} {} {} makes {} without checking the {}, which can revert {} zero",
-                format!("{:?}", function_definition.visibility),
-                if function_definition.name.is_empty() {
-                    format!("{}", contract_definition.name)
+
+                format!("{:?}", context.function_definition.visibility),
+
+                if context.function_definition.name.is_empty() {
+                    format!("{}", context.contract_definition.name)
                 } else {
-                    format!("{}.{}", contract_definition.name, function_definition.name)
+                    format!("{}.{}", context.contract_definition.name, context.function_definition.name)
                 },
-                format!("{:?}", function_definition.kind).to_lowercase(),
+
+                context.function_definition.kind,
+
                 if function_info.occurance_count == 1 {
                     "an ERC-20 transfer"
                 } else {
                     "ERC-20 transfers"
                 },
+
                 if function_info.occurance_count == 1 {
                     "amount"
                 } else {
                     "amounts"
                 },
+                
                 if function_info.occurance_count == 1 {
                     "if"
                 } else {

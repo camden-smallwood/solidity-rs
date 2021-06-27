@@ -1,14 +1,14 @@
-use super::AstVisitor;
+use super::{AstVisitor, SourceUnitContext};
 use std::io;
 
 pub struct NoSpdxIdentifierVisitor;
 
 impl AstVisitor for NoSpdxIdentifierVisitor {
-    fn visit_source_unit(
+    fn visit_source_unit<'a>(
         &mut self,
-        source_unit: &solidity::ast::SourceUnit
+        context: &mut SourceUnitContext<'a>
     ) -> io::Result<()> {
-        if source_unit.license.is_none() {
+        if context.current_source_unit.license.is_none() {
             println!("\tSPDX license identifier not provided in source file; Consider adding one before deployment");
         }
 

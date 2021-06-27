@@ -61,7 +61,7 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                         println!(
                                             "\tThe {} `{}` {} returns the local `{}` variable explicitly",
                                             
-                                            format!("{:?}", function_definition.visibility).to_lowercase(),
+                                            function_definition.visibility,
 
                                             if function_definition.name.is_empty() {
                                                 format!("{}", contract_definition.name)
@@ -72,7 +72,7 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                                 )
                                             },
 
-                                            format!("{:?}", function_definition.kind).to_lowercase(),
+                                            function_definition.kind,
                                             
                                             identifier.name
                                         );
@@ -136,7 +136,7 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                         println!(
                                             "\tThe {} `{}` {} returns the local {} variables explicitly",
                                             
-                                            format!("{:?}", function_definition.visibility).to_lowercase(),
+                                            function_definition.visibility,
 
                                             if function_definition.name.is_empty() {
                                                 format!("{}", contract_definition.name)
@@ -147,7 +147,7 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                                 )
                                             },
 
-                                            format!("{:?}", function_definition.kind).to_lowercase(),
+                                            function_definition.kind,
 
                                             local_variable_names.join(", ")
                                         );

@@ -29,7 +29,7 @@ impl AstVisitor for IneffectualStatementsVisitor {
                         } else {
                             format!("{}.{}", contract_definition.name, function_definition.name)
                         },
-                        format!("{:?}", function_definition.kind).to_lowercase(),
+                        function_definition.kind,
                         literal
                     );
                 }
@@ -43,7 +43,7 @@ impl AstVisitor for IneffectualStatementsVisitor {
                         } else {
                             format!("{}.{}", contract_definition.name, function_definition.name)
                         },
-                        format!("{:?}", function_definition.kind).to_lowercase(),
+                        function_definition.kind,
                         identifier
                     );
                 }
@@ -57,7 +57,7 @@ impl AstVisitor for IneffectualStatementsVisitor {
                         } else {
                             format!("{}.{}", contract_definition.name, function_definition.name)
                         },
-                        format!("{:?}", function_definition.kind).to_lowercase(),
+                        function_definition.kind,
                         index_access
                     );
                 }
@@ -71,7 +71,7 @@ impl AstVisitor for IneffectualStatementsVisitor {
                         } else {
                             format!("{}.{}", contract_definition.name, function_definition.name)
                         },
-                        format!("{:?}", function_definition.kind).to_lowercase(),
+                        function_definition.kind,
                         index_range_access
                     );
                 }
@@ -85,7 +85,7 @@ impl AstVisitor for IneffectualStatementsVisitor {
                         } else {
                             format!("{}.{}", contract_definition.name, function_definition.name)
                         },
-                        format!("{:?}", function_definition.kind).to_lowercase(),
+                        function_definition.kind,
                         member_access
                     );
                 }
@@ -99,7 +99,7 @@ impl AstVisitor for IneffectualStatementsVisitor {
                         } else {
                             format!("{}.{}", contract_definition.name, function_definition.name)
                         },
-                        format!("{:?}", function_definition.kind).to_lowercase(),
+                        function_definition.kind,
                         binary_operation
                     );
                 }
@@ -113,7 +113,7 @@ impl AstVisitor for IneffectualStatementsVisitor {
                         } else {
                             format!("{}.{}", contract_definition.name, function_definition.name)
                         },
-                        format!("{:?}", function_definition.kind).to_lowercase(),
+                        function_definition.kind,
                         conditional
                     );
                 }
@@ -127,7 +127,7 @@ impl AstVisitor for IneffectualStatementsVisitor {
                         } else {
                             format!("{}.{}", contract_definition.name, function_definition.name)
                         },
-                        format!("{:?}", function_definition.kind).to_lowercase(),
+                        function_definition.kind,
                         tuple_expression
                     );
                 }

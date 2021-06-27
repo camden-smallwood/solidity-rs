@@ -1,20 +1,19 @@
-use super::AstVisitor;
+use super::{AstVisitor, PragmaDirectiveContext};
 use std::io;
 
 pub struct FloatingSolidityVersionVisitor;
 
 impl AstVisitor for FloatingSolidityVersionVisitor {
-    fn visit_pragma_directive(
+    fn visit_pragma_directive<'a>(
         &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        pragma_directive: &solidity::ast::PragmaDirective,
+        context: &mut PragmaDirectiveContext<'a>
     ) -> io::Result<()> {
-        if let Some(literal) = pragma_directive.literals.first() {
+        if let Some(literal) = context.pragma_directive.literals.first() {
             if literal == "solidity" {
                 let mut pragma_string = String::new();
                 let mut floating = false;
 
-                for literal in pragma_directive.literals.iter().skip(1) {
+                for literal in context.pragma_directive.literals.iter().skip(1) {
                     if let "^" | ">" | ">=" | "<" | "<=" = literal.as_str() {
                         if !pragma_string.is_empty() {
                             pragma_string.push(' ');

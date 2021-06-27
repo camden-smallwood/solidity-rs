@@ -1,4 +1,4 @@
-use super::AstVisitor;
+use super::{AstVisitor, FunctionDefinitionContext};
 use solidity::ast::{NodeID, SourceUnit};
 use std::{collections::HashMap, io};
 
@@ -23,16 +23,10 @@ impl<'a> SafeERC20FunctionsVisitor<'a> {
 }
 
 impl AstVisitor for SafeERC20FunctionsVisitor<'_> {
-    fn visit_function_definition(
-        &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        _contract_definition: &solidity::ast::ContractDefinition,
-        _definition_node: &solidity::ast::ContractDefinitionNode,
-        function_definition: &solidity::ast::FunctionDefinition,
-    ) -> io::Result<()> {
-        if !self.functions.contains_key(&function_definition.id) {
+    fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
+        if !self.functions.contains_key(&context.function_definition.id) {
             self.functions.insert(
-                function_definition.id,
+                context.function_definition.id,
                 FunctionInfo {
                     transfer: false,
                     transfer_from: false,
@@ -44,51 +38,54 @@ impl AstVisitor for SafeERC20FunctionsVisitor<'_> {
         Ok(())
     }
 
-    fn leave_function_definition(
-        &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        contract_definition: &solidity::ast::ContractDefinition,
-        _definition_node: &solidity::ast::ContractDefinitionNode,
-        function_definition: &solidity::ast::FunctionDefinition,
-    ) -> io::Result<()> {
-        let function_info = self.functions.get(&function_definition.id).unwrap();
+    fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
+        let function_info = self.functions.get(&context.function_definition.id).unwrap();
 
         if function_info.transfer {
             println!(
                 "\t{} {} {} uses ERC20.transfer instead of SafeERC20.safeTransfer",
-                format!("{:?}", function_definition.visibility),
-                if function_definition.name.is_empty() {
-                    format!("{}", contract_definition.name)
+
+                format!("{:?}", context.function_definition.visibility),
+
+                if context.function_definition.name.is_empty() {
+                    format!("{}", context.contract_definition.name)
                 } else {
-                    format!("{}.{}", contract_definition.name, function_definition.name)
+                    format!("{}.{}", context.contract_definition.name, context.function_definition.name)
                 },
-                format!("{:?}", function_definition.kind).to_lowercase()
+
+                context.function_definition.kind
             );
         }
 
         if function_info.transfer_from {
             println!(
                 "\t{} {} {} uses ERC20.transferFrom instead of SafeERC20.safeTransferFrom",
-                format!("{:?}", function_definition.visibility),
-                if function_definition.name.is_empty() {
-                    format!("{}", contract_definition.name)
+
+                format!("{:?}", context.function_definition.visibility),
+
+                if context.function_definition.name.is_empty() {
+                    format!("{}", context.contract_definition.name)
                 } else {
-                    format!("{}.{}", contract_definition.name, function_definition.name)
+                    format!("{}.{}", context.contract_definition.name, context.function_definition.name)
                 },
-                format!("{:?}", function_definition.kind).to_lowercase()
+
+                context.function_definition.kind
             );
         }
 
         if function_info.approve {
             println!(
                 "\t{} {} {} uses ERC20.approve instead of SafeERC20.safeApprove",
-                format!("{:?}", function_definition.visibility),
-                if function_definition.name.is_empty() {
-                    format!("{}", contract_definition.name)
+
+                format!("{:?}", context.function_definition.visibility),
+
+                if context.function_definition.name.is_empty() {
+                    format!("{}", context.contract_definition.name)
                 } else {
-                    format!("{}.{}", contract_definition.name, function_definition.name)
+                    format!("{}.{}", context.contract_definition.name, context.function_definition.name)
                 },
-                format!("{:?}", function_definition.kind).to_lowercase()
+
+                context.function_definition.kind
             );
         }
 

@@ -18,26 +18,24 @@ impl AstVisitor for AssignmentComparisonsVisitor {
         function_call: &'a FunctionCall,
     ) -> io::Result<()> {
         if let Expression::Identifier(Identifier { name, .. }) = function_call.expression.as_ref() {
-            if (name == "require" || name == "assert")
-                && function_call
-                    .arguments
-                    .first()
-                    .unwrap()
-                    .contains_operation("=")
-            {
+            if (name == "require" || name == "assert") && function_call.arguments.first().unwrap().contains_operation("=") {
                 match definition_node {
                     solidity::ast::ContractDefinitionNode::FunctionDefinition(
                         function_definition,
                     ) => {
                         println!(
                             "\t{} {} {} contains a call to {} that performs an assignment",
+
                             format!("{:?}", function_definition.visibility),
+
                             if function_definition.name.is_empty() {
                                 format!("{}", contract_definition.name)
                             } else {
                                 format!("{}.{}", contract_definition.name, function_definition.name)
                             },
-                            format!("{:?}", function_definition.kind).to_lowercase(),
+
+                            function_definition.kind,
+
                             name
                         );
                     }
@@ -84,7 +82,7 @@ impl AstVisitor for AssignmentComparisonsVisitor {
                         } else {
                             format!("{}.{}", contract_definition.name, function_definition.name)
                         },
-                        format!("{:?}", function_definition.kind).to_lowercase()
+                        function_definition.kind
                     );
                 }
 
@@ -129,7 +127,7 @@ impl AstVisitor for AssignmentComparisonsVisitor {
                             } else {
                                 format!("{}.{}", contract_definition.name, function_definition.name)
                             },
-                            format!("{:?}", function_definition.kind).to_lowercase()
+                            function_definition.kind
                         );
                     }
 
@@ -174,7 +172,7 @@ impl AstVisitor for AssignmentComparisonsVisitor {
                         } else {
                             format!("{}.{}", contract_definition.name, function_definition.name)
                         },
-                        format!("{:?}", function_definition.kind).to_lowercase()
+                        function_definition.kind
                     );
                 }
 
@@ -217,7 +215,7 @@ impl AstVisitor for AssignmentComparisonsVisitor {
                         } else {
                             format!("{}.{}", contract_definition.name, function_definition.name)
                         },
-                        format!("{:?}", function_definition.kind).to_lowercase()
+                        function_definition.kind
                     );
                 }
 

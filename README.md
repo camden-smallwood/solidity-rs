@@ -9,6 +9,7 @@ Some legacy versions of Solidity are inherently supported, but the focus is 0.8.
 - [x] `floating_solidity_version`
 - [x] `node_modules_imports`
 - [x] `large_literals`
+- [ ] ~~`tight_variable_packing`~~ (WIP)
 - [x] `redundant_getter_function`
 - [x] `require_without_message`
 - [x] `zero_address_parameters`

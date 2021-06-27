@@ -44,7 +44,7 @@ impl AstVisitor for UnusedReturnVisitor<'_> {
                                     println!(
                                         "\tThe {} `{}` {} makes a call to the {} `{}` {}, ignoring the returned {}",
 
-                                        format!("{:?}", function_definition.visibility).to_lowercase(),
+                                        function_definition.visibility,
 
                                         if function_definition.name.is_empty() {
                                             format!("{}", contract_definition.name)
@@ -52,7 +52,7 @@ impl AstVisitor for UnusedReturnVisitor<'_> {
                                             format!("{}.{}", contract_definition.name, function_definition.name)
                                         },
 
-                                        format!("{:?}", function_definition.kind).to_lowercase(),
+                                        function_definition.kind,
 
                                         format!("{:?}", called_function_definition.visibility).to_lowercase(),
 

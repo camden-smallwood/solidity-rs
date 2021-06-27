@@ -1,4 +1,4 @@
-use super::AstVisitor;
+use super::{AstVisitor, SourceUnitContext};
 use solidity::ast::SourceUnit;
 use std::io;
 
@@ -16,15 +16,15 @@ impl<'a> SourceUnitVisitor<'a> {
     }
 }
 
-impl<'a> AstVisitor for SourceUnitVisitor<'a> {
-    fn visit_source_unit(&mut self, source_unit: &solidity::ast::SourceUnit) -> io::Result<()> {
+impl AstVisitor for SourceUnitVisitor<'_> {
+    fn visit_source_unit<'a>(&mut self, context: &mut SourceUnitContext<'a>) -> io::Result<()> {
         if self.first_file {
             self.first_file = false;
         } else {
             println!();
         }
 
-        println!("{}:", source_unit.absolute_path.as_ref().map(|path| path.as_str()).unwrap_or("<ABSOLUTE_PATH_NOT_SET/>"));
+        println!("{}:", context.current_source_unit.absolute_path.as_ref().map(|path| path.as_str()).unwrap_or("<ABSOLUTE_PATH_NOT_SET/>"));
 
         Ok(())
     }

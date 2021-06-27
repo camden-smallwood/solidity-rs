@@ -1,4 +1,4 @@
-use super::AstVisitor;
+use super::{AstVisitor, FunctionDefinitionContext};
 use solidity::ast::SourceUnit;
 use std::io;
 
@@ -13,15 +13,9 @@ impl<'a> StateVariableShadowingVisitor<'a> {
     }
 }
 
-impl<'a> AstVisitor for StateVariableShadowingVisitor<'a> {
-    fn visit_function_definition(
-        &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        contract_definition: &solidity::ast::ContractDefinition,
-        _definition_node: &solidity::ast::ContractDefinitionNode,
-        function_definition: &solidity::ast::FunctionDefinition
-    ) -> io::Result<()> {
-        let contract_ids = match contract_definition.linearized_base_contracts.as_ref() {
+impl AstVisitor for StateVariableShadowingVisitor<'_> {
+    fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
+        let contract_ids = match context.contract_definition.linearized_base_contracts.as_ref() {
             Some(contract_ids) => contract_ids,
             None => return Ok(()),
         };
@@ -37,7 +31,7 @@ impl<'a> AstVisitor for StateVariableShadowingVisitor<'a> {
             }
 
             if let Some(base_contract_definition) = base_contract_definition {
-                for variable_declaration in function_definition.parameters.parameters.iter() {
+                for variable_declaration in context.function_definition.parameters.parameters.iter() {
                     for base_variable_declaration in base_contract_definition.variable_declarations() {
                         if let solidity::ast::Visibility::Private = base_variable_declaration.visibility {
                             continue;
@@ -47,15 +41,15 @@ impl<'a> AstVisitor for StateVariableShadowingVisitor<'a> {
                             println!(
                                 "\t{} {} {} has a {} {} parameter '{}' which shadows the {} {} {} state variable",
 
-                                format!("{:?}", function_definition.visibility),
+                                format!("{:?}", context.function_definition.visibility),
 
-                                if function_definition.name.is_empty() {
-                                    format!("{}", contract_definition.name)
+                                if context.function_definition.name.is_empty() {
+                                    format!("{}", context.contract_definition.name)
                                 } else {
-                                    format!("{}.{}", contract_definition.name, function_definition.name)
+                                    format!("{}.{}", context.contract_definition.name, context.function_definition.name)
                                 },
 
-                                format!("{:?}", function_definition.kind).to_lowercase(),
+                                context.function_definition.kind,
 
                                 variable_declaration.type_descriptions.type_string.as_ref().unwrap(),
 

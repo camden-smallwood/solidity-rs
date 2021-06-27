@@ -9,6 +9,7 @@ const ANALYZERS: &'static [(&'static str, for<'a> fn(&'a [solidity::ast::SourceU
     ("node_modules_imports", |_| Box::new(analysis::NodeModulesImportsVisitor)),
     ("abstract_contracts", |_| Box::new(analysis::AbstractContractsVisitor)),
     ("large_literals", |_| Box::new(analysis::LargeLiteralsVisitor::default())),
+    ("tight_variable_packing", |_| Box::new(analysis::TightVariablePackingVisitor::default())),
     ("redundant_getter_function", |source_units| Box::new(analysis::RedundantGetterFunctionVisitor::new(source_units))),
     ("require_without_message", |source_units| Box::new(analysis::RequireWithoutMessageVisitor::new(source_units))),
     ("state_variable_shadowing", |source_units| Box::new(analysis::StateVariableShadowingVisitor::new(source_units))),
@@ -100,7 +101,7 @@ fn main() -> io::Result<()> {
 
     let truffle_config_path = path.join("truffle-config.js");
 
-    if truffle_config_path.is_file() && truffle_config_path.exists() {
+    if truffle_config_path.is_file() {
         let build_path = path.join("build").join("contracts");
 
         if !build_path.exists() || !build_path.is_dir() {
@@ -149,51 +150,190 @@ fn main() -> io::Result<()> {
 
                 println!("{}`:", contract_definition.name);
 
-                for function_definition in contract_definition.function_definitions() {
-                    if function_definition.body.is_some() {
-                        print!("- [ ] `{}", function_definition.kind);
+                let mut lines = vec![];
 
-                        if function_definition.kind != solidity::ast::FunctionKind::Constructor {
-                            print!(" {}", function_definition.name);
-                        }
+                //
+                // Print enums
+                //
 
-                        print!("{}", function_definition.parameters);
-
-                        print!(" {}", function_definition.visibility);
-
-                        for modifier in function_definition.modifiers.iter() {
-                            print!(" {}", modifier);
-                        }
-
-                        if !function_definition.return_parameters.parameters.is_empty() {
-                            print!(" returns {}", function_definition.return_parameters);
-                        }
-
-                        println!("`");
+                for definition_node in contract_definition.nodes.iter() {
+                    if let solidity::ast::ContractDefinitionNode::EnumDefinition(enum_definition) = definition_node {
+                        lines.push(format!("- [ ] `enum {}`", enum_definition.name).to_string());
                     }
+                }
+
+                if !lines.is_empty() {
+                    println!();
+                    println!("#### Enums:");
+                    
+                    for line in lines.iter() {
+                        println!("{}", line);
+                    }
+
+                    lines.clear();
+                }
+
+                //
+                // Print structs
+                //
+                
+                for definition_node in contract_definition.nodes.iter() {
+                    if let solidity::ast::ContractDefinitionNode::StructDefinition(struct_definition) = definition_node {
+                        lines.push(format!("- [ ] `struct {}`", struct_definition.name).to_string());
+                    }
+                }
+
+                if !lines.is_empty() {
+                    println!();
+                    println!("#### Structs:");
+                    
+                    for line in lines.iter() {
+                        println!("{}", line);
+                    }
+
+                    lines.clear();
+                }
+                
+                //
+                // Print variables
+                //
+
+                for definition_node in contract_definition.nodes.iter() {
+                    if let solidity::ast::ContractDefinitionNode::VariableDeclaration(variable_declaration) = definition_node {
+                        lines.push(format!("- [ ] `{}`", variable_declaration).to_string());
+                    }
+                }
+
+                if !lines.is_empty() {
+                    println!();
+                    println!("#### Variables:");
+                    
+                    for line in lines.iter() {
+                        println!("{}", line);
+                    }
+
+                    lines.clear();
+                }
+
+                //
+                // Print modifiers
+                //
+
+                for definition_node in contract_definition.nodes.iter() {
+                    if let solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) = definition_node {
+                        let mut line = String::new();
+                        
+                        line.push_str("- [ ] `modifier");
+
+                        if !modifier_definition.name.is_empty() {
+                            line.push_str(format!(" {}", modifier_definition.name).as_str());
+                        }
+
+                        line.push_str(format!("{}", modifier_definition.parameters).as_str());
+                
+                        if modifier_definition.visibility != solidity::ast::Visibility::Internal {
+                            line.push_str(format!("{} {}", modifier_definition.parameters, modifier_definition.visibility).as_str());
+                        }
+                        
+                        if let Some(true) = modifier_definition.r#virtual {
+                            line.push_str(format!(" virtual").as_str());
+                        }
+                
+                        if let Some(overrides) = modifier_definition.overrides.as_ref() {
+                            line.push_str(format!(" {}", overrides).as_str());
+                        }
+                        
+                        line.push_str(format!("`").as_str());
+
+                        lines.push(line);
+                    }
+                }
+                
+                if !lines.is_empty() {
+                    println!();
+                    println!("#### Modifiers:");
+                    
+                    for line in lines.iter() {
+                        println!("{}", line);
+                    }
+
+                    lines.clear();
+                }
+
+                //
+                // Print functions
+                //
+
+                for definition_node in contract_definition.nodes.iter() {
+                    if let solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) = definition_node {
+                        if function_definition.body.is_none() {
+                            continue;
+                        }
+
+                        let mut line = String::new();
+
+                        line.push_str(format!("- [ ] `{}", function_definition.kind).as_str());
+
+                        if !function_definition.name.is_empty() {
+                            line.push_str(format!(" {}", function_definition.name).as_str());
+                        }
+                
+                        line.push_str(format!("{} {}", function_definition.parameters, function_definition.visibility).as_str());
+                        
+                        if function_definition.state_mutability != solidity::ast::StateMutability::NonPayable {
+                            line.push_str(format!(" {}", function_definition.state_mutability).as_str());
+                        }
+                
+                        if let Some(true) = function_definition.r#virtual {
+                            line.push_str(format!(" virtual").as_str());
+                        }
+                
+                        if let Some(overrides) = function_definition.overrides.as_ref() {
+                            line.push_str(format!(" {}", overrides).as_str());
+                        }
+                
+                        for modifier in function_definition.modifiers.iter() {
+                            line.push_str(format!(" {}", modifier).as_str());
+                        }
+                
+                        if !function_definition.return_parameters.parameters.is_empty() {
+                            line.push_str(format!(" returns {}", function_definition.return_parameters).as_str());
+                        }
+
+                        line.push_str(format!("`").as_str());
+
+                        lines.push(line);
+                    }
+                }
+
+                if !lines.is_empty() {
+                    println!();
+                    println!("#### Functions:");
+                    
+                    for line in lines.iter() {
+                        println!("{}", line);
+                    }
+
+                    lines.clear();
                 }
 
                 println!();
             }
+        
+            println!("---");
+            println!();
         }
-
-        println!();
-        println!("----------");
-        println!();
     }
 
-    let mut walker = analysis::AstWalker {
-        visitors: vec![
-            Box::new(analysis::SourceUnitVisitor::new(source_units.as_slice())),
-        ],
-        ..Default::default()
-    };
+    let mut visitors: Vec<Box<dyn analysis::AstVisitor>> = vec![
+        Box::new(analysis::SourceUnitVisitor::new(source_units.as_slice())),
+    ];
 
     for &(analyzer_name, analyzer_constructor_fn) in ANALYZERS {
         if analyzer_names.is_empty() || analyzer_names.contains(analyzer_name) {
-            walker.visitors.push(analyzer_constructor_fn(source_units.as_slice()));
+            visitors.push(analyzer_constructor_fn(source_units.as_slice()));
         }
     }
 
-    walker.analyze(source_units.as_slice())
+    analysis::visit_source_units(visitors, source_units.as_slice())
 }

@@ -1,4 +1,4 @@
-use super::AstVisitor;
+use super::{AstVisitor, FunctionDefinitionContext};
 use solidity::ast::{NodeID, SourceUnit};
 use std::io;
 
@@ -19,36 +19,27 @@ impl<'a> ExternalCallsInLoopVisitor<'a> {
 }
 
 impl AstVisitor for ExternalCallsInLoopVisitor<'_> {
-    fn visit_function_definition(
-        &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        _contract_definition: &solidity::ast::ContractDefinition,
-        _definition_node: &solidity::ast::ContractDefinitionNode,
-        _function_definition: &solidity::ast::FunctionDefinition,
-    ) -> io::Result<()> {
+    fn visit_function_definition<'a>(&mut self, _context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
         self.loop_ids.clear();
         self.makes_external_call = false;
 
         Ok(())
     }
 
-    fn leave_function_definition(
-        &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        contract_definition: &solidity::ast::ContractDefinition,
-        _definition_node: &solidity::ast::ContractDefinitionNode,
-        function_definition: &solidity::ast::FunctionDefinition,
-    ) -> io::Result<()> {
+    fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
         if self.makes_external_call {
             println!(
                 "\t{} {} {} makes an external call inside a loop",
-                format!("{:?}", function_definition.visibility),
-                if function_definition.name.is_empty() {
-                    format!("{}", contract_definition.name)
+
+                format!("{:?}", context.function_definition.visibility),
+
+                if context.function_definition.name.is_empty() {
+                    format!("{}", context.contract_definition.name)
                 } else {
-                    format!("{}.{}", contract_definition.name, function_definition.name)
+                    format!("{}.{}", context.contract_definition.name, context.function_definition.name)
                 },
-                format!("{:?}", function_definition.kind).to_lowercase()
+                
+                context.function_definition.kind
             );
         }
 

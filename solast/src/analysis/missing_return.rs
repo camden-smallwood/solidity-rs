@@ -1,10 +1,13 @@
-use super::AstVisitor;
+use super::{AstVisitor, FunctionDefinitionContext};
 
 use solidity::ast::{
     Assignment, Block, BlockOrStatement, ContractDefinition, ContractDefinitionNode,
-    FunctionDefinition, NodeID, SourceUnit, Statement,
+    NodeID, SourceUnit, Statement,
 };
-use yul::{InlineAssembly, YulAssignment, YulBlock, YulStatement};
+
+use yul::{
+    InlineAssembly, YulAssignment, YulBlock, YulStatement
+};
 
 use std::{
     collections::{HashMap, HashSet},
@@ -28,24 +31,18 @@ impl Default for MissingReturnVisitor {
 }
 
 impl AstVisitor for MissingReturnVisitor {
-    fn visit_function_definition(
-        &mut self,
-        _source_unit: &SourceUnit,
-        _contract_definition: &ContractDefinition,
-        _definition_node: &ContractDefinitionNode,
-        function_definition: &FunctionDefinition,
-    ) -> io::Result<()> {
-        if function_definition.return_parameters.parameters.is_empty() {
+    fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
+        if context.function_definition.return_parameters.parameters.is_empty() {
             return Ok(());
         }
 
-        if function_definition.body.is_none() {
+        if context.function_definition.body.is_none() {
             return Ok(());
         }
 
-        if !self.function_info.contains_key(&function_definition.id) {
+        if !self.function_info.contains_key(&context.function_definition.id) {
             self.function_info.insert(
-                function_definition.id,
+                context.function_definition.id,
                 FunctionInfo {
                     assigned_return_variables: HashSet::new(),
                 },
@@ -55,25 +52,19 @@ impl AstVisitor for MissingReturnVisitor {
         Ok(())
     }
 
-    fn leave_function_definition(
-        &mut self,
-        _source_unit: &SourceUnit,
-        contract_definition: &ContractDefinition,
-        _definition_node: &ContractDefinitionNode,
-        function_definition: &FunctionDefinition,
-    ) -> io::Result<()> {
-        let function_info = match self.function_info.get(&function_definition.id) {
+    fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
+        let function_info = match self.function_info.get(&context.function_definition.id) {
             Some(function_info) => function_info,
             None => return Ok(())
         };
 
-        if BlockOrStatement::Block(Box::new(function_definition.body.as_ref().unwrap().clone())).contains_returns() {
+        if BlockOrStatement::Block(Box::new(context.function_definition.body.as_ref().unwrap().clone())).contains_returns() {
             return Ok(());
         }
 
         let mut assigned = vec![];
 
-        for variable_declaration in function_definition.return_parameters.parameters.iter() {
+        for variable_declaration in context.function_definition.return_parameters.parameters.iter() {
             assigned.push(function_info.assigned_return_variables.contains(&variable_declaration.id));
         }
 
@@ -81,15 +72,15 @@ impl AstVisitor for MissingReturnVisitor {
             println!(
                 "\t{} {} {} is missing an explicit return statement",
 
-                format!("{:?}", function_definition.visibility),
+                format!("{:?}", context.function_definition.visibility),
 
-                if function_definition.name.is_empty() {
-                    format!("{}", contract_definition.name)
+                if context.function_definition.name.is_empty() {
+                    format!("{}", context.contract_definition.name)
                 } else {
-                    format!("{}.{}", contract_definition.name, function_definition.name)
+                    format!("{}.{}", context.contract_definition.name, context.function_definition.name)
                 },
 
-                function_definition.kind
+                context.function_definition.kind
             );
         }
 

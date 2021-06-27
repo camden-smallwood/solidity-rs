@@ -1,4 +1,4 @@
-use super::AstVisitor;
+use super::{AstVisitor, FunctionDefinitionContext};
 use solidity::ast::{NodeID, SourceUnit};
 use std::{collections::HashMap, io};
 
@@ -17,41 +17,30 @@ impl<'a> RawAddressTransferVisitor<'a> {
 }
 
 impl AstVisitor for RawAddressTransferVisitor<'_> {
-    fn visit_function_definition(
-        &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        _contract_definition: &solidity::ast::ContractDefinition,
-        _definition_node: &solidity::ast::ContractDefinitionNode,
-        function_definition: &solidity::ast::FunctionDefinition,
-    ) -> io::Result<()> {
-        if !self
-            .functions_transfer
-            .contains_key(&function_definition.id)
-        {
-            self.functions_transfer.insert(function_definition.id, 0);
+    fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
+        if !self.functions_transfer.contains_key(&context.function_definition.id) {
+            self.functions_transfer.insert(context.function_definition.id, 0);
         }
 
         Ok(())
     }
 
-    fn leave_function_definition(
-        &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        contract_definition: &solidity::ast::ContractDefinition,
-        _definition_node: &solidity::ast::ContractDefinitionNode,
-        function_definition: &solidity::ast::FunctionDefinition,
-    ) -> io::Result<()> {
-        if let Some(&transfer_count) = self.functions_transfer.get(&function_definition.id) {
+    fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
+        if let Some(&transfer_count) = self.functions_transfer.get(&context.function_definition.id) {
             if transfer_count > 0 {
                 println!(
                     "\t{} {} {} performs {}",
-                    format!("{:?}", function_definition.visibility),
-                    if function_definition.name.is_empty() {
-                        format!("{}", contract_definition.name)
+
+                    format!("{:?}", context.function_definition.visibility),
+
+                    if context.function_definition.name.is_empty() {
+                        format!("{}", context.contract_definition.name)
                     } else {
-                        format!("{}.{}", contract_definition.name, function_definition.name)
+                        format!("{}.{}", context.contract_definition.name, context.function_definition.name)
                     },
-                    format!("{:?}", function_definition.kind).to_lowercase(),
+
+                    context.function_definition.kind,
+                    
                     if transfer_count == 1 {
                         "a raw address transfer"
                     } else {

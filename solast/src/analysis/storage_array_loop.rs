@@ -1,4 +1,4 @@
-use super::AstVisitor;
+use super::{AstVisitor, FunctionDefinitionContext, VariableDeclarationContext};
 use solidity::ast::{NodeID, SourceUnit};
 use std::{
     collections::{HashMap, HashSet},
@@ -83,23 +83,17 @@ impl<'a> StorageArrayLoopVisitor<'a> {
 }
 
 impl AstVisitor for StorageArrayLoopVisitor<'_> {
-    fn visit_function_definition(
-        &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        _contract_definition: &solidity::ast::ContractDefinition,
-        _definition_node: &solidity::ast::ContractDefinitionNode,
-        function_definition: &solidity::ast::FunctionDefinition,
-    ) -> io::Result<()> {
-        if !self.functions.contains_key(&function_definition.id) {
+    fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
+        if !self.functions.contains_key(&context.function_definition.id) {
             self.functions.insert(
-                function_definition.id,
+                context.function_definition.id,
                 FunctionInfo {
                     loops_over_storage_array: false,
                 },
             );
         }
 
-        for variable_declaration in function_definition.parameters.parameters.iter() {
+        for variable_declaration in context.function_definition.parameters.parameters.iter() {
             if let solidity::ast::StorageLocation::Storage = variable_declaration.storage_location {
                 if let Some(solidity::ast::TypeName::ArrayTypeName(_)) = variable_declaration.type_name {
                     if !self.storage_arrays.contains(&variable_declaration.id) {
@@ -112,27 +106,21 @@ impl AstVisitor for StorageArrayLoopVisitor<'_> {
         Ok(())
     }
 
-    fn leave_function_definition(
-        &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        contract_definition: &solidity::ast::ContractDefinition,
-        _definition_node: &solidity::ast::ContractDefinitionNode,
-        function_definition: &solidity::ast::FunctionDefinition,
-    ) -> io::Result<()> {
-        if let Some(function_info) = self.functions.get(&function_definition.id) {
+    fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
+        if let Some(function_info) = self.functions.get(&context.function_definition.id) {
             if function_info.loops_over_storage_array {
                 println!(
                     "\t{} {} {} performs a loop over a storage array, querying the length over each iteration",
 
-                    format!("{:?}", function_definition.visibility),
+                    format!("{:?}", context.function_definition.visibility),
 
-                    if function_definition.name.is_empty() {
-                        format!("{}", contract_definition.name)
+                    if context.function_definition.name.is_empty() {
+                        format!("{}", context.contract_definition.name)
                     } else {
-                        format!("{}.{}", contract_definition.name, function_definition.name)
+                        format!("{}.{}", context.contract_definition.name, context.function_definition.name)
                     },
 
-                    format!("{:?}", function_definition.kind).to_lowercase()
+                    context.function_definition.kind
                 );
             }
         }
@@ -140,25 +128,16 @@ impl AstVisitor for StorageArrayLoopVisitor<'_> {
         Ok(())
     }
 
-    fn visit_variable_declaration<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        _contract_definition: &'a solidity::ast::ContractDefinition,
-        _definition_node: &'a solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&'a solidity::ast::Block>,
-        variable_declaration: &'a solidity::ast::VariableDeclaration,
-    ) -> io::Result<()> {
-        let storage_location = match &variable_declaration.storage_location {
-            solidity::ast::StorageLocation::Default if variable_declaration.state_variable => {
-                solidity::ast::StorageLocation::Storage
-            }
+    fn visit_variable_declaration<'a, 'b>(&mut self, context: &mut VariableDeclarationContext<'a, 'b>) -> io::Result<()> {
+        let storage_location = match &context.variable_declaration.storage_location {
+            solidity::ast::StorageLocation::Default if context.variable_declaration.state_variable => solidity::ast::StorageLocation::Storage,
             storage_location => storage_location.clone(),
         };
 
         if let solidity::ast::StorageLocation::Storage = storage_location {
-            if let Some(solidity::ast::TypeName::ArrayTypeName(_)) = variable_declaration.type_name {
-                if !self.storage_arrays.contains(&variable_declaration.id) {
-                    self.storage_arrays.insert(variable_declaration.id);
+            if let Some(solidity::ast::TypeName::ArrayTypeName(_)) = context.variable_declaration.type_name {
+                if !self.storage_arrays.contains(&context.variable_declaration.id) {
+                    self.storage_arrays.insert(context.variable_declaration.id);
                 }
             }
         }

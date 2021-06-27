@@ -1,4 +1,4 @@
-use super::AstVisitor;
+use super::{AstVisitor, FunctionDefinitionContext};
 use solidity::ast::SourceUnit;
 use std::io;
 
@@ -12,27 +12,21 @@ impl<'a> RedundantGetterFunctionVisitor<'a> {
     }
 }
 
-impl<'a> AstVisitor for RedundantGetterFunctionVisitor<'a> {
-    fn visit_function_definition(
-        &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        contract_definition: &solidity::ast::ContractDefinition,
-        _definition_node: &solidity::ast::ContractDefinitionNode,
-        function_definition: &solidity::ast::FunctionDefinition,
-    ) -> io::Result<()> {
-        if function_definition.name.is_empty() || function_definition.body.is_none() {
+impl AstVisitor for RedundantGetterFunctionVisitor<'_> {
+    fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
+        if context.function_definition.name.is_empty() || context.function_definition.body.is_none() {
             return Ok(());
         }
 
-        if function_definition.return_parameters.parameters.len() != 1 {
+        if context.function_definition.return_parameters.parameters.len() != 1 {
             return Ok(());
         }
 
-        if function_definition.visibility != solidity::ast::Visibility::Public {
+        if context.function_definition.visibility != solidity::ast::Visibility::Public {
             return Ok(());
         }
 
-        let statements = function_definition
+        let statements = context.function_definition
             .body
             .as_ref()
             .unwrap()
@@ -50,7 +44,7 @@ impl<'a> AstVisitor for RedundantGetterFunctionVisitor<'a> {
 
         let variable_declaration = match return_statement.expression.as_ref() {
             Some(solidity::ast::Expression::Identifier(identifier)) => {
-                match contract_definition.variable_declaration(identifier.referenced_declaration) {
+                match context.contract_definition.variable_declaration(identifier.referenced_declaration) {
                     Some(variable_declaration) => variable_declaration,
                     None => return Ok(()),
                 }
@@ -58,21 +52,21 @@ impl<'a> AstVisitor for RedundantGetterFunctionVisitor<'a> {
             _ => return Ok(()),
         };
 
-        if (variable_declaration.name != function_definition.name)
+        if (variable_declaration.name != context.function_definition.name)
             && !(variable_declaration.name.starts_with('_')
-                && variable_declaration.name[1..] == function_definition.name)
+                && variable_declaration.name[1..] == context.function_definition.name)
         {
             return Ok(());
         }
 
         println!(
             "\t{} {}.{} {} is a redundant getter function for the {} {}.{} state variable",
-            format!("{:?}", function_definition.visibility),
-            contract_definition.name,
-            function_definition.name,
-            format!("{:?}", function_definition.kind).to_lowercase(),
-            format!("{:?}", variable_declaration.visibility).to_lowercase(),
-            contract_definition.name,
+            format!("{:?}", context.function_definition.visibility),
+            context.contract_definition.name,
+            context.function_definition.name,
+            context.function_definition.kind,
+            variable_declaration.visibility,
+            context.contract_definition.name,
             variable_declaration.name,
         );
 

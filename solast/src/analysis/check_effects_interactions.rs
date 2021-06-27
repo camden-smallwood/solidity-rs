@@ -1,4 +1,4 @@
-use super::AstVisitor;
+use super::{AstVisitor, FunctionDefinitionContext};
 use solidity::ast::{NodeID, SourceUnit};
 use std::{collections::HashMap, io};
 
@@ -21,40 +21,31 @@ impl<'a> CheckEffectsInteractionsVisitor<'a> {
 }
 
 impl AstVisitor for CheckEffectsInteractionsVisitor<'_> {
-    fn visit_function_definition(
-        &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        _contract_definition: &solidity::ast::ContractDefinition,
-        _definition_node: &solidity::ast::ContractDefinitionNode,
-        _function_definition: &solidity::ast::FunctionDefinition,
-    ) -> io::Result<()> {
+    fn visit_function_definition<'a>(&mut self, _context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
         self.makes_external_call = false;
         self.makes_post_external_call_assignment = false;
 
         Ok(())
     }
 
-    fn leave_function_definition(
-        &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        contract_definition: &solidity::ast::ContractDefinition,
-        _definition_node: &solidity::ast::ContractDefinitionNode,
-        function_definition: &solidity::ast::FunctionDefinition,
-    ) -> io::Result<()> {
-        if let solidity::ast::FunctionKind::Constructor = function_definition.kind {
+    fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
+        if let solidity::ast::FunctionKind::Constructor = context.function_definition.kind {
             return Ok(());
         }
 
         if self.makes_external_call && self.makes_post_external_call_assignment {
             println!(
                 "\t{} {} {} ignores the Check-Effects-Interactions pattern",
-                format!("{:?}", function_definition.visibility),
-                if function_definition.name.is_empty() {
-                    format!("{}", contract_definition.name)
+
+                format!("{:?}", context.function_definition.visibility),
+
+                if context.function_definition.name.is_empty() {
+                    format!("{}", context.contract_definition.name)
                 } else {
-                    format!("{}.{}", contract_definition.name, function_definition.name)
+                    format!("{}.{}", context.contract_definition.name, context.function_definition.name)
                 },
-                format!("{:?}", function_definition.kind).to_lowercase()
+                
+                context.function_definition.kind
             );
         }
 

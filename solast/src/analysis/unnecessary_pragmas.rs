@@ -1,15 +1,14 @@
-use super::AstVisitor;
-use solidity::ast::SourceUnit;
+use super::{AstVisitor, SourceUnitContext};
 use std::io;
 
 pub struct UnnecessaryPragmasVisitor;
 
 impl AstVisitor for UnnecessaryPragmasVisitor {
-    fn visit_source_unit(&mut self, source_unit: &SourceUnit) -> io::Result<()> {
+    fn visit_source_unit<'a>(&mut self, context: &mut SourceUnitContext<'a>) -> io::Result<()> {
         let mut solidity: Vec<&str> = vec![];
         let mut abicoder: Vec<&str> = vec![];
 
-        for pragma_directive in source_unit.pragma_directives() {
+        for pragma_directive in context.current_source_unit.pragma_directives() {
             match pragma_directive.literals.first() {
                 Some(literal) if literal == "solidity" => {
                     assert!(solidity.is_empty());

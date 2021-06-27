@@ -26,7 +26,19 @@ impl Display for ModifierDefinition {
         }
 
         f.write_fmt(format_args!("{}", self.parameters))?;
+                
+        if self.visibility != Visibility::Internal {
+            f.write_fmt(format_args!("{} {}", self.parameters, self.visibility))?;
+        }
+        
+        if let Some(true) = self.r#virtual {
+            f.write_fmt(format_args!(" virtual"))?;
+        }
 
+        if let Some(overrides) = self.overrides.as_ref() {
+            f.write_fmt(format_args!(" {}", overrides))?;
+        }
+        
         f.write_fmt(format_args!(" {}", self.body))
     }
 }

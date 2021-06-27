@@ -1,4 +1,4 @@
-use super::AstVisitor;
+use super::{AstVisitor, FunctionDefinitionContext, ModifierDefinitionContext};
 use solidity::ast::{NodeID, SourceUnit};
 use std::{collections::HashMap, io};
 
@@ -17,23 +17,17 @@ impl<'a> RequireWithoutMessageVisitor<'a> {
 }
 
 impl AstVisitor for RequireWithoutMessageVisitor<'_> {
-    fn leave_modifier_definition(
-        &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        contract_definition: &solidity::ast::ContractDefinition,
-        _definition_node: &solidity::ast::ContractDefinitionNode,
-        modifier_definition: &solidity::ast::ModifierDefinition,
-    ) -> io::Result<()> {
-        if let Some(&requirement_count) = self.requirement_counts.get(&modifier_definition.id) {
+    fn leave_modifier_definition<'a>(&mut self, context: &mut ModifierDefinitionContext<'a>) -> io::Result<()> {
+        if let Some(&requirement_count) = self.requirement_counts.get(&context.modifier_definition.id) {
             println!(
                 "\t{} {} modifier has {} without {}",
 
-                format!("{:?}", modifier_definition.visibility),
+                format!("{:?}", context.modifier_definition.visibility),
 
-                if modifier_definition.name.is_empty() {
-                    format!("{}", contract_definition.name)
+                if context.modifier_definition.name.is_empty() {
+                    format!("{}", context.contract_definition.name)
                 } else {
-                    format!("{}.{}", contract_definition.name, modifier_definition.name)
+                    format!("{}.{}", context.contract_definition.name, context.modifier_definition.name)
                 },
 
                 if requirement_count > 1 {
@@ -53,26 +47,20 @@ impl AstVisitor for RequireWithoutMessageVisitor<'_> {
         Ok(())
     }
 
-    fn leave_function_definition(
-        &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        contract_definition: &solidity::ast::ContractDefinition,
-        _definition_node: &solidity::ast::ContractDefinitionNode,
-        function_definition: &solidity::ast::FunctionDefinition,
-    ) -> io::Result<()> {
-        if let Some(&requirement_count) = self.requirement_counts.get(&function_definition.id) {
+    fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
+        if let Some(&requirement_count) = self.requirement_counts.get(&context.function_definition.id) {
             println!(
                 "\t{} {} {} has {} without {}",
 
-                format!("{:?}", function_definition.visibility),
+                format!("{:?}", context.function_definition.visibility),
 
-                if function_definition.name.is_empty() {
-                    format!("{}", contract_definition.name)
+                if context.function_definition.name.is_empty() {
+                    format!("{}", context.contract_definition.name)
                 } else {
-                    format!("{}.{}", contract_definition.name, function_definition.name)
+                    format!("{}.{}", context.contract_definition.name, context.function_definition.name)
                 },
 
-                function_definition.kind,
+                context.function_definition.kind,
 
                 if requirement_count > 1 {
                     "requirements"

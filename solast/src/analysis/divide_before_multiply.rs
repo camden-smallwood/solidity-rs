@@ -30,7 +30,7 @@ impl AstVisitor for DivideBeforeMultiplyVisitor {
                             } else {
                                 format!("{}.{}", contract_definition.name, function_definition.name)
                             },
-                            format!("{:?}", function_definition.kind).to_lowercase()
+                            function_definition.kind
                         );
                     }
 
