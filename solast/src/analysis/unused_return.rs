@@ -1,4 +1,4 @@
-use super::AstVisitor;
+use super::{AstVisitor, StatementContext};
 use solidity::ast::SourceUnit;
 use std::io;
 
@@ -13,15 +13,8 @@ impl<'a> UnusedReturnVisitor<'a> {
 }
 
 impl AstVisitor for UnusedReturnVisitor<'_> {
-    fn visit_statement<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        contract_definition: &'a solidity::ast::ContractDefinition,
-        definition_node: &'a solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&'a solidity::ast::Block>,
-        statement: &'a solidity::ast::Statement,
-    ) -> io::Result<()> {
-        if let solidity::ast::Statement::ExpressionStatement(expression_statement) = statement {
+    fn visit_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> {
+        if let solidity::ast::Statement::ExpressionStatement(expression_statement) = context.statement {
             if let solidity::ast::Expression::FunctionCall(solidity::ast::FunctionCall {
                 expression,
                 ..
@@ -39,7 +32,7 @@ impl AstVisitor for UnusedReturnVisitor<'_> {
                 for source_unit in self.source_units.iter() {
                     if let Some((called_contract_definition, called_function_definition)) = source_unit.function_and_contract_definition(referenced_declaration) {
                         if !called_function_definition.return_parameters.parameters.is_empty() {
-                            match definition_node {
+                            match context.definition_node {
                                 solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
                                     println!(
                                         "\tThe {} `{}` {} makes a call to the {} `{}` {}, ignoring the returned {}",
@@ -47,9 +40,9 @@ impl AstVisitor for UnusedReturnVisitor<'_> {
                                         function_definition.visibility,
 
                                         if function_definition.name.is_empty() {
-                                            format!("{}", contract_definition.name)
+                                            format!("{}", context.contract_definition.name)
                                         } else {
-                                            format!("{}.{}", contract_definition.name, function_definition.name)
+                                            format!("{}.{}", context.contract_definition.name, function_definition.name)
                                         },
 
                                         function_definition.kind,
@@ -79,9 +72,9 @@ impl AstVisitor for UnusedReturnVisitor<'_> {
                                         format!("{:?}", modifier_definition.visibility).to_lowercase(),
 
                                         if modifier_definition.name.is_empty() {
-                                            format!("{}", contract_definition.name)
+                                            format!("{}", context.contract_definition.name)
                                         } else {
-                                            format!("{}.{}", contract_definition.name, modifier_definition.name)
+                                            format!("{}.{}", context.contract_definition.name, modifier_definition.name)
                                         },
 
                                         format!("{:?}", called_function_definition.visibility).to_lowercase(),

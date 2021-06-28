@@ -1,4 +1,4 @@
-use super::{AstVisitor, FunctionDefinitionContext};
+use super::{AstVisitor, BlockContext, FunctionDefinitionContext};
 use solidity::ast::{NodeID, SourceUnit};
 use std::{
     collections::{HashMap, HashSet},
@@ -30,17 +30,10 @@ impl<'a> UncheckedERC20TransferVisitor<'a> {
 }
 
 impl AstVisitor for UncheckedERC20TransferVisitor<'_> {
-    fn visit_block<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        _contract_definition: &'a solidity::ast::ContractDefinition,
-        _definition_node: &'a solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&'a solidity::ast::Block>,
-        block: &'a solidity::ast::Block,
-    ) -> io::Result<()> {
-        if !self.block_info.contains_key(&block.id) {
+    fn visit_block<'a, 'b>(&mut self, context: &mut BlockContext<'a, 'b>) -> io::Result<()> {
+        if !self.block_info.contains_key(&context.block.id) {
             self.block_info.insert(
-                block.id,
+                context.block.id,
                 BlockInfo {
                     verified_declarations: HashSet::new(),
                 },

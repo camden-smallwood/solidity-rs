@@ -1,33 +1,26 @@
-use solidity::ast::{Block, ContractDefinition, ContractDefinitionNode, ExpressionStatement, SourceUnit, Statement};
+use solidity::ast::{ContractDefinitionNode, ExpressionStatement, Statement};
 use std::io;
-use super::AstVisitor;
+use super::{AstVisitor, StatementContext};
 
 pub struct IneffectualStatementsVisitor;
 
 impl AstVisitor for IneffectualStatementsVisitor {
-    fn visit_statement<'a>(
-        &mut self,
-        _source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        _blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-    ) -> io::Result<()> {
-        let function_definition = match definition_node {
+    fn visit_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> {
+        let function_definition = match context.definition_node {
             ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition,
             _ => return Ok(())
         };
 
-        if let Statement::ExpressionStatement(ExpressionStatement { expression }) = statement {
+        if let Statement::ExpressionStatement(ExpressionStatement { expression }) = context.statement {
             match expression {
                 solidity::ast::Expression::Literal(literal) => {
                     println!(
                         "\t{} {} {} contains an ineffectual literal statement: {}",
                         format!("{:?}", function_definition.visibility),
                         if function_definition.name.is_empty() {
-                            format!("{}", contract_definition.name)
+                            format!("{}", context.contract_definition.name)
                         } else {
-                            format!("{}.{}", contract_definition.name, function_definition.name)
+                            format!("{}.{}", context.contract_definition.name, function_definition.name)
                         },
                         function_definition.kind,
                         literal
@@ -39,9 +32,9 @@ impl AstVisitor for IneffectualStatementsVisitor {
                         "\t{} {} {} contains an ineffectual identifier statement: {}",
                         format!("{:?}", function_definition.visibility),
                         if function_definition.name.is_empty() {
-                            format!("{}", contract_definition.name)
+                            format!("{}", context.contract_definition.name)
                         } else {
-                            format!("{}.{}", contract_definition.name, function_definition.name)
+                            format!("{}.{}", context.contract_definition.name, function_definition.name)
                         },
                         function_definition.kind,
                         identifier
@@ -53,9 +46,9 @@ impl AstVisitor for IneffectualStatementsVisitor {
                         "\t{} {} {} contains an ineffectual index access statement: {}",
                         format!("{:?}", function_definition.visibility),
                         if function_definition.name.is_empty() {
-                            format!("{}", contract_definition.name)
+                            format!("{}", context.contract_definition.name)
                         } else {
-                            format!("{}.{}", contract_definition.name, function_definition.name)
+                            format!("{}.{}", context.contract_definition.name, function_definition.name)
                         },
                         function_definition.kind,
                         index_access
@@ -67,9 +60,9 @@ impl AstVisitor for IneffectualStatementsVisitor {
                         "\t{} {} {} contains an ineffectual index range access statement: {}",
                         format!("{:?}", function_definition.visibility),
                         if function_definition.name.is_empty() {
-                            format!("{}", contract_definition.name)
+                            format!("{}", context.contract_definition.name)
                         } else {
-                            format!("{}.{}", contract_definition.name, function_definition.name)
+                            format!("{}.{}", context.contract_definition.name, function_definition.name)
                         },
                         function_definition.kind,
                         index_range_access
@@ -81,9 +74,9 @@ impl AstVisitor for IneffectualStatementsVisitor {
                         "\t{} {} {} contains an ineffectual member access statement: {}",
                         format!("{:?}", function_definition.visibility),
                         if function_definition.name.is_empty() {
-                            format!("{}", contract_definition.name)
+                            format!("{}", context.contract_definition.name)
                         } else {
-                            format!("{}.{}", contract_definition.name, function_definition.name)
+                            format!("{}.{}", context.contract_definition.name, function_definition.name)
                         },
                         function_definition.kind,
                         member_access
@@ -95,9 +88,9 @@ impl AstVisitor for IneffectualStatementsVisitor {
                         "\t{} {} {} contains an ineffectual binary operation statement: {}",
                         format!("{:?}", function_definition.visibility),
                         if function_definition.name.is_empty() {
-                            format!("{}", contract_definition.name)
+                            format!("{}", context.contract_definition.name)
                         } else {
-                            format!("{}.{}", contract_definition.name, function_definition.name)
+                            format!("{}.{}", context.contract_definition.name, function_definition.name)
                         },
                         function_definition.kind,
                         binary_operation
@@ -109,9 +102,9 @@ impl AstVisitor for IneffectualStatementsVisitor {
                         "\t{} {} {} contains an ineffectual conditional statement: {}",
                         format!("{:?}", function_definition.visibility),
                         if function_definition.name.is_empty() {
-                            format!("{}", contract_definition.name)
+                            format!("{}", context.contract_definition.name)
                         } else {
-                            format!("{}.{}", contract_definition.name, function_definition.name)
+                            format!("{}.{}", context.contract_definition.name, function_definition.name)
                         },
                         function_definition.kind,
                         conditional
@@ -123,9 +116,9 @@ impl AstVisitor for IneffectualStatementsVisitor {
                         "\t{} {} {} contains an ineffectual tuple expression statement: {}",
                         format!("{:?}", function_definition.visibility),
                         if function_definition.name.is_empty() {
-                            format!("{}", contract_definition.name)
+                            format!("{}", context.contract_definition.name)
                         } else {
-                            format!("{}.{}", contract_definition.name, function_definition.name)
+                            format!("{}.{}", context.contract_definition.name, function_definition.name)
                         },
                         function_definition.kind,
                         tuple_expression

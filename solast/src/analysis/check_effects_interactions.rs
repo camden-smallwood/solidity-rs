@@ -1,4 +1,4 @@
-use super::{AstVisitor, FunctionDefinitionContext};
+use super::{AstVisitor, FunctionDefinitionContext, StatementContext};
 use solidity::ast::{NodeID, SourceUnit};
 use std::{collections::HashMap, io};
 
@@ -52,34 +52,27 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_> {
         Ok(())
     }
 
-    fn visit_statement<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        contract_definition: &'a solidity::ast::ContractDefinition,
-        definition_node: &'a solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&'a solidity::ast::Block>,
-        statement: &'a solidity::ast::Statement,
-    ) -> io::Result<()> {
+    fn visit_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> {
         if let solidity::ast::Statement::VariableDeclarationStatement(
             solidity::ast::VariableDeclarationStatement {
                 declarations,
                 initial_value: Some(expression),
                 ..
             },
-        ) = statement
+        ) = context.statement
         {
-            let ids = contract_definition.get_assigned_state_variables(
+            let ids = context.contract_definition.get_assigned_state_variables(
                 self.source_units,
-                definition_node,
+                context.definition_node,
                 expression,
             );
 
             for &id in ids.iter() {
-                if contract_definition.hierarchy_contains_state_variable(self.source_units, id) {
+                if context.contract_definition.hierarchy_contains_state_variable(self.source_units, id) {
                     let state_variable = {
                         let mut state_variable = None;
 
-                        if let Some(contract_ids) = contract_definition.linearized_base_contracts.as_ref() {
+                        if let Some(contract_ids) = context.contract_definition.linearized_base_contracts.as_ref() {
                             for &contract_id in contract_ids.iter() {
                                 for source_unit in self.source_units.iter() {
                                     if let Some(contract_definition) = source_unit.contract_definition(contract_id) {
@@ -91,7 +84,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_> {
                                 }
                             }
                         } else {
-                            if let Some(variable_declaration) = contract_definition.variable_declaration(id) {
+                            if let Some(variable_declaration) = context.contract_definition.variable_declaration(id) {
                                 state_variable = Some(variable_declaration);
                             }
                         }

@@ -89,6 +89,24 @@ pub struct FunctionDefinitionContext<'a> {
     pub function_definition: &'a FunctionDefinition,
 }
 
+pub struct BlockContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub block: &'a Block,
+}
+
+pub struct StatementContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: &'a Statement,
+}
+
 #[allow(unused_variables)]
 pub trait AstVisitor {
     fn visit_source_unit<'a>(&mut self, context: &mut SourceUnitContext<'a>) -> io::Result<()> { Ok(()) }
@@ -127,38 +145,11 @@ pub trait AstVisitor {
     fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> { Ok(()) }
     fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> { Ok(()) }
 
-    fn visit_block<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        block: &'a Block,
-    ) -> io::Result<()> {
-        Ok(())
-    }
+    fn visit_block<'a, 'b>(&mut self, context: &mut BlockContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_block<'a, 'b>(&mut self, context: &mut BlockContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
-    fn leave_block<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        block: &'a Block,
-    ) -> io::Result<()> {
-        Ok(())
-    }
-
-    fn visit_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-    ) -> io::Result<()> {
-        Ok(())
-    }
+    fn visit_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
     fn visit_variable_declaration_statement<'a>(
         &mut self,
@@ -1014,21 +1005,17 @@ impl AstVisitor for AstVisitorData<'_> {
 
         let mut blocks = vec![];
 
-        self.visit_block(
-            context.current_source_unit,
-            context.contract_definition,
-            context.definition_node,
-            &mut blocks,
-            &context.modifier_definition.body,
-        )?;
+        let mut context = BlockContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: &mut blocks,
+            block: &context.modifier_definition.body,
+        };
 
-        self.leave_block(
-            context.current_source_unit,
-            context.contract_definition,
-            context.definition_node,
-            &mut blocks,
-            &context.modifier_definition.body,
-        )?;
+        self.visit_block(&mut context)?;
+        self.leave_block(&mut context)?;
 
         Ok(())
     }
@@ -1049,20 +1036,17 @@ impl AstVisitor for AstVisitorData<'_> {
         if let Some(block) = context.function_definition.body.as_ref() {
             let mut blocks = vec![];
 
-            self.visit_block(
-                context.current_source_unit,
-                context.contract_definition,
-                context.definition_node,
-                &mut blocks,
-                block,
-            )?;
-            self.leave_block(
-                context.current_source_unit,
-                context.contract_definition,
-                context.definition_node,
-                &mut blocks,
-                block,
-            )?;
+            let mut context = BlockContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: &mut blocks,
+                block
+            };
+    
+            self.visit_block(&mut context)?;
+            self.leave_block(&mut context)?;
         }
 
         Ok(())
@@ -1076,226 +1060,188 @@ impl AstVisitor for AstVisitorData<'_> {
         Ok(())
     }
 
-    fn visit_block<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        block: &'a Block,
-    ) -> io::Result<()> {
+    fn visit_block<'a, 'b>(&mut self, context: &mut BlockContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_block(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                block,
-            )?;
+            visitor.visit_block(context)?;
         }
 
-        blocks.push(block);
+        context.blocks.push(context.block);
 
-        for statement in block.statements.iter() {
-            self.visit_statement(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-            )?;
+        for statement in context.block.statements.iter() {
+            let mut context = StatementContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: context.blocks,
+                statement
+            };
+
+            self.visit_statement(&mut context)?;
+            self.leave_statement(&mut context)?;
         }
 
         Ok(())
     }
 
-    fn leave_block<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        block: &'a Block,
-    ) -> io::Result<()> {
-        blocks.pop();
+    fn leave_block<'a, 'b>(&mut self, context: &mut BlockContext<'a, 'b>) -> io::Result<()> {
+        context.blocks.pop();
 
         for visitor in self.visitors.iter_mut() {
-            visitor.leave_block(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                block,
-            )?;
+            visitor.leave_block(context)?;
         }
 
         Ok(())
     }
 
-    fn visit_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-    ) -> io::Result<()> {
+    fn visit_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_statement(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-            )?;
+            visitor.visit_statement(context)?;
         }
 
-        match statement {
+        match context.statement {
             Statement::VariableDeclarationStatement(variable_declaration_statement) => {
                 self.visit_variable_declaration_statement(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
                     variable_declaration_statement,
                 )?;
                 self.visit_variable_declaration_statement(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
                     variable_declaration_statement,
                 )?;
             }
 
             Statement::IfStatement(if_statement) => {
                 self.visit_if_statement(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
                     if_statement,
                 )?;
             }
 
             Statement::ForStatement(for_statement) => {
                 self.visit_for_statement(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
                     for_statement,
                 )?;
 
                 self.leave_for_statement(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
                     for_statement,
                 )?;
             }
 
             Statement::WhileStatement(while_statement) => {
                 self.visit_while_statement(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
                     while_statement,
                 )?;
 
                 self.leave_while_statement(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
                     while_statement,
                 )?;
             }
 
             Statement::EmitStatement(emit_statement) => {
                 self.visit_emit_statement(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
                     emit_statement,
                 )?;
             }
 
             Statement::TryStatement(try_statement) => {
                 self.visit_try_statement(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
                     try_statement,
                 )?;
             }
 
             Statement::RevertStatement(revert_statement) => {
                 self.visit_revert_statement(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
                     revert_statement,
                 )?;
             }
 
             Statement::UncheckedBlock(block) => {
-                self.visit_block(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
+                let mut context = BlockContext {
+                    source_units: &[], // TODO
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
                     block,
-                )?;
-                self.leave_block(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    block,
-                )?;
+                };
+                
+                self.visit_block(&mut context)?;
+                self.leave_block(&mut context)?;
             }
 
             Statement::Return(return_statement) => {
                 self.visit_return(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    Some(statement),
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
+                    Some(context.statement),
                     return_statement,
                 )?;
             }
 
             Statement::ExpressionStatement(expression_statement) => {
                 self.visit_expression(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    Some(statement),
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
+                    Some(context.statement),
                     &expression_statement.expression,
                 )?;
             }
 
             Statement::InlineAssembly(inline_assembly) => {
                 self.visit_inline_assembly(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
+                    context.statement,
                     inline_assembly,
                 )?;
             }
 
             Statement::UnhandledStatement { node_type, src, id } => {
-                self.visit_unhandled_statement(source_unit, node_type, src, id)?;
+                self.visit_unhandled_statement(context.current_source_unit, node_type, src, id)?;
             }
         }
 
@@ -1392,13 +1338,17 @@ impl AstVisitor for AstVisitorData<'_> {
         }
 
         if let Some(statement) = for_statement.initialization_expression.as_ref() {
-            self.visit_statement(
-                source_unit,
+            let mut context = StatementContext {
+                source_units: &[], // TODO
+                current_source_unit: source_unit,
                 contract_definition,
                 definition_node,
                 blocks,
-                statement,
-            )?;
+                statement
+            };
+
+            self.visit_statement(&mut context)?;
+            self.leave_statement(&mut context)?;
         }
 
         if let Some(expression) = for_statement.condition.as_ref() {
@@ -1413,13 +1363,17 @@ impl AstVisitor for AstVisitorData<'_> {
         }
 
         if let Some(statement) = for_statement.loop_expression.as_ref() {
-            self.visit_statement(
-                source_unit,
+            let mut context = StatementContext {
+                source_units: &[], // TODO
+                current_source_unit: source_unit,
                 contract_definition,
                 definition_node,
                 blocks,
-                statement,
-            )?;
+                statement
+            };
+
+            self.visit_statement(&mut context)?;
+            self.leave_statement(&mut context)?;
         }
 
         self.visit_block_or_statement(
@@ -1553,20 +1507,17 @@ impl AstVisitor for AstVisitorData<'_> {
         }
 
         for clause in try_statement.clauses.iter() {
-            self.visit_block(
-                source_unit,
+            let mut context = BlockContext {
+                source_units: &[], // TODO
+                current_source_unit: source_unit,
                 contract_definition,
                 definition_node,
                 blocks,
-                &clause.block,
-            )?;
-            self.leave_block(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                &clause.block,
-            )?;
+                block: &clause.block,
+            };
+            
+            self.visit_block(&mut context)?;
+            self.leave_block(&mut context)?;
         }
 
         Ok(())
@@ -1613,30 +1564,35 @@ impl AstVisitor for AstVisitorData<'_> {
 
         match block_or_statement {
             BlockOrStatement::Block(block) => {
-                self.visit_block(
-                    source_unit,
+                let mut context = BlockContext {
+                    source_units: &[], // TODO
+                    current_source_unit: source_unit,
                     contract_definition,
                     definition_node,
                     blocks,
                     block,
-                )?;
-                self.leave_block(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    block,
-                )
+                };
+                
+                self.visit_block(&mut context)?;
+                self.leave_block(&mut context)?;
             }
 
-            BlockOrStatement::Statement(statement) => self.visit_statement(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-            ),
+            BlockOrStatement::Statement(statement) => {
+                let mut context = StatementContext {
+                    source_units: &[], // TODO
+                    current_source_unit: source_unit,
+                    contract_definition,
+                    definition_node,
+                    blocks,
+                    statement
+                };
+    
+                self.visit_statement(&mut context)?;
+                self.leave_statement(&mut context)?;
+            }
         }
+
+        Ok(())
     }
 
     fn visit_return<'a>(

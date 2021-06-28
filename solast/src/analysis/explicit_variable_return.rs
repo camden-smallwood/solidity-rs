@@ -1,4 +1,4 @@
-use super::AstVisitor;
+use super::{AstVisitor, StatementContext};
 use solidity::ast::NodeID;
 use std::{collections::HashSet, io};
 
@@ -17,15 +17,8 @@ impl Default for ExplicitVariableReturnVisitor {
 }
 
 impl AstVisitor for ExplicitVariableReturnVisitor {
-    fn visit_statement<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        contract_definition: &'a solidity::ast::ContractDefinition,
-        definition_node: &'a solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&'a solidity::ast::Block>,
-        statement: &'a solidity::ast::Statement,
-    ) -> io::Result<()> {
-        let definition_id = match definition_node {
+    fn visit_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> {
+        let definition_id = match context.definition_node {
             solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
                 function_definition.id
             }
@@ -35,7 +28,7 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
             _ => return Ok(()),
         };
 
-        match statement {
+        match context.statement {
             solidity::ast::Statement::VariableDeclarationStatement(variable_declaration_statement) => {
                 for declaration in variable_declaration_statement.declarations.iter() {
                     if let Some(declaration) = declaration {
@@ -56,7 +49,7 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                             if !self.reported_functions.contains(&definition_id) {
                                 self.reported_functions.insert(definition_id);
 
-                                match definition_node {
+                                match context.definition_node {
                                     solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
                                         println!(
                                             "\tThe {} `{}` {} returns the local `{}` variable explicitly",
@@ -64,11 +57,11 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                             function_definition.visibility,
 
                                             if function_definition.name.is_empty() {
-                                                format!("{}", contract_definition.name)
+                                                format!("{}", context.contract_definition.name)
                                             } else {
                                                 format!(
                                                     "{}.{}",
-                                                    contract_definition.name, function_definition.name
+                                                    context.contract_definition.name, function_definition.name
                                                 )
                                             },
 
@@ -85,11 +78,11 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                             format!("{:?}", modifier_definition.visibility).to_lowercase(),
 
                                             if modifier_definition.name.is_empty() {
-                                                format!("{}", contract_definition.name)
+                                                format!("{}", context.contract_definition.name)
                                             } else {
                                                 format!(
                                                     "{}.{}",
-                                                    contract_definition.name, modifier_definition.name
+                                                    context.contract_definition.name, modifier_definition.name
                                                 )
                                             },
 
@@ -131,7 +124,7 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                             if !self.reported_functions.contains(&definition_id) {
                                 self.reported_functions.insert(definition_id);
 
-                                match definition_node {
+                                match context.definition_node {
                                     solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
                                         println!(
                                             "\tThe {} `{}` {} returns the local {} variables explicitly",
@@ -139,11 +132,11 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                             function_definition.visibility,
 
                                             if function_definition.name.is_empty() {
-                                                format!("{}", contract_definition.name)
+                                                format!("{}", context.contract_definition.name)
                                             } else {
                                                 format!(
                                                     "{}.{}",
-                                                    contract_definition.name, function_definition.name
+                                                    context.contract_definition.name, function_definition.name
                                                 )
                                             },
 
@@ -160,11 +153,11 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                             format!("{:?}", modifier_definition.visibility),
 
                                             if modifier_definition.name.is_empty() {
-                                                format!("{}", contract_definition.name)
+                                                format!("{}", context.contract_definition.name)
                                             } else {
                                                 format!(
                                                     "{}.{}",
-                                                    contract_definition.name, modifier_definition.name
+                                                    context.contract_definition.name, modifier_definition.name
                                                 )
                                             },
 
