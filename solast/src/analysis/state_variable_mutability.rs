@@ -20,6 +20,12 @@ impl<'a> StateVariableMutabilityVisitor<'a> {
     }
 }
 
+//
+// TODO:
+//   check for local variables which are bound to array state variable entries
+//   if the local variable mutates state, don't suggest the state variable
+//
+
 impl AstVisitor for StateVariableMutabilityVisitor<'_> {
     fn leave_contract_definition<'a>(&mut self, context: &mut super::ContractDefinitionContext<'a>) -> io::Result<()> {
         if let Some(contract_info) = self.contract_info.get(&context.contract_definition.id) {
