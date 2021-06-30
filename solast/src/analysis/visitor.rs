@@ -1171,7 +1171,7 @@ impl AstVisitor for AstVisitorData<'_> {
 
             Statement::UncheckedBlock(block) => {
                 let mut context = BlockContext {
-                    source_units: &[], // TODO
+                    source_units: context.source_units,
                     current_source_unit: context.current_source_unit,
                     contract_definition: context.contract_definition,
                     definition_node: context.definition_node,
@@ -1325,7 +1325,7 @@ impl AstVisitor for AstVisitorData<'_> {
 
         if let Some(statement) = context.for_statement.loop_expression.as_ref() {
             let mut context = StatementContext {
-                source_units: &[], // TODO
+                source_units: context.source_units,
                 current_source_unit: context.current_source_unit,
                 contract_definition: context.contract_definition,
                 definition_node: context.definition_node,
