@@ -4,6 +4,12 @@ use solidity::ast::{BinaryOperation, Block, ContractDefinition, ContractDefiniti
 
 pub struct DivideBeforeMultiplyVisitor;
 
+//
+// TODO:
+//   1. track variable assignments, transfering all operations that occurred
+//   2. retrieve operations from function calls
+//
+
 impl AstVisitor for DivideBeforeMultiplyVisitor {
     fn visit_binary_operation<'a>(
         &mut self,
