@@ -3,7 +3,7 @@ use std::{collections::HashSet, env, fs::File, io, path::PathBuf};
 pub mod analysis;
 pub mod truffle;
 
-const ANALYZERS: &'static [(&'static str, for<'a> fn(&'a [solidity::ast::SourceUnit]) -> Box<dyn analysis::AstVisitor + 'a>)] = &[
+const VISITORS: &'static [(&'static str, for<'a> fn(&'a [solidity::ast::SourceUnit]) -> Box<dyn analysis::AstVisitor + 'a>)] = &[
     ("no_spdx_identifier", |_| Box::new(analysis::NoSpdxIdentifierVisitor)),
     ("floating_solidity_version", |_| Box::new(analysis::FloatingSolidityVersionVisitor)),
     ("node_modules_imports", |_| Box::new(analysis::NodeModulesImportsVisitor)),
@@ -44,7 +44,7 @@ fn main() -> io::Result<()> {
 
     let mut path: Option<PathBuf> = None;
     let mut todo_list = false;
-    let mut analyzer_names: HashSet<String> = HashSet::new();
+    let mut visitor_names: HashSet<String> = HashSet::new();
     let mut contract_name: Option<String> = None;
 
     loop {
@@ -67,9 +67,9 @@ fn main() -> io::Result<()> {
                     contract_name = Some(s.trim_start_matches("contract=").into());
                 }
 
-                s if ANALYZERS.iter().find(|analyzer| analyzer.0 == s).is_some() => {
-                    if !analyzer_names.contains(s) {
-                        analyzer_names.insert(s.into());
+                s if VISITORS.iter().find(|visitor| visitor.0 == s).is_some() => {
+                    if !visitor_names.contains(s) {
+                        visitor_names.insert(s.into());
                     }
                 }
 
@@ -329,9 +329,9 @@ fn main() -> io::Result<()> {
         Box::new(analysis::SourceUnitVisitor::new(source_units.as_slice())),
     ];
 
-    for &(analyzer_name, analyzer_constructor_fn) in ANALYZERS {
-        if analyzer_names.is_empty() || analyzer_names.contains(analyzer_name) {
-            visitors.push(analyzer_constructor_fn(source_units.as_slice()));
+    for &(visitor_name, visitor_constructor_fn) in VISITORS {
+        if visitor_names.is_empty() || visitor_names.contains(visitor_name) {
+            visitors.push(visitor_constructor_fn(source_units.as_slice()));
         }
     }
 

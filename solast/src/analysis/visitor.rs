@@ -1248,6 +1248,14 @@ impl AstVisitor for AstVisitorData<'_> {
         Ok(())
     }
 
+    fn leave_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_statement(context)?;
+        }
+
+        Ok(())
+    }
+
     fn visit_variable_declaration_statement<'a>(
         &mut self,
         source_unit: &'a SourceUnit,
