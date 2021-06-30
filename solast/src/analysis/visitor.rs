@@ -11,6 +11,50 @@ pub struct SourceUnitContext<'a> {
     pub current_source_unit: &'a SourceUnit,
 }
 
+impl<'a> SourceUnitContext<'a> {
+    pub fn create_pragma_directive_context(&self, pragma_directive: &'a PragmaDirective) -> PragmaDirectiveContext<'a> {
+        PragmaDirectiveContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            pragma_directive
+        }
+    }
+
+    pub fn create_import_directive_context(&self, import_directive: &'a ImportDirective) -> ImportDirectiveContext<'a> {
+        ImportDirectiveContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            import_directive
+        }
+    }
+
+    pub fn create_contract_definition_context(&self, contract_definition: &'a ContractDefinition) -> ContractDefinitionContext<'a> {
+        ContractDefinitionContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition
+        }
+    }
+
+    pub fn create_struct_definition_context(&self, struct_definition: &'a StructDefinition) -> StructDefinitionContext<'a> {
+        StructDefinitionContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition: None,
+            struct_definition
+        }
+    }
+
+    pub fn create_enum_definition_context(&self, enum_definition: &'a EnumDefinition) -> EnumDefinitionContext<'a> {
+        EnumDefinitionContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition: None,
+            enum_definition
+        }
+    }
+}
+
 pub struct PragmaDirectiveContext<'a> {
     pub source_units: &'a [SourceUnit],
     pub current_source_unit: &'a SourceUnit,
@@ -27,6 +71,35 @@ pub struct ContractDefinitionContext<'a> {
     pub source_units: &'a [SourceUnit],
     pub current_source_unit: &'a SourceUnit,
     pub contract_definition: &'a ContractDefinition,
+}
+
+impl<'a> ContractDefinitionContext<'a> {
+    pub fn create_using_for_directive_context(&self, using_for_directive: &'a UsingForDirective) -> UsingForDirectiveContext<'a> {
+        UsingForDirectiveContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition: self.contract_definition,
+            using_for_directive
+        }
+    }
+
+    pub fn create_struct_definition_context(&self, struct_definition: &'a StructDefinition) -> StructDefinitionContext<'a> {
+        StructDefinitionContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition: Some(self.contract_definition),
+            struct_definition
+        }
+    }
+
+    pub fn create_enum_definition_context(&self, enum_definition: &'a EnumDefinition) -> EnumDefinitionContext<'a> {
+        EnumDefinitionContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition: Some(self.contract_definition),
+            enum_definition
+        }
+    }
 }
 
 pub struct StructDefinitionContext<'a> {
@@ -670,58 +743,31 @@ impl AstVisitor for AstVisitorData<'_> {
         for node in context.current_source_unit.nodes.iter() {
             match node {
                 SourceUnitNode::PragmaDirective(pragma_directive) => {
-                    let mut context = PragmaDirectiveContext {
-                        source_units: context.source_units,
-                        current_source_unit: context.current_source_unit,
-                        pragma_directive
-                    };
-
+                    let mut context = context.create_pragma_directive_context(pragma_directive);
                     self.visit_pragma_directive(&mut context)?;
                     self.leave_pragma_directive(&mut context)?;
                 }
 
                 SourceUnitNode::ImportDirective(import_directive) => {
-                    let mut context = ImportDirectiveContext {
-                        source_units: context.source_units,
-                        current_source_unit: context.current_source_unit,
-                        import_directive
-                    };
-
+                    let mut context = context.create_import_directive_context(import_directive);
                     self.visit_import_directive(&mut context)?;
                     self.leave_import_directive(&mut context)?;
                 }
 
                 SourceUnitNode::ContractDefinition(contract_definition) => {
-                    let mut context = ContractDefinitionContext {
-                        source_units: context.source_units,
-                        current_source_unit: context.current_source_unit,
-                        contract_definition
-                    };
-
+                    let mut context = context.create_contract_definition_context(contract_definition);
                     self.visit_contract_definition(&mut context)?;
                     self.leave_contract_definition(&mut context)?;
                 }
 
                 SourceUnitNode::StructDefinition(struct_definition) => {
-                    let mut context = StructDefinitionContext {
-                        source_units: context.source_units,
-                        current_source_unit: context.current_source_unit,
-                        contract_definition: None,
-                        struct_definition
-                    };
-
+                    let mut context = context.create_struct_definition_context(struct_definition);
                     self.visit_struct_definition(&mut context)?;
                     self.leave_struct_definition(&mut context)?;
                 }
 
                 SourceUnitNode::EnumDefinition(enum_definition) => {
-                    let mut context = EnumDefinitionContext {
-                        source_units: context.source_units,
-                        current_source_unit: context.current_source_unit,
-                        contract_definition: None,
-                        enum_definition
-                    };
-
+                    let mut context = context.create_enum_definition_context(enum_definition);
                     self.visit_enum_definition(&mut context)?;
                     self.leave_enum_definition(&mut context)?;
                 }
