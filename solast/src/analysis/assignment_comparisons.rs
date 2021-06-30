@@ -1,7 +1,7 @@
 use super::AstVisitor;
 use solidity::ast::{
-    Block, Conditional, ContractDefinition, ContractDefinitionNode, Expression, ForStatement,
-    FunctionCall, Identifier, IfStatement, SourceUnit, Statement, WhileStatement,
+    Block, Conditional, ContractDefinition, ContractDefinitionNode, Expression,
+    FunctionCall, Identifier, SourceUnit, Statement,
 };
 use std::io;
 
@@ -63,24 +63,17 @@ impl AstVisitor for AssignmentComparisonsVisitor {
         Ok(())
     }
 
-    fn visit_if_statement<'a>(
-        &mut self,
-        _source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        _blocks: &mut Vec<&'a Block>,
-        if_statement: &'a IfStatement,
-    ) -> io::Result<()> {
-        if if_statement.condition.contains_operation("=") {
-            match definition_node {
+    fn visit_if_statement<'a, 'b>(&mut self, context: &mut super::IfStatementContext<'a, 'b>) -> io::Result<()> {
+        if context.if_statement.condition.contains_operation("=") {
+            match context.definition_node {
                 solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
                     println!(
                         "\t{} {} {} contains an if statement with a condition that performs an assignment",
                         format!("{:?}", function_definition.visibility),
                         if function_definition.name.is_empty() {
-                            format!("{}", contract_definition.name)
+                            format!("{}", context.contract_definition.name)
                         } else {
-                            format!("{}.{}", contract_definition.name, function_definition.name)
+                            format!("{}.{}", context.contract_definition.name, function_definition.name)
                         },
                         function_definition.kind
                     );
@@ -91,9 +84,9 @@ impl AstVisitor for AssignmentComparisonsVisitor {
                         "\t{} {} modifier contains an if statement with a condition that performs an assignment",
                         format!("{:?}", modifier_definition.visibility),
                         if modifier_definition.name.is_empty() {
-                            format!("{}", contract_definition.name)
+                            format!("{}", context.contract_definition.name)
                         } else {
-                            format!("{}.{}", contract_definition.name, modifier_definition.name)
+                            format!("{}.{}", context.contract_definition.name, modifier_definition.name)
                         }
                     );
                 }
@@ -105,17 +98,10 @@ impl AstVisitor for AssignmentComparisonsVisitor {
         Ok(())
     }
 
-    fn visit_for_statement<'a>(
-        &mut self,
-        _source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        _blocks: &mut Vec<&'a Block>,
-        for_statement: &'a ForStatement,
-    ) -> io::Result<()> {
-        if let Some(condition) = for_statement.condition.as_ref() {
+    fn visit_for_statement<'a, 'b>(&mut self, context: &mut super::ForStatementContext<'a, 'b>) -> io::Result<()> {
+        if let Some(condition) = context.for_statement.condition.as_ref() {
             if condition.contains_operation("=") {
-                match definition_node {
+                match context.definition_node {
                     solidity::ast::ContractDefinitionNode::FunctionDefinition(
                         function_definition,
                     ) => {
@@ -123,9 +109,9 @@ impl AstVisitor for AssignmentComparisonsVisitor {
                             "\t{} {} {} contains a for statement with a condition that performs an assignment",
                             format!("{:?}", function_definition.visibility),
                             if function_definition.name.is_empty() {
-                                format!("{}", contract_definition.name)
+                                format!("{}", context.contract_definition.name)
                             } else {
-                                format!("{}.{}", contract_definition.name, function_definition.name)
+                                format!("{}.{}", context.contract_definition.name, function_definition.name)
                             },
                             function_definition.kind
                         );
@@ -138,9 +124,9 @@ impl AstVisitor for AssignmentComparisonsVisitor {
                             "\t{} {} modifier contains a for statement with a condition that performs an assignment",
                             format!("{:?}", modifier_definition.visibility),
                             if modifier_definition.name.is_empty() {
-                                format!("{}", contract_definition.name)
+                                format!("{}", context.contract_definition.name)
                             } else {
-                                format!("{}.{}", contract_definition.name, modifier_definition.name)
+                                format!("{}.{}", context.contract_definition.name, modifier_definition.name)
                             }
                         );
                     }
@@ -153,24 +139,17 @@ impl AstVisitor for AssignmentComparisonsVisitor {
         Ok(())
     }
 
-    fn visit_while_statement<'a>(
-        &mut self,
-        _source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        _blocks: &mut Vec<&'a Block>,
-        while_statement: &'a WhileStatement,
-    ) -> io::Result<()> {
-        if while_statement.condition.contains_operation("=") {
-            match definition_node {
+    fn visit_while_statement<'a, 'b>(&mut self, context: &mut super::WhileStatementContext<'a, 'b>) -> io::Result<()> {
+        if context.while_statement.condition.contains_operation("=") {
+            match context.definition_node {
                 solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
                     println!(
                         "\t{} {} {} contains a while statement with a condition that performs an assignment",
                         format!("{:?}", function_definition.visibility),
                         if function_definition.name.is_empty() {
-                            format!("{}", contract_definition.name)
+                            format!("{}", context.contract_definition.name)
                         } else {
-                            format!("{}.{}", contract_definition.name, function_definition.name)
+                            format!("{}.{}", context.contract_definition.name, function_definition.name)
                         },
                         function_definition.kind
                     );
@@ -181,9 +160,9 @@ impl AstVisitor for AssignmentComparisonsVisitor {
                         "\t{} {} modifier contains a while statement with a condition that performs an assignment",
                         format!("{:?}", modifier_definition.visibility),
                         if modifier_definition.name.is_empty() {
-                            format!("{}", contract_definition.name)
+                            format!("{}", context.contract_definition.name)
                         } else {
-                            format!("{}.{}", contract_definition.name, modifier_definition.name)
+                            format!("{}.{}", context.contract_definition.name, modifier_definition.name)
                         }
                     );
                 }

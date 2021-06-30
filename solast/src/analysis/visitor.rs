@@ -107,6 +107,42 @@ pub struct StatementContext<'a, 'b> {
     pub statement: &'a Statement,
 }
 
+pub struct VariableDeclarationStatementContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub variable_declaration_statement: &'a VariableDeclarationStatement,
+}
+
+pub struct IfStatementContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub if_statement: &'a IfStatement,
+}
+
+pub struct ForStatementContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub for_statement: &'a ForStatement,
+}
+
+pub struct WhileStatementContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub while_statement: &'a WhileStatement,
+}
+
 #[allow(unused_variables)]
 pub trait AstVisitor {
     fn visit_source_unit<'a>(&mut self, context: &mut SourceUnitContext<'a>) -> io::Result<()> { Ok(()) }
@@ -151,71 +187,17 @@ pub trait AstVisitor {
     fn visit_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
     fn leave_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
-    fn visit_variable_declaration_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        variable_declaration_statement: &'a VariableDeclarationStatement,
-    ) -> io::Result<()> {
-        Ok(())
-    }
+    fn visit_variable_declaration_statement<'a, 'b>(&mut self, context: &mut VariableDeclarationStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_variable_declaration_statement<'a, 'b>(&mut self, context: &mut VariableDeclarationStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
-    fn visit_if_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        if_statement: &'a IfStatement,
-    ) -> io::Result<()> {
-        Ok(())
-    }
+    fn visit_if_statement<'a, 'b>(&mut self, context: &mut IfStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_if_statement<'a, 'b>(&mut self, context: &mut IfStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
-    fn visit_for_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        for_statement: &'a ForStatement,
-    ) -> io::Result<()> {
-        Ok(())
-    }
+    fn visit_for_statement<'a, 'b>(&mut self, context: &mut ForStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_for_statement<'a, 'b>(&mut self, context: &mut ForStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
-    fn leave_for_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        for_statement: &'a ForStatement,
-    ) -> io::Result<()> {
-        Ok(())
-    }
-
-    fn visit_while_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        while_statement: &'a WhileStatement,
-    ) -> io::Result<()> {
-        Ok(())
-    }
-
-    fn leave_while_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        while_statement: &'a WhileStatement,
-    ) -> io::Result<()> {
-        Ok(())
-    }
+    fn visit_while_statement<'a, 'b>(&mut self, context: &mut WhileStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_while_statement<'a, 'b>(&mut self, context: &mut WhileStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
     fn visit_emit_statement<'a>(
         &mut self,
@@ -711,6 +693,7 @@ impl AstVisitor for AstVisitorData<'_> {
                     };
 
                     self.visit_contract_definition(&mut context)?;
+                    self.leave_contract_definition(&mut context)?;
                 }
 
                 SourceUnitNode::StructDefinition(struct_definition) => {
@@ -1101,66 +1084,59 @@ impl AstVisitor for AstVisitorData<'_> {
 
         match context.statement {
             Statement::VariableDeclarationStatement(variable_declaration_statement) => {
-                self.visit_variable_declaration_statement(
-                    context.current_source_unit,
-                    context.contract_definition,
-                    context.definition_node,
-                    context.blocks,
-                    variable_declaration_statement,
-                )?;
-                self.visit_variable_declaration_statement(
-                    context.current_source_unit,
-                    context.contract_definition,
-                    context.definition_node,
-                    context.blocks,
-                    variable_declaration_statement,
-                )?;
+                let mut context = VariableDeclarationStatementContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    variable_declaration_statement
+                };
+
+                self.visit_variable_declaration_statement(&mut context)?;
+                self.leave_variable_declaration_statement(&mut context)?;
             }
 
             Statement::IfStatement(if_statement) => {
-                self.visit_if_statement(
-                    context.current_source_unit,
-                    context.contract_definition,
-                    context.definition_node,
-                    context.blocks,
-                    if_statement,
-                )?;
+                let mut context = IfStatementContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    if_statement
+                };
+
+                self.visit_if_statement(&mut context)?;
+                self.leave_if_statement(&mut context)?;
             }
 
             Statement::ForStatement(for_statement) => {
-                self.visit_for_statement(
-                    context.current_source_unit,
-                    context.contract_definition,
-                    context.definition_node,
-                    context.blocks,
-                    for_statement,
-                )?;
+                let mut context = ForStatementContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    for_statement
+                };
 
-                self.leave_for_statement(
-                    context.current_source_unit,
-                    context.contract_definition,
-                    context.definition_node,
-                    context.blocks,
-                    for_statement,
-                )?;
+                self.visit_for_statement(&mut context)?;
+                self.leave_for_statement(&mut context)?;
             }
 
             Statement::WhileStatement(while_statement) => {
-                self.visit_while_statement(
-                    context.current_source_unit,
-                    context.contract_definition,
-                    context.definition_node,
-                    context.blocks,
-                    while_statement,
-                )?;
+                let mut context = WhileStatementContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    while_statement
+                };
 
-                self.leave_while_statement(
-                    context.current_source_unit,
-                    context.contract_definition,
-                    context.definition_node,
-                    context.blocks,
-                    while_statement,
-                )?;
+                self.visit_while_statement(&mut context)?;
+                self.leave_while_statement(&mut context)?;
             }
 
             Statement::EmitStatement(emit_statement) => {
@@ -1256,30 +1232,17 @@ impl AstVisitor for AstVisitorData<'_> {
         Ok(())
     }
 
-    fn visit_variable_declaration_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        variable_declaration_statement: &'a VariableDeclarationStatement,
-    ) -> io::Result<()> {
+    fn visit_variable_declaration_statement<'a, 'b>(&mut self, context: &mut VariableDeclarationStatementContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_variable_declaration_statement(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                variable_declaration_statement,
-            )?;
+            visitor.visit_variable_declaration_statement(context)?;
         }
 
-        if let Some(initial_value) = variable_declaration_statement.initial_value.as_ref() {
+        if let Some(initial_value) = context.variable_declaration_statement.initial_value.as_ref() {
             self.visit_expression(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
+                context.current_source_unit,
+                context.contract_definition,
+                context.definition_node,
+                context.blocks,
                 None,
                 initial_value,
             )?;
@@ -1288,38 +1251,33 @@ impl AstVisitor for AstVisitorData<'_> {
         Ok(())
     }
 
-    fn visit_if_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        if_statement: &'a IfStatement,
-    ) -> io::Result<()> {
+    fn leave_variable_declaration_statement<'a, 'b>(&mut self, context: &mut VariableDeclarationStatementContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_if_statement(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                if_statement,
-            )?;
+            visitor.leave_variable_declaration_statement(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_if_statement<'a, 'b>(&mut self, context: &mut IfStatementContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_if_statement(context)?;
         }
 
         self.visit_block_or_statement(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            &if_statement.true_body,
+            context.current_source_unit,
+            context.contract_definition,
+            context.definition_node,
+            context.blocks,
+            &context.if_statement.true_body,
         )?;
 
-        if let Some(false_body) = if_statement.false_body.as_ref() {
+        if let Some(false_body) = context.if_statement.false_body.as_ref() {
             self.visit_block_or_statement(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
+                context.current_source_unit,
+                context.contract_definition,
+                context.definition_node,
+                context.blocks,
                 false_body,
             )?;
         }
@@ -1327,31 +1285,26 @@ impl AstVisitor for AstVisitorData<'_> {
         Ok(())
     }
 
-    fn visit_for_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        for_statement: &'a ForStatement,
-    ) -> io::Result<()> {
+    fn leave_if_statement<'a, 'b>(&mut self, context: &mut IfStatementContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_for_statement(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                for_statement,
-            )?;
+            visitor.leave_if_statement(context)?;
         }
 
-        if let Some(statement) = for_statement.initialization_expression.as_ref() {
+        Ok(())
+    }
+
+    fn visit_for_statement<'a, 'b>(&mut self, context: &mut ForStatementContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_for_statement(context)?;
+        }
+
+        if let Some(statement) = context.for_statement.initialization_expression.as_ref() {
             let mut context = StatementContext {
-                source_units: &[], // TODO
-                current_source_unit: source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: context.blocks,
                 statement
             };
 
@@ -1359,24 +1312,24 @@ impl AstVisitor for AstVisitorData<'_> {
             self.leave_statement(&mut context)?;
         }
 
-        if let Some(expression) = for_statement.condition.as_ref() {
+        if let Some(expression) = context.for_statement.condition.as_ref() {
             self.visit_expression(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
+                context.current_source_unit,
+                context.contract_definition,
+                context.definition_node,
+                context.blocks,
                 None,
                 expression,
             )?;
         }
 
-        if let Some(statement) = for_statement.loop_expression.as_ref() {
+        if let Some(statement) = context.for_statement.loop_expression.as_ref() {
             let mut context = StatementContext {
                 source_units: &[], // TODO
-                current_source_unit: source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: context.blocks,
                 statement
             };
 
@@ -1385,91 +1338,52 @@ impl AstVisitor for AstVisitorData<'_> {
         }
 
         self.visit_block_or_statement(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            &for_statement.body,
+            context.current_source_unit,
+            context.contract_definition,
+            context.definition_node,
+            context.blocks,
+            &context.for_statement.body,
         )?;
 
         Ok(())
     }
 
-    fn leave_for_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        for_statement: &'a ForStatement,
-    ) -> io::Result<()> {
+    fn leave_for_statement<'a, 'b>(&mut self, context: &mut ForStatementContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.leave_for_statement(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                for_statement,
-            )?;
+            visitor.leave_for_statement(context)?;
         }
 
         Ok(())
     }
 
-    fn visit_while_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        while_statement: &'a WhileStatement,
-    ) -> io::Result<()> {
+    fn visit_while_statement<'a, 'b>(&mut self, context: &mut WhileStatementContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_while_statement(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                while_statement,
-            )?;
+            visitor.visit_while_statement(context)?;
         }
 
         self.visit_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
+            context.current_source_unit,
+            context.contract_definition,
+            context.definition_node,
+            context.blocks,
             None,
-            &while_statement.condition,
+            &context.while_statement.condition,
         )?;
 
         self.visit_block_or_statement(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            &while_statement.body,
+            context.current_source_unit,
+            context.contract_definition,
+            context.definition_node,
+            context.blocks,
+            &context.while_statement.body,
         )?;
 
         Ok(())
     }
 
-    fn leave_while_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        while_statement: &'a WhileStatement,
-    ) -> io::Result<()> {
+    fn leave_while_statement<'a, 'b>(&mut self, context: &mut WhileStatementContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.leave_while_statement(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                while_statement,
-            )?;
+            visitor.leave_while_statement(context)?;
         }
 
         Ok(())

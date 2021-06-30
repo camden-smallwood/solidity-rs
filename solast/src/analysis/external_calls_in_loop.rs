@@ -46,30 +46,16 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_> {
         Ok(())
     }
 
-    fn visit_for_statement<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        _contract_definition: &'a solidity::ast::ContractDefinition,
-        _definition_node: &'a solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&'a solidity::ast::Block>,
-        for_statement: &'a solidity::ast::ForStatement,
-    ) -> io::Result<()> {
-        self.loop_ids.push(for_statement.id);
+    fn visit_for_statement<'a, 'b>(&mut self, context: &mut super::ForStatementContext<'a, 'b>) -> io::Result<()> {
+        self.loop_ids.push(context.for_statement.id);
 
         Ok(())
     }
 
-    fn leave_for_statement<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        _contract_definition: &'a solidity::ast::ContractDefinition,
-        _definition_node: &'a solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&'a solidity::ast::Block>,
-        for_statement: &'a solidity::ast::ForStatement,
-    ) -> io::Result<()> {
+    fn leave_for_statement<'a, 'b>(&mut self, context: &mut super::ForStatementContext<'a, 'b>) -> io::Result<()> {
         match self.loop_ids.pop() {
             Some(loop_id) => {
-                if loop_id != for_statement.id {
+                if loop_id != context.for_statement.id {
                     return Err(io::Error::new(io::ErrorKind::InvalidData, "asdf"));
                 }
             }
@@ -85,30 +71,16 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_> {
         Ok(())
     }
 
-    fn visit_while_statement<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        _contract_definition: &'a solidity::ast::ContractDefinition,
-        _definition_node: &'a solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&'a solidity::ast::Block>,
-        while_statement: &'a solidity::ast::WhileStatement,
-    ) -> io::Result<()> {
-        self.loop_ids.push(while_statement.id);
+    fn visit_while_statement<'a, 'b>(&mut self, context: &mut super::WhileStatementContext<'a, 'b>) -> io::Result<()> {
+        self.loop_ids.push(context.while_statement.id);
 
         Ok(())
     }
 
-    fn leave_while_statement<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        _contract_definition: &'a solidity::ast::ContractDefinition,
-        _definition_node: &'a solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&'a solidity::ast::Block>,
-        while_statement: &'a solidity::ast::WhileStatement,
-    ) -> io::Result<()> {
+    fn leave_while_statement<'a, 'b>(&mut self, context: &mut super::WhileStatementContext<'a, 'b>) -> io::Result<()> {
         match self.loop_ids.pop() {
             Some(loop_id) => {
-                if loop_id != while_statement.id {
+                if loop_id != context.while_statement.id {
                     return Err(io::Error::new(io::ErrorKind::InvalidData, "asdf"));
                 }
             }

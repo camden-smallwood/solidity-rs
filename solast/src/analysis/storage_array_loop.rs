@@ -1,4 +1,4 @@
-use super::{AstVisitor, FunctionDefinitionContext, VariableDeclarationContext};
+use super::{AstVisitor, ForStatementContext, FunctionDefinitionContext, VariableDeclarationContext};
 use solidity::ast::{NodeID, SourceUnit};
 use std::{
     collections::{HashMap, HashSet},
@@ -145,21 +145,14 @@ impl AstVisitor for StorageArrayLoopVisitor<'_> {
         Ok(())
     }
 
-    fn visit_for_statement<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        _contract_definition: &'a solidity::ast::ContractDefinition,
-        definition_node: &'a solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&'a solidity::ast::Block>,
-        for_statement: &'a solidity::ast::ForStatement,
-    ) -> io::Result<()> {
-        let definition_id = match definition_node {
+    fn visit_for_statement<'a, 'b>(&mut self, context: &mut ForStatementContext<'a, 'b>) -> io::Result<()> {
+        let definition_id = match context.definition_node {
             solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
             solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,
             _ => return Ok(())
         };
 
-        if let Some(expression) = for_statement.condition.as_ref() {
+        if let Some(expression) = context.for_statement.condition.as_ref() {
             if self.expression_contains_storage_array_length(expression) {
                 self.functions
                     .get_mut(&definition_id)
@@ -171,21 +164,14 @@ impl AstVisitor for StorageArrayLoopVisitor<'_> {
         Ok(())
     }
 
-    fn visit_while_statement<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        _contract_definition: &'a solidity::ast::ContractDefinition,
-        definition_node: &'a solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&'a solidity::ast::Block>,
-        while_statement: &solidity::ast::WhileStatement,
-    ) -> io::Result<()> {
-        let definition_id = match definition_node {
+    fn visit_while_statement<'a, 'b>(&mut self, context: &mut super::WhileStatementContext<'a, 'b>) -> io::Result<()> {
+        let definition_id = match context.definition_node {
             solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
             solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,
             _ => return Ok(())
         };
 
-        if self.expression_contains_storage_array_length(&while_statement.condition) {
+        if self.expression_contains_storage_array_length(&context.while_statement.condition) {
             self.functions
                 .get_mut(&definition_id)
                 .unwrap()

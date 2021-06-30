@@ -96,15 +96,8 @@ impl AstVisitor for UncheckedERC20TransferVisitor<'_> {
         Ok(())
     }
 
-    fn visit_if_statement<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        _contract_definition: &'a solidity::ast::ContractDefinition,
-        _definition_node: &'a solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&'a solidity::ast::Block>,
-        if_statement: &'a solidity::ast::IfStatement,
-    ) -> io::Result<()> {
-        let block = match &if_statement.true_body {
+    fn visit_if_statement<'a, 'b>(&mut self, context: &mut super::IfStatementContext<'a, 'b>) -> io::Result<()> {
+        let block = match &context.if_statement.true_body {
             solidity::ast::BlockOrStatement::Block(block) => block,
             solidity::ast::BlockOrStatement::Statement(_) => return Ok(()),
         };
@@ -120,7 +113,7 @@ impl AstVisitor for UncheckedERC20TransferVisitor<'_> {
 
         let block_info = self.block_info.get_mut(&block.id).unwrap();
 
-        let mut operations = match &if_statement.condition {
+        let mut operations = match &context.if_statement.condition {
             solidity::ast::Expression::BinaryOperation(expr) => vec![expr],
             _ => return Ok(()),
         };
