@@ -29,8 +29,9 @@ impl AstVisitor for UnrestrictedSetterFunctionsVisitor {
             return Ok(())
         }
 
-        if context.function_definition.body.is_none() {
-            return Ok(())
+        match context.function_definition.body.as_ref() {
+            Some(block) if !block.statements.is_empty() => {}
+            _ => return Ok(())
         }
 
         for statement in context.function_definition.body.as_ref().unwrap().statements.iter() {
@@ -44,7 +45,7 @@ impl AstVisitor for UnrestrictedSetterFunctionsVisitor {
         }
 
         println!(
-            "\t{} {} {} is an unprotected setter function",
+            "\t{} {} {} ({}) is an unprotected setter function",
 
             format!("{:?}", context.function_definition.visibility),
 
@@ -54,7 +55,9 @@ impl AstVisitor for UnrestrictedSetterFunctionsVisitor {
                 format!("{}.{}", context.contract_definition.name, context.function_definition.name)
             },
 
-            context.function_definition.kind
+            context.function_definition.kind,
+
+            context.function_definition.src
         );
 
         Ok(())
