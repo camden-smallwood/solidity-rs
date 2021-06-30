@@ -143,6 +143,62 @@ pub struct WhileStatementContext<'a, 'b> {
     pub while_statement: &'a WhileStatement,
 }
 
+pub struct EmitStatementContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub emit_statement: &'a EmitStatement,
+}
+
+pub struct TryStatementContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub try_statement: &'a TryStatement,
+}
+
+pub struct RevertStatementContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub revert_statement: &'a RevertStatement,
+}
+
+pub struct BlockOrStatementContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub block_or_statement: &'a BlockOrStatement,
+}
+
+pub struct ReturnContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: Option<&'a Statement>,
+    pub return_statement: &'a Return,
+}
+
+pub struct ExpressionContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: Option<&'a Statement>,
+    pub expression: &'a Expression,
+}
+
 #[allow(unused_variables)]
 pub trait AstVisitor {
     fn visit_source_unit<'a>(&mut self, context: &mut SourceUnitContext<'a>) -> io::Result<()> { Ok(()) }
@@ -199,73 +255,23 @@ pub trait AstVisitor {
     fn visit_while_statement<'a, 'b>(&mut self, context: &mut WhileStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
     fn leave_while_statement<'a, 'b>(&mut self, context: &mut WhileStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
-    fn visit_emit_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        emit_statement: &'a EmitStatement,
-    ) -> io::Result<()> {
-        Ok(())
-    }
+    fn visit_emit_statement<'a, 'b>(&mut self, context: &mut EmitStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_emit_statement<'a, 'b>(&mut self, context: &mut EmitStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
-    fn visit_try_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        try_statement: &'a TryStatement,
-    ) -> io::Result<()> {
-        Ok(())
-    }
+    fn visit_try_statement<'a, 'b>(&mut self, context: &mut TryStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_try_statement<'a, 'b>(&mut self, context: &mut TryStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
-    fn visit_revert_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        revert_statement: &'a RevertStatement,
-    ) -> io::Result<()> {
-        Ok(())
-    }
+    fn visit_revert_statement<'a, 'b>(&mut self, context: &mut RevertStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_revert_statement<'a, 'b>(&mut self, context: &mut RevertStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
-    fn visit_block_or_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        block_or_statement: &'a BlockOrStatement,
-    ) -> io::Result<()> {
-        Ok(())
-    }
+    fn visit_block_or_statement<'a, 'b>(&mut self, context: &mut BlockOrStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_block_or_statement<'a, 'b>(&mut self, context: &mut BlockOrStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
-    fn visit_return<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: Option<&'a Statement>,
-        return_statement: &'a Return,
-    ) -> io::Result<()> {
-        Ok(())
-    }
+    fn visit_return<'a, 'b>(&mut self, context: &mut ReturnContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_return<'a, 'b>(&mut self, context: &mut ReturnContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
-    fn visit_expression<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: Option<&'a Statement>,
-        expression: &'a Expression,
-    ) -> io::Result<()> {
-        Ok(())
-    }
+    fn visit_expression<'a, 'b>(&mut self, context: &mut ExpressionContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_expression<'a, 'b>(&mut self, context: &mut ExpressionContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
     fn visit_literal(
         &mut self,
@@ -1140,33 +1146,45 @@ impl AstVisitor for AstVisitorData<'_> {
             }
 
             Statement::EmitStatement(emit_statement) => {
-                self.visit_emit_statement(
-                    context.current_source_unit,
-                    context.contract_definition,
-                    context.definition_node,
-                    context.blocks,
-                    emit_statement,
-                )?;
+                let mut context = EmitStatementContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    emit_statement
+                };
+                
+                self.visit_emit_statement(&mut context)?;
+                self.leave_emit_statement(&mut context)?;
             }
 
             Statement::TryStatement(try_statement) => {
-                self.visit_try_statement(
-                    context.current_source_unit,
-                    context.contract_definition,
-                    context.definition_node,
-                    context.blocks,
-                    try_statement,
-                )?;
+                let mut context = TryStatementContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    try_statement
+                };
+
+                self.visit_try_statement(&mut context)?;
+                self.leave_try_statement(&mut context)?;
             }
 
             Statement::RevertStatement(revert_statement) => {
-                self.visit_revert_statement(
-                    context.current_source_unit,
-                    context.contract_definition,
-                    context.definition_node,
-                    context.blocks,
-                    revert_statement,
-                )?;
+                let mut context = RevertStatementContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    revert_statement
+                };
+
+                self.visit_revert_statement(&mut context)?;
+                self.leave_revert_statement(&mut context)?;
             }
 
             Statement::UncheckedBlock(block) => {
@@ -1184,25 +1202,33 @@ impl AstVisitor for AstVisitorData<'_> {
             }
 
             Statement::Return(return_statement) => {
-                self.visit_return(
-                    context.current_source_unit,
-                    context.contract_definition,
-                    context.definition_node,
-                    context.blocks,
-                    Some(context.statement),
+                let mut context = ReturnContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: Some(context.statement),
                     return_statement,
-                )?;
+                };
+
+                self.visit_return(&mut context)?;
+                self.leave_return(&mut context)?;
             }
 
             Statement::ExpressionStatement(expression_statement) => {
-                self.visit_expression(
-                    context.current_source_unit,
-                    context.contract_definition,
-                    context.definition_node,
-                    context.blocks,
-                    Some(context.statement),
-                    &expression_statement.expression,
-                )?;
+                let mut context = ExpressionContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: Some(context.statement),
+                    expression: &expression_statement.expression,
+                };
+
+                self.visit_expression(&mut context)?;
+                self.leave_expression(&mut context)?;
             }
 
             Statement::InlineAssembly(inline_assembly) => {
@@ -1238,14 +1264,18 @@ impl AstVisitor for AstVisitorData<'_> {
         }
 
         if let Some(initial_value) = context.variable_declaration_statement.initial_value.as_ref() {
-            self.visit_expression(
-                context.current_source_unit,
-                context.contract_definition,
-                context.definition_node,
-                context.blocks,
-                None,
-                initial_value,
-            )?;
+            let mut context = ExpressionContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: context.blocks,
+                statement: None,
+                expression: initial_value,
+            };
+
+            self.visit_expression(&mut context)?;
+            self.leave_expression(&mut context)?;
         }
 
         Ok(())
@@ -1264,22 +1294,30 @@ impl AstVisitor for AstVisitorData<'_> {
             visitor.visit_if_statement(context)?;
         }
 
-        self.visit_block_or_statement(
-            context.current_source_unit,
-            context.contract_definition,
-            context.definition_node,
-            context.blocks,
-            &context.if_statement.true_body,
-        )?;
+        let mut true_body_context = BlockOrStatementContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            block_or_statement: &context.if_statement.true_body,
+        };
+
+        self.visit_block_or_statement(&mut true_body_context)?;
+        self.leave_block_or_statement(&mut true_body_context)?;
 
         if let Some(false_body) = context.if_statement.false_body.as_ref() {
-            self.visit_block_or_statement(
-                context.current_source_unit,
-                context.contract_definition,
-                context.definition_node,
-                context.blocks,
-                false_body,
-            )?;
+            let mut false_body_context = BlockOrStatementContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: context.blocks,
+                block_or_statement: false_body,
+            };
+    
+            self.visit_block_or_statement(&mut false_body_context)?;
+            self.leave_block_or_statement(&mut false_body_context)?;
         }
 
         Ok(())
@@ -1313,14 +1351,18 @@ impl AstVisitor for AstVisitorData<'_> {
         }
 
         if let Some(expression) = context.for_statement.condition.as_ref() {
-            self.visit_expression(
-                context.current_source_unit,
-                context.contract_definition,
-                context.definition_node,
-                context.blocks,
-                None,
-                expression,
-            )?;
+            let mut context = ExpressionContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: context.blocks,
+                statement: None,
+                expression
+            };
+
+            self.visit_expression(&mut context)?;
+            self.leave_expression(&mut context)?;
         }
 
         if let Some(statement) = context.for_statement.loop_expression.as_ref() {
@@ -1336,14 +1378,18 @@ impl AstVisitor for AstVisitorData<'_> {
             self.visit_statement(&mut context)?;
             self.leave_statement(&mut context)?;
         }
+        
+        let mut context = BlockOrStatementContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            block_or_statement: &context.for_statement.body,
+        };
 
-        self.visit_block_or_statement(
-            context.current_source_unit,
-            context.contract_definition,
-            context.definition_node,
-            context.blocks,
-            &context.for_statement.body,
-        )?;
+        self.visit_block_or_statement(&mut context)?;
+        self.leave_block_or_statement(&mut context)?;
 
         Ok(())
     }
@@ -1361,22 +1407,30 @@ impl AstVisitor for AstVisitorData<'_> {
             visitor.visit_while_statement(context)?;
         }
 
-        self.visit_expression(
-            context.current_source_unit,
-            context.contract_definition,
-            context.definition_node,
-            context.blocks,
-            None,
-            &context.while_statement.condition,
-        )?;
+        let mut condition_context = ExpressionContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: None,
+            expression: &context.while_statement.condition,
+        };
 
-        self.visit_block_or_statement(
-            context.current_source_unit,
-            context.contract_definition,
-            context.definition_node,
-            context.blocks,
-            &context.while_statement.body,
-        )?;
+        self.visit_expression(&mut condition_context)?;
+        self.leave_expression(&mut condition_context)?;
+
+        let mut context = BlockOrStatementContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            block_or_statement: &context.while_statement.body,
+        };
+
+        self.visit_block_or_statement(&mut context)?;
+        self.leave_block_or_statement(&mut context)?;
 
         Ok(())
     }
@@ -1389,52 +1443,34 @@ impl AstVisitor for AstVisitorData<'_> {
         Ok(())
     }
 
-    fn visit_emit_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        emit_statement: &'a EmitStatement,
-    ) -> io::Result<()> {
+    fn visit_emit_statement<'a, 'b>(&mut self, context: &mut EmitStatementContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_emit_statement(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                emit_statement,
-            )?;
+            visitor.visit_emit_statement(context)?;
         }
 
         Ok(())
     }
 
-    fn visit_try_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        try_statement: &'a TryStatement,
-    ) -> io::Result<()> {
+    fn leave_emit_statement<'a, 'b>(&mut self, context: &mut EmitStatementContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_try_statement(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                try_statement,
-            )?;
+            visitor.leave_emit_statement(context)?;
         }
 
-        for clause in try_statement.clauses.iter() {
+        Ok(())
+    }
+
+    fn visit_try_statement<'a, 'b>(&mut self, context: &mut TryStatementContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_try_statement(context)?;
+        }
+
+        for clause in context.try_statement.clauses.iter() {
             let mut context = BlockContext {
-                source_units: &[], // TODO
-                current_source_unit: source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: context.blocks,
                 block: &clause.block,
             };
             
@@ -1445,54 +1481,44 @@ impl AstVisitor for AstVisitorData<'_> {
         Ok(())
     }
 
-    fn visit_revert_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        revert_statement: &'a RevertStatement,
-    ) -> io::Result<()> {
+    fn leave_try_statement<'a, 'b>(&mut self, context: &mut TryStatementContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_revert_statement(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                revert_statement,
-            )?;
+            visitor.visit_try_statement(context)?;
         }
 
         Ok(())
     }
 
-    fn visit_block_or_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        block_or_statement: &'a BlockOrStatement,
-    ) -> io::Result<()> {
+    fn visit_revert_statement<'a, 'b>(&mut self, context: &mut RevertStatementContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_block_or_statement(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                block_or_statement,
-            )?;
+            visitor.visit_revert_statement(context)?;
         }
 
-        match block_or_statement {
+        Ok(())
+    }
+
+    fn leave_revert_statement<'a, 'b>(&mut self, context: &mut RevertStatementContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_revert_statement(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_block_or_statement<'a, 'b>(&mut self, context: &mut BlockOrStatementContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_block_or_statement(context)?;
+        }
+
+        match context.block_or_statement {
             BlockOrStatement::Block(block) => {
                 let mut context = BlockContext {
-                    source_units: &[], // TODO
-                    current_source_unit: source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    block,
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    block
                 };
                 
                 self.visit_block(&mut context)?;
@@ -1501,11 +1527,11 @@ impl AstVisitor for AstVisitorData<'_> {
 
             BlockOrStatement::Statement(statement) => {
                 let mut context = StatementContext {
-                    source_units: &[], // TODO
-                    current_source_unit: source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
                     statement
                 };
     
@@ -1517,203 +1543,185 @@ impl AstVisitor for AstVisitorData<'_> {
         Ok(())
     }
 
-    fn visit_return<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: Option<&'a Statement>,
-        return_statement: &'a Return,
-    ) -> io::Result<()> {
+    fn leave_block_or_statement<'a, 'b>(&mut self, context: &mut BlockOrStatementContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_return(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                return_statement,
-            )?;
-        }
-
-        if let Some(expression) = return_statement.expression.as_ref() {
-            self.visit_expression(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                expression,
-            )?;
+            visitor.leave_block_or_statement(context)?;
         }
 
         Ok(())
     }
 
-    fn visit_expression<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: Option<&'a Statement>,
-        expression: &'a Expression,
-    ) -> io::Result<()> {
+    fn visit_return<'a, 'b>(&mut self, context: &mut ReturnContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_expression(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                expression,
-            )?;
+            visitor.visit_return(context)?;
         }
 
-        match expression {
+        if let Some(expression) = context.return_statement.expression.as_ref() {
+            let mut condition_context = ExpressionContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: context.blocks,
+                statement: context.statement,
+                expression
+            };
+    
+            self.visit_expression(&mut condition_context)?;
+            self.leave_expression(&mut condition_context)?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_expression<'a, 'b>(&mut self, context: &mut ExpressionContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_expression(context)?;
+        }
+
+        match context.expression {
             Expression::Literal(literal) => {
                 self.visit_literal(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
+                    context.statement,
                     literal,
                 )?;
             }
             Expression::Identifier(identifier) => {
                 self.visit_identifier(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
+                    context.statement,
                     identifier,
                 )?;
             }
             Expression::UnaryOperation(unary_operation) => {
                 self.visit_unary_operation(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
+                    context.statement,
                     unary_operation,
                 )?;
             }
             Expression::BinaryOperation(binary_operation) => {
                 self.visit_binary_operation(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
+                    context.statement,
                     binary_operation,
                 )?;
             }
             Expression::Conditional(conditional) => {
                 self.visit_conditional(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
+                    context.statement,
                     conditional,
                 )?;
             }
             Expression::Assignment(assignment) => {
                 self.visit_assignment(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
+                    context.statement,
                     assignment,
                 )?;
             }
             Expression::FunctionCall(function_call) => {
                 self.visit_function_call(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
+                    context.statement,
                     function_call,
                 )?;
             }
             Expression::FunctionCallOptions(function_call_options) => {
                 self.visit_function_call_options(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
+                    context.statement,
                     function_call_options,
                 )?;
             }
             Expression::IndexAccess(index_access) => {
                 self.visit_index_access(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
+                    context.statement,
                     index_access,
                 )?;
             }
             Expression::IndexRangeAccess(index_range_access) => {
                 self.visit_index_range_access(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
+                    context.statement,
                     index_range_access,
                 )?;
             }
             Expression::MemberAccess(member_access) => {
                 self.visit_member_access(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
+                    context.statement,
                     member_access,
                 )?;
             }
             Expression::ElementaryTypeNameExpression(elementary_type_name_expression) => {
                 self.visit_elementary_type_name_expression(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
+                    context.statement,
                     elementary_type_name_expression,
                 )?;
             }
             Expression::TupleExpression(tuple_expression) => {
                 self.visit_tuple_expression(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
+                    context.statement,
                     tuple_expression,
                 )?;
             }
             Expression::NewExpression(new_expression) => {
                 self.visit_new_expression(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
+                    context.current_source_unit,
+                    context.contract_definition,
+                    context.definition_node,
+                    context.blocks,
+                    context.statement,
                     new_expression,
                 )?;
             }
             Expression::UnhandledExpression { node_type, src, id } => {
-                self.visit_unhandled_expression(source_unit, node_type, src, id)?;
+                self.visit_unhandled_expression(context.current_source_unit, node_type, src, id)?;
             }
         }
 
@@ -1786,14 +1794,18 @@ impl AstVisitor for AstVisitorData<'_> {
             )?;
         }
 
-        self.visit_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            unary_operation.sub_expression.as_ref(),
-        )?;
+        let mut context = ExpressionContext {
+            source_units: &[], // TODO
+            current_source_unit: source_unit,
+            contract_definition: contract_definition,
+            definition_node: definition_node,
+            blocks: blocks,
+            statement: statement,
+            expression: unary_operation.sub_expression.as_ref(),
+        };
+
+        self.visit_expression(&mut context)?;
+        self.leave_expression(&mut context)?;
 
         Ok(())
     }
@@ -1818,22 +1830,31 @@ impl AstVisitor for AstVisitorData<'_> {
             )?;
         }
 
-        self.visit_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            binary_operation.left_expression.as_ref(),
-        )?;
-        self.visit_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            binary_operation.right_expression.as_ref(),
-        )?;
+        let mut left_context = ExpressionContext {
+            source_units: &[], // TODO
+            current_source_unit: source_unit,
+            contract_definition: contract_definition,
+            definition_node: definition_node,
+            blocks: blocks,
+            statement: statement,
+            expression: binary_operation.left_expression.as_ref(),
+        };
+
+        self.visit_expression(&mut left_context)?;
+        self.leave_expression(&mut left_context)?;
+
+        let mut right_context = ExpressionContext {
+            source_units: &[], // TODO
+            current_source_unit: source_unit,
+            contract_definition: contract_definition,
+            definition_node: definition_node,
+            blocks: blocks,
+            statement: statement,
+            expression: binary_operation.right_expression.as_ref(),
+        };
+
+        self.visit_expression(&mut right_context)?;
+        self.leave_expression(&mut right_context)?;
 
         Ok(())
     }
@@ -1858,32 +1879,44 @@ impl AstVisitor for AstVisitorData<'_> {
             )?;
         }
 
-        self.visit_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            conditional.condition.as_ref(),
-        )?;
+        let mut condition_context = ExpressionContext {
+            source_units: &[], // TODO
+            current_source_unit: source_unit,
+            contract_definition: contract_definition,
+            definition_node: definition_node,
+            blocks: blocks,
+            statement: statement,
+            expression: conditional.condition.as_ref(),
+        };
 
-        self.visit_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            conditional.true_expression.as_ref(),
-        )?;
+        self.visit_expression(&mut condition_context)?;
+        self.leave_expression(&mut condition_context)?;
 
-        self.visit_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            conditional.false_expression.as_ref(),
-        )?;
+        let mut true_context = ExpressionContext {
+            source_units: &[], // TODO
+            current_source_unit: source_unit,
+            contract_definition: contract_definition,
+            definition_node: definition_node,
+            blocks: blocks,
+            statement: statement,
+            expression: conditional.true_expression.as_ref(),
+        };
+
+        self.visit_expression(&mut true_context)?;
+        self.leave_expression(&mut true_context)?;
+
+        let mut false_context = ExpressionContext {
+            source_units: &[], // TODO
+            current_source_unit: source_unit,
+            contract_definition: contract_definition,
+            definition_node: definition_node,
+            blocks: blocks,
+            statement: statement,
+            expression: conditional.false_expression.as_ref(),
+        };
+
+        self.visit_expression(&mut false_context)?;
+        self.leave_expression(&mut false_context)?;
 
         Ok(())
     }
@@ -1908,23 +1941,31 @@ impl AstVisitor for AstVisitorData<'_> {
             )?;
         }
 
-        self.visit_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            assignment.left_hand_side.as_ref(),
-        )?;
+        let mut left_context = ExpressionContext {
+            source_units: &[], // TODO
+            current_source_unit: source_unit,
+            contract_definition: contract_definition,
+            definition_node: definition_node,
+            blocks: blocks,
+            statement: statement,
+            expression: assignment.left_hand_side.as_ref(),
+        };
 
-        self.visit_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            assignment.right_hand_side.as_ref(),
-        )?;
+        self.visit_expression(&mut left_context)?;
+        self.leave_expression(&mut left_context)?;
+
+        let mut right_context = ExpressionContext {
+            source_units: &[], // TODO
+            current_source_unit: source_unit,
+            contract_definition: contract_definition,
+            definition_node: definition_node,
+            blocks: blocks,
+            statement: statement,
+            expression: assignment.right_hand_side.as_ref(),
+        };
+
+        self.visit_expression(&mut right_context)?;
+        self.leave_expression(&mut right_context)?;
 
         Ok(())
     }
@@ -1949,24 +1990,32 @@ impl AstVisitor for AstVisitorData<'_> {
             )?;
         }
 
-        self.visit_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            function_call.expression.as_ref(),
-        )?;
+        let mut expression_context = ExpressionContext {
+            source_units: &[], // TODO
+            current_source_unit: source_unit,
+            contract_definition: contract_definition,
+            definition_node: definition_node,
+            blocks: blocks,
+            statement: statement,
+            expression: function_call.expression.as_ref(),
+        };
+
+        self.visit_expression(&mut expression_context)?;
+        self.leave_expression(&mut expression_context)?;
 
         for argument in function_call.arguments.iter() {
-            self.visit_expression(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                argument,
-            )?;
+            let mut argument_context = ExpressionContext {
+                source_units: &[], // TODO
+                current_source_unit: source_unit,
+                contract_definition: contract_definition,
+                definition_node: definition_node,
+                blocks: blocks,
+                statement: statement,
+                expression: argument,
+            };
+    
+            self.visit_expression(&mut argument_context)?;
+            self.leave_expression(&mut argument_context)?;
         }
 
         Ok(())
@@ -1992,24 +2041,32 @@ impl AstVisitor for AstVisitorData<'_> {
             )?;
         }
 
-        self.visit_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            function_call_options.expression.as_ref(),
-        )?;
+        let mut expression_context = ExpressionContext {
+            source_units: &[], // TODO
+            current_source_unit: source_unit,
+            contract_definition: contract_definition,
+            definition_node: definition_node,
+            blocks: blocks,
+            statement: statement,
+            expression: function_call_options.expression.as_ref(),
+        };
+
+        self.visit_expression(&mut expression_context)?;
+        self.leave_expression(&mut expression_context)?;
 
         for option in function_call_options.options.iter() {
-            self.visit_expression(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                option,
-            )?;
+            let mut option_context = ExpressionContext {
+                source_units: &[], // TODO
+                current_source_unit: source_unit,
+                contract_definition: contract_definition,
+                definition_node: definition_node,
+                blocks: blocks,
+                statement: statement,
+                expression: option
+            };
+    
+            self.visit_expression(&mut option_context)?;
+            self.leave_expression(&mut option_context)?;
         }
 
         Ok(())
@@ -2035,23 +2092,31 @@ impl AstVisitor for AstVisitorData<'_> {
             )?;
         }
 
-        self.visit_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            index_access.base_expression.as_ref(),
-        )?;
+        let mut base_context = ExpressionContext {
+            source_units: &[], // TODO
+            current_source_unit: source_unit,
+            contract_definition: contract_definition,
+            definition_node: definition_node,
+            blocks: blocks,
+            statement: statement,
+            expression: index_access.base_expression.as_ref(),
+        };
 
-        self.visit_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            index_access.index_expression.as_ref(),
-        )?;
+        self.visit_expression(&mut base_context)?;
+        self.leave_expression(&mut base_context)?;
+
+        let mut index_context = ExpressionContext {
+            source_units: &[], // TODO
+            current_source_unit: source_unit,
+            contract_definition: contract_definition,
+            definition_node: definition_node,
+            blocks: blocks,
+            statement: statement,
+            expression: index_access.index_expression.as_ref(),
+        };
+
+        self.visit_expression(&mut index_context)?;
+        self.leave_expression(&mut index_context)?;
 
         Ok(())
     }
@@ -2076,35 +2141,47 @@ impl AstVisitor for AstVisitorData<'_> {
             )?;
         }
 
-        self.visit_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            index_range_access.base_expression.as_ref(),
-        )?;
+        let mut base_context = ExpressionContext {
+            source_units: &[], // TODO
+            current_source_unit: source_unit,
+            contract_definition: contract_definition,
+            definition_node: definition_node,
+            blocks: blocks,
+            statement: statement,
+            expression: index_range_access.base_expression.as_ref(),
+        };
+
+        self.visit_expression(&mut base_context)?;
+        self.leave_expression(&mut base_context)?;
 
         if let Some(start_expression) = index_range_access.start_expression.as_ref() {
-            self.visit_expression(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                start_expression.as_ref(),
-            )?;
+            let mut start_context = ExpressionContext {
+                source_units: &[], // TODO
+                current_source_unit: source_unit,
+                contract_definition: contract_definition,
+                definition_node: definition_node,
+                blocks: blocks,
+                statement: statement,
+                expression: start_expression.as_ref(),
+            };
+
+            self.visit_expression(&mut start_context)?;
+            self.leave_expression(&mut start_context)?;
         }
 
         if let Some(end_expression) = index_range_access.end_expression.as_ref() {
-            self.visit_expression(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                end_expression.as_ref(),
-            )?;
+            let mut end_context = ExpressionContext {
+                source_units: &[], // TODO
+                current_source_unit: source_unit,
+                contract_definition: contract_definition,
+                definition_node: definition_node,
+                blocks: blocks,
+                statement: statement,
+                expression: end_expression.as_ref(),
+            };
+    
+            self.visit_expression(&mut end_context)?;
+            self.leave_expression(&mut end_context)?;
         }
 
         Ok(())
@@ -2130,14 +2207,18 @@ impl AstVisitor for AstVisitorData<'_> {
             )?;
         }
 
-        self.visit_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            member_access.expression.as_ref(),
-        )?;
+        let mut expression_context = ExpressionContext {
+            source_units: &[], // TODO
+            current_source_unit: source_unit,
+            contract_definition: contract_definition,
+            definition_node: definition_node,
+            blocks: blocks,
+            statement: statement,
+            expression: member_access.expression.as_ref(),
+        };
+
+        self.visit_expression(&mut expression_context)?;
+        self.leave_expression(&mut expression_context)?;
 
         Ok(())
     }
@@ -2187,14 +2268,18 @@ impl AstVisitor for AstVisitorData<'_> {
 
         for component in tuple_expression.components.iter() {
             if let Some(component) = component {
-                self.visit_expression(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
-                    component,
-                )?;
+                let mut component_context = ExpressionContext {
+                    source_units: &[], // TODO
+                    current_source_unit: source_unit,
+                    contract_definition: contract_definition,
+                    definition_node: definition_node,
+                    blocks: blocks,
+                    statement: statement,
+                    expression: component,
+                };
+        
+                self.visit_expression(&mut component_context)?;
+                self.leave_expression(&mut component_context)?;
             }
         }
 
