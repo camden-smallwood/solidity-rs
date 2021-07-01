@@ -28,6 +28,10 @@ impl AstVisitor for RedundantAssignmentsVisitor {
                     component_ids.extend(component.referenced_declarations());
                 }
 
+                if component_ids.is_empty() {
+                    continue;
+                }
+
                 if tuple_component_ids.iter().find(|&ids| ids.eq(&component_ids)).is_some() {
                     match definition_node {
                         ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
