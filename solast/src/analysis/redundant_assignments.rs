@@ -20,51 +20,50 @@ impl AstVisitor for RedundantAssignmentsVisitor {
         assignment: &'a solidity::ast::Assignment,
     ) -> std::io::Result<()> {
         if let Expression::TupleExpression(tuple_expression) = assignment.left_hand_side.as_ref() {
-            let mut referenced_declarations: Vec<Vec<NodeID>> = vec![];
+            let mut tuple_component_ids: Vec<Vec<NodeID>> = vec![];
 
             for component in tuple_expression.components.iter() {
-                let mut component_referenced_declarations = vec![];
+                let mut component_ids = vec![];
 
                 if let Some(component) = component.as_ref() {
-                    component_referenced_declarations.extend(component.referenced_declarations());
+                    component_ids.extend(component.referenced_declarations());
                 }
 
-                if !component_referenced_declarations.is_empty() {
-                    for references in referenced_declarations.iter() {
-                        if references.eq(&component_referenced_declarations) {
-                            match definition_node {
-                                ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                                    "\tThe {} {} in the `{}` {} contains a redundant assignment: `{}`",
-    
-                                    function_definition.visibility,
-    
-                                    if let FunctionKind::Constructor = function_definition.kind {
-                                        format!("{}", "constructor")
-                                    } else {
-                                        format!("`{}` {}", function_definition.name, function_definition.kind)
-                                    },
-    
-                                    contract_definition.name,
-                                    contract_definition.kind,
+                if tuple_component_ids.iter().find(|&ids| ids.eq(&component_ids)).is_some() {
+                    match definition_node {
+                        ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                            "\tThe {} {} in the `{}` {} contains a redundant assignment: `{}`",
 
-                                    assignment
-                                ),
-    
-                                ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                                    "\tThe `{}` modifier in the `{}` {} contains a redundant assignment: `{}`",
-                                    modifier_definition.name,
-                                    contract_definition.name,
-                                    contract_definition.kind,
-                                    assignment
-                                ),
-    
-                                _ => return Ok(())
-                            }
-                        }
+                            function_definition.visibility,
+
+                            if let FunctionKind::Constructor = function_definition.kind {
+                                format!("{}", "constructor")
+                            } else {
+                                format!("`{}` {}", function_definition.name, function_definition.kind)
+                            },
+
+                            contract_definition.name,
+                            contract_definition.kind,
+
+                            assignment
+                        ),
+
+                        ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                            "\tThe `{}` modifier in the `{}` {} contains a redundant assignment: `{}`",
+                            
+                            modifier_definition.name,
+
+                            contract_definition.name,
+                            contract_definition.kind,
+
+                            assignment
+                        ),
+
+                        _ => return Ok(())
                     }
                 }
 
-                referenced_declarations.push(component_referenced_declarations);
+                tuple_component_ids.push(component_ids);
             }
         }
 
