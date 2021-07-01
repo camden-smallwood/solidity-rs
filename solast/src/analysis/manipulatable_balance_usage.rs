@@ -5,7 +5,8 @@ pub struct ManipulatableBalanceUsageVisitor;
 
 //
 // TODO:
-//   determine if token.balanceOf(address(this)) is used in ways which can be manipulated
+// * determine if balance can actually be manipulated
+// * determine if manipulating balance has consequences
 //
 
 impl AstVisitor for ManipulatableBalanceUsageVisitor {
@@ -41,7 +42,7 @@ impl AstVisitor for ManipulatableBalanceUsageVisitor {
                             ..
                         }) if name == "this" => match definition_node {
                             ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                                "\tThe {} {} in the `{}` {} contains usage of `.balanceOf(address(this))`",
+                                "\tThe {} {} in the `{}` {} contains manipulatable balance usage: `{}`",
 
                                 function_definition.visibility,
 
@@ -52,14 +53,20 @@ impl AstVisitor for ManipulatableBalanceUsageVisitor {
                                 },
 
                                 contract_definition.name,
-                                contract_definition.kind
+                                contract_definition.kind,
+
+                                function_call
                             ),
 
                             ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                                "\tThe `{}` modifier in the `{}` {} contains usage of `.balanceOf(address(this))`",
+                                "\tThe `{}` modifier in the `{}` {} contains manipulatable balance usage: `{}`",
+
                                 modifier_definition.name,
+
                                 contract_definition.name,
-                                contract_definition.kind
+                                contract_definition.kind,
+
+                                function_call
                             ),
 
                             _ => return Ok(())
