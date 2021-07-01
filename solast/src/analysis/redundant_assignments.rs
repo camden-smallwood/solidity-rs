@@ -1,6 +1,5 @@
-use solidity::ast::{ContractDefinitionNode, Expression, FunctionKind, NodeID};
-
 use super::AstVisitor;
+use solidity::ast::*;
 
 pub struct RedundantAssignmentsVisitor;
 
@@ -36,8 +35,8 @@ impl AstVisitor for RedundantAssignmentsVisitor {
 
                             function_definition.visibility,
 
-                            if let FunctionKind::Constructor = function_definition.kind {
-                                format!("{}", "constructor")
+                            if function_definition.name.is_empty() {
+                                format!("{}", function_definition.kind)
                             } else {
                                 format!("`{}` {}", function_definition.name, function_definition.kind)
                             },
@@ -50,7 +49,7 @@ impl AstVisitor for RedundantAssignmentsVisitor {
 
                         ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
                             "\tThe `{}` modifier in the `{}` {} contains a redundant assignment: `{}`",
-                            
+
                             modifier_definition.name,
 
                             contract_definition.name,
