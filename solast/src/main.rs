@@ -36,6 +36,7 @@ const VISITORS: &'static [(&'static str, for<'a> fn(&'a [solidity::ast::SourceUn
     ("unnecessary_comparisons", |_| Box::new(analysis::UnnecessaryComparisonsVisitor)),
     ("assert_usage", |_| Box::new(analysis::AssertUsageVisitor::default())),
     ("unrestricted_setter_functions", |_| Box::new(analysis::UnrestrictedSetterFunctionsVisitor)),
+    ("manipulatable_balance_usage", |_| Box::new(analysis::ManipulatableBalanceUsageVisitor)),
 ];
 
 fn main() -> io::Result<()> {

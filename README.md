@@ -36,6 +36,7 @@ Some legacy versions of Solidity are inherently supported, but the focus is 0.8.
 - [ ] ~~`unnecessary_comparisons`~~ (WIP)
 - [x] `assert_usage`
 - [ ] ~~`unrestricted_setter_functions`~~ (WIP)
+- [ ] ~~`manipulatable_balance_usage`~~ (WIP)
 
 ## Usage
 
