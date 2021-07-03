@@ -14,7 +14,7 @@ const VISITORS: &'static [(&'static str, for<'a> fn(&'a [solidity::ast::SourceUn
     ("require_without_message", |source_units| Box::new(analysis::RequireWithoutMessageVisitor::new(source_units))),
     ("state_variable_shadowing", |source_units| Box::new(analysis::StateVariableShadowingVisitor::new(source_units))),
     ("explicit_variable_return", |_| Box::new(analysis::ExplicitVariableReturnVisitor::default())),
-    ("unused_return", |source_units| Box::new(analysis::UnusedReturnVisitor::new(source_units))),
+    ("unused_return", |_| Box::new(analysis::UnusedReturnVisitor)),
     ("storage_array_loop", |source_units| Box::new(analysis::StorageArrayLoopVisitor::new(source_units))),
     ("external_calls_in_loop", |source_units| Box::new(analysis::ExternalCallsInLoopVisitor::new(source_units))),
     ("check_effects_interactions", |source_units| Box::new(analysis::CheckEffectsInteractionsVisitor::new(source_units))),

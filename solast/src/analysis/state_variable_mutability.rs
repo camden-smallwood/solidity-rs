@@ -1,4 +1,4 @@
-use super::{AssignmentContext, AstVisitor, UnaryOperationContext, VariableDeclarationContext};
+use super::AstVisitor;
 use solidity::ast::*;
 use std::{collections::HashMap, io};
 
@@ -23,7 +23,7 @@ impl<'a> StateVariableMutabilityVisitor<'a> {
 //
 // TODO:
 //   check for local variables which are bound to array state variable entries
-//   if the local variable mutates state, don't suggest the state variable
+//   if the local variable mutates state, don't suggest that the state variable should be immutable
 //
 
 impl AstVisitor for StateVariableMutabilityVisitor<'_> {
@@ -51,7 +51,7 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_> {
         Ok(())
     }
 
-    fn visit_variable_declaration<'a, 'b>(&mut self, context: &mut VariableDeclarationContext<'a, 'b>) -> io::Result<()> {
+    fn visit_variable_declaration<'a, 'b>(&mut self, context: &mut super::VariableDeclarationContext<'a, 'b>) -> io::Result<()> {
         if let ContractDefinitionNode::VariableDeclaration(variable_declaration) = context.definition_node {
             if !self.contract_info.contains_key(&context.contract_definition.id) {
                 self.contract_info.insert(context.contract_definition.id, ContractInfo {
@@ -72,7 +72,7 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_> {
         Ok(())
     }
 
-    fn visit_assignment<'a, 'b>(&mut self, context: &mut AssignmentContext<'a, 'b>) -> io::Result<()> {
+    fn visit_assignment<'a, 'b>(&mut self, context: &mut super::AssignmentContext<'a, 'b>) -> io::Result<()> {
         if let ContractDefinitionNode::FunctionDefinition(FunctionDefinition {
             kind: FunctionKind::Constructor,
             ..
@@ -100,7 +100,7 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_> {
         Ok(())
     }
 
-    fn visit_unary_operation<'a, 'b>(&mut self, context: &mut UnaryOperationContext<'a, 'b>) -> io::Result<()> {
+    fn visit_unary_operation<'a, 'b>(&mut self, context: &mut super::UnaryOperationContext<'a, 'b>) -> io::Result<()> {
         if let ContractDefinitionNode::FunctionDefinition(FunctionDefinition {
             kind: FunctionKind::Constructor,
             ..

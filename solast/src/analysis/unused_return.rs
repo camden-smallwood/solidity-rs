@@ -1,107 +1,98 @@
-use super::{AstVisitor, StatementContext};
-use solidity::ast::SourceUnit;
-use std::io;
+use solidity::ast::*;
 
-pub struct UnusedReturnVisitor<'a> {
-    source_units: &'a [SourceUnit],
-}
+pub struct UnusedReturnVisitor;
 
-impl<'a> UnusedReturnVisitor<'a> {
-    pub fn new(source_units: &'a [SourceUnit]) -> Self {
-        Self { source_units }
-    }
-}
+impl super::AstVisitor for UnusedReturnVisitor {
+    fn visit_statement<'a, 'b>(&mut self, context: &mut super::StatementContext<'a, 'b>) -> std::io::Result<()> {
+        let referenced_declaration = match context.statement {
+            Statement::ExpressionStatement(ExpressionStatement {
+                expression: Expression::FunctionCall(FunctionCall {
+                    arguments,
+                    expression,
+                    ..
+                })
+            }) if !arguments.is_empty() => match expression.root_expression() {
+                Some(&Expression::Identifier(Identifier {
+                    referenced_declaration,
+                    ..
+                })) => referenced_declaration,
 
-impl AstVisitor for UnusedReturnVisitor<'_> {
-    fn visit_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> {
-        if let solidity::ast::Statement::ExpressionStatement(expression_statement) = context.statement {
-            if let solidity::ast::Expression::FunctionCall(solidity::ast::FunctionCall {
-                expression,
-                ..
-            })
-            | solidity::ast::Expression::FunctionCallOptions(solidity::ast::FunctionCallOptions {
-                expression,
-                ..
-            }) = &expression_statement.expression {
-                let referenced_declaration = match expression.root_expression() {
-                    Some(solidity::ast::Expression::Identifier(solidity::ast::Identifier { referenced_declaration, .. })) => referenced_declaration.clone(),
-                    Some(solidity::ast::Expression::MemberAccess(solidity::ast::MemberAccess { referenced_declaration: Some(referenced_delcaration), .. })) => referenced_delcaration.clone(),
-                    _ => return Ok(())
-                };
+                Some(&Expression::MemberAccess(MemberAccess {
+                    referenced_declaration: Some(referenced_delcaration),
+                    ..
+                })) => referenced_delcaration,
 
-                for source_unit in self.source_units.iter() {
-                    if let Some((called_contract_definition, called_function_definition)) = source_unit.function_and_contract_definition(referenced_declaration) {
-                        if !called_function_definition.return_parameters.parameters.is_empty() {
-                            match context.definition_node {
-                                solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
-                                    println!(
-                                        "\tThe {} `{}` {} makes a call to the {} `{}` {}, ignoring the returned {}",
+                _ => return Ok(())
+            }
 
-                                        function_definition.visibility,
+            _ => return Ok(())
+        };
 
-                                        if function_definition.name.is_empty() {
-                                            format!("{}", context.contract_definition.name)
-                                        } else {
-                                            format!("{}.{}", context.contract_definition.name, function_definition.name)
-                                        },
+        for source_unit in context.source_units.iter() {
+            if let Some((called_contract_definition, called_function_definition)) = source_unit.function_and_contract_definition(referenced_declaration) {
+                match context.definition_node {
+                    ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                        "\tThe {} `{}` {} makes a call to the {} `{}` {}, ignoring the returned {}",
 
-                                        function_definition.kind,
+                        function_definition.visibility,
 
-                                        format!("{:?}", called_function_definition.visibility).to_lowercase(),
+                        if function_definition.name.is_empty() {
+                            format!("{}", context.contract_definition.name)
+                        } else {
+                            format!("{}.{}", context.contract_definition.name, function_definition.name)
+                        },
 
-                                        if called_function_definition.name.is_empty() {
-                                            format!("{}", called_contract_definition.name)
-                                        } else {
-                                            format!("{}.{}", called_contract_definition.name, called_function_definition.name)
-                                        },
+                        function_definition.kind,
 
-                                        format!("{:?}", called_function_definition.kind).to_lowercase(),
+                        format!("{:?}", called_function_definition.visibility).to_lowercase(),
 
-                                        if called_function_definition.return_parameters.parameters.len() > 1 {
-                                            "values"
-                                        } else {
-                                            "value"
-                                        }
-                                    );
-                                }
+                        if called_function_definition.name.is_empty() {
+                            format!("{}", called_contract_definition.name)
+                        } else {
+                            format!("{}.{}", called_contract_definition.name, called_function_definition.name)
+                        },
 
-                                solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
-                                    println!(
-                                        "\tThe {} `{}` modifier makes a call to the {} `{}` {}, ignoring the returned {}",
+                        format!("{:?}", called_function_definition.kind).to_lowercase(),
 
-                                        format!("{:?}", modifier_definition.visibility).to_lowercase(),
-
-                                        if modifier_definition.name.is_empty() {
-                                            format!("{}", context.contract_definition.name)
-                                        } else {
-                                            format!("{}.{}", context.contract_definition.name, modifier_definition.name)
-                                        },
-
-                                        format!("{:?}", called_function_definition.visibility).to_lowercase(),
-
-                                        if called_function_definition.name.is_empty() {
-                                            format!("{}", called_contract_definition.name)
-                                        } else {
-                                            format!("{}.{}", called_contract_definition.name, called_function_definition.name)
-                                        },
-
-                                        format!("{:?}", called_function_definition.kind).to_lowercase(),
-
-                                        if called_function_definition.return_parameters.parameters.len() > 1 {
-                                            "values"
-                                        } else {
-                                            "value"
-                                        }
-                                    );
-                                }
-
-                                _ => {}
-                            }
-
-                            return Ok(());
+                        if called_function_definition.return_parameters.parameters.len() > 1 {
+                            "values"
+                        } else {
+                            "value"
                         }
-                    }
+                    ),
+
+                    ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                        "\tThe {} `{}` modifier makes a call to the {} `{}` {}, ignoring the returned {}",
+
+                        format!("{:?}", modifier_definition.visibility).to_lowercase(),
+
+                        if modifier_definition.name.is_empty() {
+                            format!("{}", context.contract_definition.name)
+                        } else {
+                            format!("{}.{}", context.contract_definition.name, modifier_definition.name)
+                        },
+
+                        format!("{:?}", called_function_definition.visibility).to_lowercase(),
+
+                        if called_function_definition.name.is_empty() {
+                            format!("{}", called_contract_definition.name)
+                        } else {
+                            format!("{}.{}", called_contract_definition.name, called_function_definition.name)
+                        },
+
+                        format!("{:?}", called_function_definition.kind).to_lowercase(),
+
+                        if called_function_definition.return_parameters.parameters.len() > 1 {
+                            "values"
+                        } else {
+                            "value"
+                        }
+                    ),
+
+                    _ => ()
                 }
+
+                return Ok(())
             }
         }
 
