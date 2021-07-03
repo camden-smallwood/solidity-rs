@@ -96,16 +96,8 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_> {
         Ok(())
     }
 
-    fn visit_identifier(
-        &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        _contract_definition: &solidity::ast::ContractDefinition,
-        definition_node: &solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&solidity::ast::Block>,
-        _statement: Option<&solidity::ast::Statement>,
-        identifier: &solidity::ast::Identifier,
-    ) -> io::Result<()> {
-        match definition_node {
+    fn visit_identifier<'a, 'b>(&mut self, context: &mut super::IdentifierContext<'a, 'b>) -> io::Result<()> {
+        match context.definition_node {
             solidity::ast::ContractDefinitionNode::FunctionDefinition(_) => {}
             _ => return Ok(())
         }
@@ -116,7 +108,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_> {
 
         for source_unit in self.source_units.iter() {
             let function_definition =
-                match source_unit.function_definition(identifier.referenced_declaration) {
+                match source_unit.function_definition(context.identifier.referenced_declaration) {
                     Some(function_definition) => function_definition,
                     None => continue,
                 };

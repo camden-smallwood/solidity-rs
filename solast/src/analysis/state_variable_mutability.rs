@@ -1,5 +1,5 @@
-use super::{AstVisitor, VariableDeclarationContext};
-use solidity::ast::{Assignment, Block, ContractDefinition, ContractDefinitionNode, Expression, FunctionCall, FunctionDefinition, FunctionKind, NodeID, SourceUnit, Statement, UnaryOperation};
+use super::{AssignmentContext, AstVisitor, UnaryOperationContext, VariableDeclarationContext};
+use solidity::ast::*;
 use std::{collections::HashMap, io};
 
 pub struct ContractInfo {
@@ -72,30 +72,22 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_> {
         Ok(())
     }
 
-    fn visit_assignment<'a>(
-        &mut self,
-        _source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        _blocks: &mut Vec<&'a Block>,
-        _statement: Option<&'a Statement>,
-        assignment: &'a Assignment,
-    ) -> io::Result<()> {
+    fn visit_assignment<'a, 'b>(&mut self, context: &mut AssignmentContext<'a, 'b>) -> io::Result<()> {
         if let ContractDefinitionNode::FunctionDefinition(FunctionDefinition {
             kind: FunctionKind::Constructor,
             ..
-        }) = definition_node {
+        }) = context.definition_node {
             return Ok(())
         }
         
-        let ids = contract_definition.get_assigned_state_variables(
+        let ids = context.contract_definition.get_assigned_state_variables(
             self.source_units,
-            definition_node,
-            assignment.left_hand_side.as_ref(),
+            context.definition_node,
+            context.assignment.left_hand_side.as_ref(),
         );
 
         for id in ids {
-            let contract_info = match self.contract_info.get_mut(&contract_definition.id) {
+            let contract_info = match self.contract_info.get_mut(&context.contract_definition.id) {
                 Some(contract_info) => contract_info,
                 None => continue,
             };
@@ -108,30 +100,22 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_> {
         Ok(())
     }
 
-    fn visit_unary_operation<'a>(
-        &mut self,
-        _source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        _blocks: &mut Vec<&'a Block>,
-        _statement: Option<&'a Statement>,
-        unary_operation: &'a UnaryOperation,
-    ) -> io::Result<()> {
+    fn visit_unary_operation<'a, 'b>(&mut self, context: &mut UnaryOperationContext<'a, 'b>) -> io::Result<()> {
         if let ContractDefinitionNode::FunctionDefinition(FunctionDefinition {
             kind: FunctionKind::Constructor,
             ..
-        }) = definition_node {
+        }) = context.definition_node {
             return Ok(())
         }
         
-        let ids = contract_definition.get_assigned_state_variables(
+        let ids = context.contract_definition.get_assigned_state_variables(
             self.source_units,
-            definition_node,
-            unary_operation.sub_expression.as_ref(),
+            context.definition_node,
+            context.unary_operation.sub_expression.as_ref(),
         );
 
         for id in ids {
-            let contract_info = match self.contract_info.get_mut(&contract_definition.id) {
+            let contract_info = match self.contract_info.get_mut(&context.contract_definition.id) {
                 Some(contract_info) => contract_info,
                 None => continue
             };

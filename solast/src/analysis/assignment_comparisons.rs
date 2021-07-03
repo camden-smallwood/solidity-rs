@@ -1,6 +1,6 @@
 use super::AstVisitor;
 use solidity::ast::{
-    Block, Conditional, ContractDefinition, ContractDefinitionNode, Expression,
+    Block, ContractDefinition, ContractDefinitionNode, Expression,
     FunctionCall, Identifier, SourceUnit, Statement,
 };
 use std::io;
@@ -174,25 +174,17 @@ impl AstVisitor for AssignmentComparisonsVisitor {
         Ok(())
     }
 
-    fn visit_conditional<'a>(
-        &mut self,
-        _source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        _blocks: &mut Vec<&'a Block>,
-        _statement: Option<&'a Statement>,
-        conditional: &'a Conditional,
-    ) -> io::Result<()> {
-        if conditional.condition.contains_operation("=") {
-            match definition_node {
+    fn visit_conditional<'a, 'b>(&mut self, context: &mut super::ConditionalContext<'a, 'b>) -> io::Result<()> {
+        if context.conditional.condition.contains_operation("=") {
+            match context.definition_node {
                 solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
                     println!(
                         "\t{} {} {} contains a conditional expression with a condition that performs an assignment",
                         format!("{:?}", function_definition.visibility),
                         if function_definition.name.is_empty() {
-                            format!("{}", contract_definition.name)
+                            format!("{}", context.contract_definition.name)
                         } else {
-                            format!("{}.{}", contract_definition.name, function_definition.name)
+                            format!("{}.{}", context.contract_definition.name, function_definition.name)
                         },
                         function_definition.kind
                     );
@@ -203,9 +195,9 @@ impl AstVisitor for AssignmentComparisonsVisitor {
                         "\t{} {} modifier contains a conditional expression with a condition that performs an assignment",
                         format!("{:?}", modifier_definition.visibility),
                         if modifier_definition.name.is_empty() {
-                            format!("{}", contract_definition.name)
+                            format!("{}", context.contract_definition.name)
                         } else {
-                            format!("{}.{}", contract_definition.name, modifier_definition.name)
+                            format!("{}.{}", context.contract_definition.name, modifier_definition.name)
                         }
                     );
                 }

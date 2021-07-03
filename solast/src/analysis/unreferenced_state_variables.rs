@@ -1,6 +1,6 @@
 use super::{AstVisitor, VariableDeclarationContext};
 use solidity::ast::{
-    Block, ContractDefinition, ContractDefinitionNode, FunctionKind, Identifier, MemberAccess,
+    Block, ContractDefinition, ContractDefinitionNode, FunctionKind, MemberAccess,
     NodeID, SourceUnit, Statement,
 };
 use std::{collections::HashMap, io};
@@ -68,24 +68,16 @@ impl AstVisitor for UnusedStateVariablesVisitor {
         Ok(())
     }
 
-    fn visit_identifier(
-        &mut self,
-        _source_unit: &SourceUnit,
-        contract_definition: &ContractDefinition,
-        definition_node: &ContractDefinitionNode,
-        _blocks: &mut Vec<&Block>,
-        _statement: Option<&Statement>,
-        identifier: &Identifier,
-    ) -> io::Result<()> {
-        match definition_node {
+    fn visit_identifier<'a, 'b>(&mut self, context: &mut super::IdentifierContext<'a, 'b>) -> io::Result<()> {
+        match context.definition_node {
             ContractDefinitionNode::FunctionDefinition(function_definition) if function_definition.kind != FunctionKind::Constructor => {}
             ContractDefinitionNode::ModifierDefinition(_) => {}
             _ => return Ok(())
         }
 
-        let contract_info = self.contract_info.get_mut(&contract_definition.id).unwrap();
+        let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
 
-        if let Some(variable_info) = contract_info.variable_info.get_mut(&identifier.referenced_declaration) {
+        if let Some(variable_info) = contract_info.variable_info.get_mut(&context.identifier.referenced_declaration) {
             *variable_info = true;
         }
 

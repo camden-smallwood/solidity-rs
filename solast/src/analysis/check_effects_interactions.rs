@@ -1,4 +1,4 @@
-use super::{AstVisitor, FunctionDefinitionContext, StatementContext};
+use super::{AstVisitor, FunctionDefinitionContext, IdentifierContext, StatementContext};
 use solidity::ast::{NodeID, SourceUnit};
 use std::{collections::HashMap, io};
 
@@ -120,23 +120,13 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_> {
         Ok(())
     }
 
-    fn visit_identifier(
-        &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        _contract_definition: &solidity::ast::ContractDefinition,
-        _definition_node: &solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&solidity::ast::Block>,
-        _statement: Option<&solidity::ast::Statement>,
-        identifier: &solidity::ast::Identifier,
-    ) -> io::Result<()> {
+    fn visit_identifier<'a, 'b>(&mut self, context: &mut IdentifierContext<'a, 'b>) -> io::Result<()> {
         if self.makes_external_call {
             return Ok(());
         }
 
         for source_unit in self.source_units.iter() {
-            if let Some(function_definition) =
-                source_unit.function_definition(identifier.referenced_declaration)
-            {
+            if let Some(function_definition) = source_unit.function_definition(context.identifier.referenced_declaration) {
                 if let solidity::ast::Visibility::External = function_definition.visibility {
                     self.makes_external_call = true;
                     return Ok(());
@@ -175,16 +165,8 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_> {
         Ok(())
     }
 
-    fn visit_assignment<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        contract_definition: &'a solidity::ast::ContractDefinition,
-        definition_node: &'a solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&'a solidity::ast::Block>,
-        _statement: Option<&'a solidity::ast::Statement>,
-        assignment: &'a solidity::ast::Assignment,
-    ) -> io::Result<()> {
-        let function_definition = match definition_node {
+    fn visit_assignment<'a, 'b>(&mut self, context: &mut super::AssignmentContext<'a, 'b>) -> io::Result<()> {
+        let function_definition = match context.definition_node {
             solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition,
             _ => return Ok(())
         };
@@ -206,17 +188,17 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_> {
             return Ok(());
         }
 
-        let ids = contract_definition.get_assigned_state_variables(
+        let ids = context.contract_definition.get_assigned_state_variables(
             self.source_units,
-            definition_node,
-            assignment.left_hand_side.as_ref(),
+            context.definition_node,
+            context.assignment.left_hand_side.as_ref(),
         );
 
         if !ids.is_empty() {
             self.makes_post_external_call_assignment = true;
         }
 
-        match assignment.left_hand_side.as_ref() {
+        match context.assignment.left_hand_side.as_ref() {
             solidity::ast::Expression::Identifier(_) => {
                 // TODO: check if local variable is no longer bound to state variable
             }
@@ -224,7 +206,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_> {
             solidity::ast::Expression::IndexAccess(_)
             | solidity::ast::Expression::IndexRangeAccess(_)
             | solidity::ast::Expression::MemberAccess(_) => {
-                match assignment.left_hand_side.root_expression() {
+                match context.assignment.left_hand_side.root_expression() {
                     Some(solidity::ast::Expression::Identifier(solidity::ast::Identifier {
                         referenced_declaration,
                         ..

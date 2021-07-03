@@ -1,7 +1,7 @@
-use super::{AstVisitor, FunctionDefinitionContext};
+use super::{AssignmentContext, AstVisitor, FunctionDefinitionContext};
 
 use solidity::ast::{
-    Assignment, Block, BlockOrStatement, ContractDefinition, ContractDefinitionNode,
+    Block, BlockOrStatement, ContractDefinition, ContractDefinitionNode,
     NodeID, SourceUnit, Statement,
 };
 
@@ -87,16 +87,8 @@ impl AstVisitor for MissingReturnVisitor {
         Ok(())
     }
 
-    fn visit_assignment<'a>(
-        &mut self,
-        _source_unit: &'a SourceUnit,
-        _contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        _blocks: &mut Vec<&'a Block>,
-        _statement: Option<&'a Statement>,
-        assignment: &'a Assignment,
-    ) -> io::Result<()> {
-        let function_definition = match definition_node {
+    fn visit_assignment<'a, 'b>(&mut self, context: &mut AssignmentContext<'a, 'b>) -> io::Result<()> {
+        let function_definition = match context.definition_node {
             ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition,
             _ => return Ok(())
         };
@@ -106,7 +98,7 @@ impl AstVisitor for MissingReturnVisitor {
             _ => return Ok(())
         };
 
-        for id in function_definition.get_assigned_return_variables(assignment.left_hand_side.as_ref()) {
+        for id in function_definition.get_assigned_return_variables(context.assignment.left_hand_side.as_ref()) {
             if !function_info.assigned_return_variables.contains(&id) {
                 function_info.assigned_return_variables.insert(id);
             }

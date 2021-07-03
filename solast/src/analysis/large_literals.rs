@@ -1,4 +1,4 @@
-use super::{AstVisitor, FunctionDefinitionContext};
+use super::{AstVisitor, FunctionDefinitionContext, LiteralContext};
 use solidity::ast::NodeID;
 use std::{collections::HashSet, io};
 
@@ -35,22 +35,14 @@ impl AstVisitor for LargeLiteralsVisitor {
         Ok(())
     }
 
-    fn visit_literal(
-        &mut self,
-        _source_unit: &solidity::ast::SourceUnit,
-        _contract_definition: &solidity::ast::ContractDefinition,
-        definition_node: &solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&solidity::ast::Block>,
-        _statement: Option<&solidity::ast::Statement>,
-        literal: &solidity::ast::Literal,
-    ) -> io::Result<()> {
-        let definition_id = match definition_node {
+    fn visit_literal<'a, 'b>(&mut self, context: &mut LiteralContext<'a, 'b>) -> io::Result<()> {
+        let definition_id = match context.definition_node {
             solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition.id,
             solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => modifier_definition.id,
             _ => return Ok(())
         };
 
-        if let Some(value) = literal.value.as_ref() {
+        if let Some(value) = context.literal.value.as_ref() {
             if value.chars().all(char::is_numeric) && (|n| (n > 6) && ((n % 3) != 0))(value.len()) {
                 if !self.functions.contains(&definition_id) {
                     self.functions.insert(definition_id);

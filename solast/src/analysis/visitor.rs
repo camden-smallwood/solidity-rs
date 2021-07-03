@@ -272,6 +272,66 @@ pub struct ExpressionContext<'a, 'b> {
     pub expression: &'a Expression,
 }
 
+pub struct LiteralContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: Option<&'a Statement>,
+    pub literal: &'a Literal,
+}
+
+pub struct IdentifierContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: Option<&'a Statement>,
+    pub identifier: &'a Identifier,
+}
+
+pub struct UnaryOperationContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: Option<&'a Statement>,
+    pub unary_operation: &'a UnaryOperation,
+}
+
+pub struct BinaryOperationContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: Option<&'a Statement>,
+    pub binary_operation: &'a BinaryOperation,
+}
+
+pub struct ConditionalContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: Option<&'a Statement>,
+    pub conditional: &'a Conditional,
+}
+
+pub struct AssignmentContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: Option<&'a Statement>,
+    pub assignment: &'a Assignment,
+}
+
 #[allow(unused_variables)]
 pub trait AstVisitor {
     fn visit_source_unit<'a>(&mut self, context: &mut SourceUnitContext<'a>) -> io::Result<()> { Ok(()) }
@@ -346,77 +406,23 @@ pub trait AstVisitor {
     fn visit_expression<'a, 'b>(&mut self, context: &mut ExpressionContext<'a, 'b>) -> io::Result<()> { Ok(()) }
     fn leave_expression<'a, 'b>(&mut self, context: &mut ExpressionContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
-    fn visit_literal(
-        &mut self,
-        source_unit: &SourceUnit,
-        contract_definition: &ContractDefinition,
-        definition_node: &ContractDefinitionNode,
-        blocks: &mut Vec<&Block>,
-        statement: Option<&Statement>,
-        literal: &Literal,
-    ) -> io::Result<()> {
-        Ok(())
-    }
+    fn visit_literal<'a, 'b>(&mut self, context: &mut LiteralContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_literal<'a, 'b>(&mut self, context: &mut LiteralContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
-    fn visit_identifier(
-        &mut self,
-        source_unit: &SourceUnit,
-        contract_definition: &ContractDefinition,
-        definition_node: &ContractDefinitionNode,
-        blocks: &mut Vec<&Block>,
-        statement: Option<&Statement>,
-        identifier: &Identifier,
-    ) -> io::Result<()> {
-        Ok(())
-    }
+    fn visit_identifier<'a, 'b>(&mut self, context: &mut IdentifierContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_identifier<'a, 'b>(&mut self, context: &mut IdentifierContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
-    fn visit_unary_operation<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: Option<&'a Statement>,
-        unary_operation: &'a UnaryOperation,
-    ) -> io::Result<()> {
-        Ok(())
-    }
+    fn visit_unary_operation<'a, 'b>(&mut self, context: &mut UnaryOperationContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_unary_operation<'a, 'b>(&mut self, context: &mut UnaryOperationContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
-    fn visit_binary_operation<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: Option<&'a Statement>,
-        binary_operation: &'a BinaryOperation,
-    ) -> io::Result<()> {
-        Ok(())
-    }
+    fn visit_binary_operation<'a, 'b>(&mut self, context: &mut BinaryOperationContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_binary_operation<'a, 'b>(&mut self, context: &mut BinaryOperationContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
-    fn visit_conditional<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: Option<&'a Statement>,
-        conditional: &'a Conditional,
-    ) -> io::Result<()> {
-        Ok(())
-    }
+    fn visit_conditional<'a, 'b>(&mut self, context: &mut ConditionalContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_conditional<'a, 'b>(&mut self, context: &mut ConditionalContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
-    fn visit_assignment<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: Option<&'a Statement>,
-        assignment: &'a Assignment,
-    ) -> io::Result<()> {
-        Ok(())
-    }
+    fn visit_assignment<'a, 'b>(&mut self, context: &mut AssignmentContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_assignment<'a, 'b>(&mut self, context: &mut AssignmentContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
     fn visit_function_call<'a>(
         &mut self,
@@ -1627,65 +1633,95 @@ impl AstVisitor for AstVisitorData<'_> {
 
         match context.expression {
             Expression::Literal(literal) => {
-                self.visit_literal(
-                    context.current_source_unit,
-                    context.contract_definition,
-                    context.definition_node,
-                    context.blocks,
-                    context.statement,
+                let mut context = LiteralContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
                     literal,
-                )?;
+                };
+
+                self.visit_literal(&mut context)?;
+                self.leave_literal(&mut context)?;
             }
+
             Expression::Identifier(identifier) => {
-                self.visit_identifier(
-                    context.current_source_unit,
-                    context.contract_definition,
-                    context.definition_node,
-                    context.blocks,
-                    context.statement,
+                let mut context = IdentifierContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
                     identifier,
-                )?;
+                };
+
+                self.visit_identifier(&mut context)?;
+                self.leave_identifier(&mut context)?;
             }
+
             Expression::UnaryOperation(unary_operation) => {
-                self.visit_unary_operation(
-                    context.current_source_unit,
-                    context.contract_definition,
-                    context.definition_node,
-                    context.blocks,
-                    context.statement,
+                let mut context = UnaryOperationContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
                     unary_operation,
-                )?;
+                };
+
+                self.visit_unary_operation(&mut context)?;
+                self.leave_unary_operation(&mut context)?;
             }
+
             Expression::BinaryOperation(binary_operation) => {
-                self.visit_binary_operation(
-                    context.current_source_unit,
-                    context.contract_definition,
-                    context.definition_node,
-                    context.blocks,
-                    context.statement,
+                let mut context = BinaryOperationContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
                     binary_operation,
-                )?;
+                };
+
+                self.visit_binary_operation(&mut context)?;
+                self.leave_binary_operation(&mut context)?;
             }
+
             Expression::Conditional(conditional) => {
-                self.visit_conditional(
-                    context.current_source_unit,
-                    context.contract_definition,
-                    context.definition_node,
-                    context.blocks,
-                    context.statement,
+                let mut context = ConditionalContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
                     conditional,
-                )?;
+                };
+
+                self.visit_conditional(&mut context)?;
+                self.leave_conditional(&mut context)?;
             }
+
             Expression::Assignment(assignment) => {
-                self.visit_assignment(
-                    context.current_source_unit,
-                    context.contract_definition,
-                    context.definition_node,
-                    context.blocks,
-                    context.statement,
+                let mut context = AssignmentContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
                     assignment,
-                )?;
+                };
+
+                self.visit_assignment(&mut context)?;
+                self.leave_assignment(&mut context)?;
             }
+
             Expression::FunctionCall(function_call) => {
                 self.visit_function_call(
                     context.current_source_unit,
@@ -1696,6 +1732,7 @@ impl AstVisitor for AstVisitorData<'_> {
                     function_call,
                 )?;
             }
+
             Expression::FunctionCallOptions(function_call_options) => {
                 self.visit_function_call_options(
                     context.current_source_unit,
@@ -1706,6 +1743,7 @@ impl AstVisitor for AstVisitorData<'_> {
                     function_call_options,
                 )?;
             }
+
             Expression::IndexAccess(index_access) => {
                 self.visit_index_access(
                     context.current_source_unit,
@@ -1716,6 +1754,7 @@ impl AstVisitor for AstVisitorData<'_> {
                     index_access,
                 )?;
             }
+
             Expression::IndexRangeAccess(index_range_access) => {
                 self.visit_index_range_access(
                     context.current_source_unit,
@@ -1726,6 +1765,7 @@ impl AstVisitor for AstVisitorData<'_> {
                     index_range_access,
                 )?;
             }
+
             Expression::MemberAccess(member_access) => {
                 self.visit_member_access(
                     context.current_source_unit,
@@ -1736,6 +1776,7 @@ impl AstVisitor for AstVisitorData<'_> {
                     member_access,
                 )?;
             }
+
             Expression::ElementaryTypeNameExpression(elementary_type_name_expression) => {
                 self.visit_elementary_type_name_expression(
                     context.current_source_unit,
@@ -1746,6 +1787,7 @@ impl AstVisitor for AstVisitorData<'_> {
                     elementary_type_name_expression,
                 )?;
             }
+
             Expression::TupleExpression(tuple_expression) => {
                 self.visit_tuple_expression(
                     context.current_source_unit,
@@ -1756,6 +1798,7 @@ impl AstVisitor for AstVisitorData<'_> {
                     tuple_expression,
                 )?;
             }
+
             Expression::NewExpression(new_expression) => {
                 self.visit_new_expression(
                     context.current_source_unit,
@@ -1766,6 +1809,7 @@ impl AstVisitor for AstVisitorData<'_> {
                     new_expression,
                 )?;
             }
+
             Expression::UnhandledExpression { node_type, src, id } => {
                 self.visit_unhandled_expression(context.current_source_unit, node_type, src, id)?;
             }
@@ -1774,129 +1818,93 @@ impl AstVisitor for AstVisitorData<'_> {
         Ok(())
     }
 
-    fn visit_literal(
-        &mut self,
-        source_unit: &SourceUnit,
-        contract_definition: &ContractDefinition,
-        definition_node: &ContractDefinitionNode,
-        blocks: &mut Vec<&Block>,
-        statement: Option<&Statement>,
-        literal: &Literal,
-    ) -> io::Result<()> {
+    fn visit_literal<'a, 'b>(&mut self, context: &mut LiteralContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_literal(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                literal,
-            )?;
+            visitor.visit_literal(context)?;
         }
 
         Ok(())
     }
 
-    fn visit_identifier(
-        &mut self,
-        source_unit: &SourceUnit,
-        contract_definition: &ContractDefinition,
-        definition_node: &ContractDefinitionNode,
-        blocks: &mut Vec<&Block>,
-        statement: Option<&Statement>,
-        identifier: &Identifier,
-    ) -> io::Result<()> {
+    fn leave_literal<'a, 'b>(&mut self, context: &mut LiteralContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_identifier(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                identifier,
-            )?;
+            visitor.leave_literal(context)?;
         }
 
         Ok(())
     }
 
-    fn visit_unary_operation<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: Option<&'a Statement>,
-        unary_operation: &'a UnaryOperation,
-    ) -> io::Result<()> {
+    fn visit_identifier<'a, 'b>(&mut self, context: &mut IdentifierContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_unary_operation(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                unary_operation,
-            )?;
+            visitor.visit_identifier(context)?;
         }
 
-        let mut context = ExpressionContext {
-            source_units: &[], // TODO
-            current_source_unit: source_unit,
-            contract_definition: contract_definition,
-            definition_node: definition_node,
-            blocks: blocks,
-            statement: statement,
-            expression: unary_operation.sub_expression.as_ref(),
+        Ok(())
+    }
+
+    fn leave_identifier<'a, 'b>(&mut self, context: &mut IdentifierContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_identifier(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_unary_operation<'a, 'b>(&mut self, context: &mut UnaryOperationContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_unary_operation(context)?;
+        }
+
+        let mut sub_context = ExpressionContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            expression: context.unary_operation.sub_expression.as_ref(),
         };
 
-        self.visit_expression(&mut context)?;
-        self.leave_expression(&mut context)?;
+        self.visit_expression(&mut sub_context)?;
+        self.leave_expression(&mut sub_context)?;
 
         Ok(())
     }
 
-    fn visit_binary_operation<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: Option<&'a Statement>,
-        binary_operation: &'a BinaryOperation,
-    ) -> io::Result<()> {
+    fn leave_unary_operation<'a, 'b>(&mut self, context: &mut UnaryOperationContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_binary_operation(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                binary_operation,
-            )?;
+            visitor.leave_unary_operation(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_binary_operation<'a, 'b>(&mut self, context: &mut BinaryOperationContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_binary_operation(context)?;
         }
 
         let mut left_context = ExpressionContext {
-            source_units: &[], // TODO
-            current_source_unit: source_unit,
-            contract_definition: contract_definition,
-            definition_node: definition_node,
-            blocks: blocks,
-            statement: statement,
-            expression: binary_operation.left_expression.as_ref(),
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            expression: context.binary_operation.left_expression.as_ref(),
         };
 
         self.visit_expression(&mut left_context)?;
         self.leave_expression(&mut left_context)?;
 
         let mut right_context = ExpressionContext {
-            source_units: &[], // TODO
-            current_source_unit: source_unit,
-            contract_definition: contract_definition,
-            definition_node: definition_node,
-            blocks: blocks,
-            statement: statement,
-            expression: binary_operation.right_expression.as_ref(),
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            expression: context.binary_operation.right_expression.as_ref(),
         };
 
         self.visit_expression(&mut right_context)?;
@@ -1905,60 +1913,53 @@ impl AstVisitor for AstVisitorData<'_> {
         Ok(())
     }
 
-    fn visit_conditional<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: Option<&'a Statement>,
-        conditional: &'a Conditional,
-    ) -> io::Result<()> {
+    fn leave_binary_operation<'a, 'b>(&mut self, context: &mut BinaryOperationContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_conditional(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                conditional,
-            )?;
+            visitor.leave_binary_operation(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_conditional<'a, 'b>(&mut self, context: &mut ConditionalContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_conditional(context)?;
         }
 
         let mut condition_context = ExpressionContext {
-            source_units: &[], // TODO
-            current_source_unit: source_unit,
-            contract_definition: contract_definition,
-            definition_node: definition_node,
-            blocks: blocks,
-            statement: statement,
-            expression: conditional.condition.as_ref(),
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            expression: context.conditional.condition.as_ref(),
         };
 
         self.visit_expression(&mut condition_context)?;
         self.leave_expression(&mut condition_context)?;
 
         let mut true_context = ExpressionContext {
-            source_units: &[], // TODO
-            current_source_unit: source_unit,
-            contract_definition: contract_definition,
-            definition_node: definition_node,
-            blocks: blocks,
-            statement: statement,
-            expression: conditional.true_expression.as_ref(),
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            expression: context.conditional.true_expression.as_ref(),
         };
 
         self.visit_expression(&mut true_context)?;
         self.leave_expression(&mut true_context)?;
 
         let mut false_context = ExpressionContext {
-            source_units: &[], // TODO
-            current_source_unit: source_unit,
-            contract_definition: contract_definition,
-            definition_node: definition_node,
-            blocks: blocks,
-            statement: statement,
-            expression: conditional.false_expression.as_ref(),
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            expression: context.conditional.false_expression.as_ref(),
         };
 
         self.visit_expression(&mut false_context)?;
@@ -1967,51 +1968,52 @@ impl AstVisitor for AstVisitorData<'_> {
         Ok(())
     }
 
-    fn visit_assignment<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: Option<&'a Statement>,
-        assignment: &'a Assignment,
-    ) -> io::Result<()> {
+    fn leave_conditional<'a, 'b>(&mut self, context: &mut ConditionalContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_assignment(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                assignment,
-            )?;
+            visitor.leave_conditional(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_assignment<'a, 'b>(&mut self, context: &mut AssignmentContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_assignment(context)?;
         }
 
         let mut left_context = ExpressionContext {
-            source_units: &[], // TODO
-            current_source_unit: source_unit,
-            contract_definition: contract_definition,
-            definition_node: definition_node,
-            blocks: blocks,
-            statement: statement,
-            expression: assignment.left_hand_side.as_ref(),
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            expression: context.assignment.left_hand_side.as_ref(),
         };
 
         self.visit_expression(&mut left_context)?;
         self.leave_expression(&mut left_context)?;
 
         let mut right_context = ExpressionContext {
-            source_units: &[], // TODO
-            current_source_unit: source_unit,
-            contract_definition: contract_definition,
-            definition_node: definition_node,
-            blocks: blocks,
-            statement: statement,
-            expression: assignment.right_hand_side.as_ref(),
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            expression: context.assignment.right_hand_side.as_ref(),
         };
 
         self.visit_expression(&mut right_context)?;
         self.leave_expression(&mut right_context)?;
+
+        Ok(())
+    }
+
+    fn leave_assignment<'a, 'b>(&mut self, context: &mut AssignmentContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_assignment(context)?;
+        }
 
         Ok(())
     }

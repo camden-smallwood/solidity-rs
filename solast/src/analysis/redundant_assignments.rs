@@ -9,16 +9,8 @@ pub struct RedundantAssignmentsVisitor;
 //
 
 impl AstVisitor for RedundantAssignmentsVisitor {
-    fn visit_assignment<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        contract_definition: &'a solidity::ast::ContractDefinition,
-        definition_node: &'a solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&'a solidity::ast::Block>,
-        _statement: Option<&'a solidity::ast::Statement>,
-        assignment: &'a solidity::ast::Assignment,
-    ) -> std::io::Result<()> {
-        if let Expression::TupleExpression(tuple_expression) = assignment.left_hand_side.as_ref() {
+    fn visit_assignment<'a, 'b>(&mut self, context: &mut super::AssignmentContext<'a, 'b>) -> std::io::Result<()> {
+        if let Expression::TupleExpression(tuple_expression) = context.assignment.left_hand_side.as_ref() {
             let mut tuple_component_ids: Vec<Vec<NodeID>> = vec![];
 
             for component in tuple_expression.components.iter() {
@@ -29,7 +21,7 @@ impl AstVisitor for RedundantAssignmentsVisitor {
                 }
 
                 if !component_ids.is_empty() && tuple_component_ids.iter().find(|&ids| ids.eq(&component_ids)).is_some() {
-                    match definition_node {
+                    match context.definition_node {
                         ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
                             "\tThe {} {} in the `{}` {} contains a redundant assignment: `{}`",
 
@@ -41,10 +33,10 @@ impl AstVisitor for RedundantAssignmentsVisitor {
                                 format!("`{}` {}", function_definition.name, function_definition.kind)
                             },
 
-                            contract_definition.name,
-                            contract_definition.kind,
+                            context.contract_definition.name,
+                            context.contract_definition.kind,
 
-                            assignment
+                            context.assignment
                         ),
 
                         ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
@@ -52,10 +44,10 @@ impl AstVisitor for RedundantAssignmentsVisitor {
 
                             modifier_definition.name,
 
-                            contract_definition.name,
-                            contract_definition.kind,
+                            context.contract_definition.name,
+                            context.contract_definition.kind,
 
-                            assignment
+                            context.assignment
                         ),
 
                         _ => return Ok(())
