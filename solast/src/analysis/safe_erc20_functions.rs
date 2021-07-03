@@ -92,22 +92,14 @@ impl AstVisitor for SafeERC20FunctionsVisitor<'_> {
         Ok(())
     }
 
-    fn visit_function_call<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        contract_definition: &'a solidity::ast::ContractDefinition,
-        definition_node: &'a solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&'a solidity::ast::Block>,
-        _statement: Option<&'a solidity::ast::Statement>,
-        function_call: &'a solidity::ast::FunctionCall,
-    ) -> io::Result<()> {
-        let definition_id = match definition_node {
+    fn visit_function_call<'a, 'b>(&mut self, context: &mut super::FunctionCallContext<'a, 'b>) -> io::Result<()> {
+        let definition_id = match context.definition_node {
             solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
             solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,
             _ => return Ok(())
         };
 
-        if contract_definition.name == "SafeERC20" {
+        if context.contract_definition.name == "SafeERC20" {
             return Ok(());
         }
 
@@ -116,7 +108,7 @@ impl AstVisitor for SafeERC20FunctionsVisitor<'_> {
             None => return Ok(())
         };
 
-        for referenced_declaration in function_call.expression.referenced_declarations() {
+        for referenced_declaration in context.function_call.expression.referenced_declarations() {
             for source_unit in self.source_units.iter() {
                 if let Some((called_contract_definition, called_function_definition)) =
                     source_unit.function_and_contract_definition(referenced_declaration)

@@ -10,24 +10,16 @@ pub struct ManipulatableBalanceUsageVisitor;
 //
 
 impl AstVisitor for ManipulatableBalanceUsageVisitor {
-    fn visit_function_call<'a>(
-        &mut self,
-        _source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        _blocks: &mut Vec<&'a Block>,
-        _statement: Option<&'a Statement>,
-        function_call: &'a FunctionCall,
-    ) -> std::io::Result<()> {
-        if function_call.arguments.len() != 1 {
+    fn visit_function_call<'a, 'b>(&mut self, context: &mut super::FunctionCallContext<'a, 'b>) -> std::io::Result<()> {
+        if context.function_call.arguments.len() != 1 {
             return Ok(())
         }
 
-        match function_call.expression.as_ref() {
+        match context.function_call.expression.as_ref() {
             Expression::MemberAccess(MemberAccess {
                 member_name,
                 ..
-            }) if member_name == "balanceOf" => match function_call.arguments.first().unwrap() {
+            }) if member_name == "balanceOf" => match context.function_call.arguments.first().unwrap() {
                 Expression::FunctionCall(FunctionCall {
                     expression,
                     arguments,
@@ -40,7 +32,7 @@ impl AstVisitor for ManipulatableBalanceUsageVisitor {
                         Expression::Identifier(Identifier {
                             name,
                             ..
-                        }) if name == "this" => match definition_node {
+                        }) if name == "this" => match context.definition_node {
                             ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
                                 "\tThe {} {} in the `{}` {} contains manipulatable balance usage: `{}`",
 
@@ -52,10 +44,10 @@ impl AstVisitor for ManipulatableBalanceUsageVisitor {
                                     format!("`{}` {}", function_definition.name, function_definition.kind)
                                 },
 
-                                contract_definition.name,
-                                contract_definition.kind,
+                                context.contract_definition.name,
+                                context.contract_definition.kind,
 
-                                function_call
+                                context.function_call
                             ),
 
                             ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
@@ -63,10 +55,10 @@ impl AstVisitor for ManipulatableBalanceUsageVisitor {
 
                                 modifier_definition.name,
 
-                                contract_definition.name,
-                                contract_definition.kind,
+                                context.contract_definition.name,
+                                context.contract_definition.kind,
 
-                                function_call
+                                context.function_call
                             ),
 
                             _ => return Ok(())

@@ -128,32 +128,24 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_> {
         Ok(())
     }
 
-    fn visit_function_call<'a>(
-        &mut self,
-        _source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        _blocks: &mut Vec<&'a Block>,
-        _statement: Option<&'a Statement>,
-        function_call: &'a FunctionCall,
-    ) -> io::Result<()> {
-        if let Expression::MemberAccess(member_access) = function_call.expression.as_ref() {
+    fn visit_function_call<'a, 'b>(&mut self, context: &mut super::FunctionCallContext<'a, 'b>) -> io::Result<()> {
+        if let Expression::MemberAccess(member_access) = context.function_call.expression.as_ref() {
             if member_access.referenced_declaration.is_none() && (member_access.member_name == "push" || member_access.member_name == "pop") {
                 if let ContractDefinitionNode::FunctionDefinition(FunctionDefinition {
                     kind: FunctionKind::Constructor,
                     ..
-                }) = definition_node {
+                }) = context.definition_node {
                     return Ok(())
                 }
                 
-                let ids = contract_definition.get_assigned_state_variables(
+                let ids = context.contract_definition.get_assigned_state_variables(
                     self.source_units,
-                    definition_node,
+                    context.definition_node,
                     member_access.expression.as_ref(),
                 );
                 
                 for id in ids {
-                    let contract_info = match self.contract_info.get_mut(&contract_definition.id) {
+                    let contract_info = match self.contract_info.get_mut(&context.contract_definition.id) {
                         Some(contract_info) => contract_info,
                         None => continue
                     };

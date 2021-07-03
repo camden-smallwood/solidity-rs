@@ -1,8 +1,5 @@
 use crate::analysis::AstVisitor;
-use solidity::ast::{
-    Block, ContractDefinition, ContractDefinitionNode, FunctionCall, FunctionDefinition,
-    SourceUnit, StateMutability, Statement,
-};
+use solidity::ast::*;
 use std::io;
 
 pub struct UnpaidPayableFunctionsVisitor<'a> {
@@ -92,16 +89,8 @@ impl<'a> UnpaidPayableFunctionsVisitor<'a> {
 }
 
 impl AstVisitor for UnpaidPayableFunctionsVisitor<'_> {
-    fn visit_function_call<'a>(
-        &mut self,
-        _source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        _blocks: &mut Vec<&'a Block>,
-        _statement: Option<&'a Statement>,
-        function_call: &'a FunctionCall,
-    ) -> io::Result<()> {
-        match function_call.expression.as_ref() {
+    fn visit_function_call<'a, 'b>(&mut self, context: &mut super::FunctionCallContext<'a, 'b>) -> io::Result<()> {
+        match context.function_call.expression.as_ref() {
             solidity::ast::Expression::Identifier(identifier) => {
                 for source_unit in self.source_units.iter() {
                     if let Some((called_contract_definition, called_definition_node)) = source_unit.find_contract_definition_node(identifier.referenced_declaration) {
@@ -110,8 +99,8 @@ impl AstVisitor for UnpaidPayableFunctionsVisitor<'_> {
                             ..
                         }) = called_definition_node {
                             self.print_message(
-                                contract_definition,
-                                definition_node,
+                                context.contract_definition,
+                                context.definition_node,
                                 called_contract_definition,
                                 called_definition_node,
                             );
@@ -134,8 +123,8 @@ impl AstVisitor for UnpaidPayableFunctionsVisitor<'_> {
                             ..
                         }) = called_definition_node {
                             self.print_message(
-                                contract_definition,
-                                definition_node,
+                                context.contract_definition,
+                                context.definition_node,
                                 called_contract_definition,
                                 called_definition_node,
                             );

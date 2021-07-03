@@ -163,22 +163,14 @@ impl AstVisitor for UncheckedERC20TransferVisitor<'_> {
         Ok(())
     }
 
-    fn visit_function_call<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        _contract_definition: &'a solidity::ast::ContractDefinition,
-        definition_node: &'a solidity::ast::ContractDefinitionNode,
-        blocks: &mut Vec<&'a solidity::ast::Block>,
-        _statement: Option<&'a solidity::ast::Statement>,
-        function_call: &'a solidity::ast::FunctionCall,
-    ) -> io::Result<()> {
-        let definition_id = match definition_node {
+    fn visit_function_call<'a, 'b>(&mut self, context: &mut super::FunctionCallContext<'a, 'b>) -> io::Result<()> {
+        let definition_id = match context.definition_node {
             solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
             solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,
             _ => return Ok(())
         };
 
-        for referenced_declaration in function_call.expression.referenced_declarations() {
+        for referenced_declaration in context.function_call.expression.referenced_declarations() {
             for source_unit in self.source_units.iter() {
                 if let Some((called_contract_definition, called_function_definition)) =
                     source_unit.function_and_contract_definition(referenced_declaration)
@@ -191,10 +183,10 @@ impl AstVisitor for UncheckedERC20TransferVisitor<'_> {
                         if let "transfer" | "transferFrom" =
                             called_function_definition.name.as_str()
                         {
-                            for block in blocks.iter() {
+                            for block in context.blocks.iter() {
                                 let block_info = self.block_info.get(&block.id).unwrap();
 
-                                match function_call.arguments.last() {
+                                match context.function_call.arguments.last() {
                                     Some(solidity::ast::Expression::Literal(_)) => break,
 
                                     Some(expression)
@@ -222,16 +214,16 @@ impl AstVisitor for UncheckedERC20TransferVisitor<'_> {
             }
         }
 
-        let block = match blocks.last() {
+        let block = match context.blocks.last() {
             Some(block) => block,
             None => return Ok(()),
         };
 
         let block_info = self.block_info.get_mut(&block.id).unwrap();
 
-        if let solidity::ast::Expression::Identifier(expr) = function_call.expression.as_ref() {
+        if let solidity::ast::Expression::Identifier(expr) = context.function_call.expression.as_ref() {
             if expr.name == "require" {
-                let mut operations = match function_call.arguments.first().unwrap() {
+                let mut operations = match context.function_call.arguments.first().unwrap() {
                     solidity::ast::Expression::BinaryOperation(expr) => vec![expr],
                     _ => return Ok(()),
                 };

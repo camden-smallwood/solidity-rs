@@ -122,16 +122,8 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_> {
         Ok(())
     }
 
-    fn visit_member_access<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        _contract_definition: &'a solidity::ast::ContractDefinition,
-        definition_node: &'a solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&'a solidity::ast::Block>,
-        _statement: Option<&'a solidity::ast::Statement>,
-        member_access: &'a solidity::ast::MemberAccess,
-    ) -> io::Result<()> {
-        match definition_node {
+    fn visit_member_access<'a, 'b>(&mut self, context: &mut super::MemberAccessContext<'a, 'b>) -> io::Result<()> {
+        match context.definition_node {
             solidity::ast::ContractDefinitionNode::FunctionDefinition(_) => {}
             _ => return Ok(())
         }
@@ -140,7 +132,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_> {
             return Ok(());
         }
 
-        if let Some(referenced_declaration) = member_access.referenced_declaration {
+        if let Some(referenced_declaration) = context.member_access.referenced_declaration {
             for source_unit in self.source_units.iter() {
                 if let Some(function_definition) =
                     source_unit.function_definition(referenced_declaration)

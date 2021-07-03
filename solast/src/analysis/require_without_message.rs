@@ -79,27 +79,19 @@ impl AstVisitor for RequireWithoutMessageVisitor<'_> {
         Ok(())
     }
 
-    fn visit_function_call<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        _contract_definition: &'a solidity::ast::ContractDefinition,
-        definition_node: &'a solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&'a solidity::ast::Block>,
-        _statement: Option<&'a solidity::ast::Statement>,
-        function_call: &'a solidity::ast::FunctionCall,
-    ) -> io::Result<()> {
-        let definition_id = match definition_node {
+    fn visit_function_call<'a, 'b>(&mut self, context: &mut super::FunctionCallContext<'a, 'b>) -> io::Result<()> {
+        let definition_id = match context.definition_node {
             solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
             solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,
             _ => return Ok(())
         };
 
-        match function_call.expression.as_ref() {
+        match context.function_call.expression.as_ref() {
             solidity::ast::Expression::Identifier(expr) if expr.name == "require" => (),
             _ => return Ok(())
         }
 
-        if function_call.arguments.len() < 2 {
+        if context.function_call.arguments.len() < 2 {
             if !self.requirement_counts.contains_key(&definition_id) {
                 self.requirement_counts.insert(definition_id, 0);
             }

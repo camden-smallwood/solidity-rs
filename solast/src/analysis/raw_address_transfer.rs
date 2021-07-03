@@ -53,23 +53,15 @@ impl AstVisitor for RawAddressTransferVisitor<'_> {
         Ok(())
     }
 
-    fn visit_function_call<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        _contract_definition: &'a solidity::ast::ContractDefinition,
-        definition_node: &'a solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&'a solidity::ast::Block>,
-        _statement: Option<&'a solidity::ast::Statement>,
-        function_call: &'a solidity::ast::FunctionCall,
-    ) -> io::Result<()> {
-        let definition_id = match definition_node {
+    fn visit_function_call<'a, 'b>(&mut self, context: &mut super::FunctionCallContext<'a, 'b>) -> io::Result<()> {
+        let definition_id = match context.definition_node {
             solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
             solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,
             _ => return Ok(())
         };
 
         if let solidity::ast::Expression::MemberAccess(member_access) =
-            function_call.expression.as_ref()
+            context.function_call.expression.as_ref()
         {
             if (member_access.referenced_declaration.is_none()
                 || member_access
@@ -88,23 +80,15 @@ impl AstVisitor for RawAddressTransferVisitor<'_> {
         Ok(())
     }
 
-    fn visit_function_call_options<'a>(
-        &mut self,
-        _source_unit: &'a solidity::ast::SourceUnit,
-        _contract_definition: &'a solidity::ast::ContractDefinition,
-        definition_node: &'a solidity::ast::ContractDefinitionNode,
-        _blocks: &mut Vec<&'a solidity::ast::Block>,
-        _statement: Option<&'a solidity::ast::Statement>,
-        function_call_options: &'a solidity::ast::FunctionCallOptions,
-    ) -> io::Result<()> {
-        let definition_id = match definition_node {
+    fn visit_function_call_options<'a, 'b>(&mut self, context: &mut super::FunctionCallOptionsContext<'a, 'b>) -> io::Result<()> {
+        let definition_id = match context.definition_node {
             solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
             solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,
             _ => return Ok(())
         };
 
         if let solidity::ast::Expression::MemberAccess(member_access) =
-            function_call_options.expression.as_ref()
+            context.function_call_options.expression.as_ref()
         {
             if (member_access.referenced_declaration.is_none()
                 || member_access
