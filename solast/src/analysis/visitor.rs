@@ -3009,6 +3009,14 @@ impl AstVisitor for AstVisitorData<'_> {
 
         Ok(())
     }
+
+    fn leave_yul_function_call<'a, 'b, 'c>(&mut self, context: &mut YulFunctionCallContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_yul_function_call(context)?;
+        }
+
+        Ok(())
+    }
 }
 
 pub fn visit_source_units<'a>(visitors: Vec<Box<dyn AstVisitor + 'a>>, source_units: &[SourceUnit]) -> io::Result<()> {
