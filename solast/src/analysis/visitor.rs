@@ -73,35 +73,6 @@ pub struct ContractDefinitionContext<'a> {
     pub contract_definition: &'a ContractDefinition,
 }
 
-impl<'a> ContractDefinitionContext<'a> {
-    pub fn create_using_for_directive_context(&self, using_for_directive: &'a UsingForDirective) -> UsingForDirectiveContext<'a> {
-        UsingForDirectiveContext {
-            source_units: self.source_units,
-            current_source_unit: self.current_source_unit,
-            contract_definition: self.contract_definition,
-            using_for_directive
-        }
-    }
-
-    pub fn create_struct_definition_context(&self, struct_definition: &'a StructDefinition) -> StructDefinitionContext<'a> {
-        StructDefinitionContext {
-            source_units: self.source_units,
-            current_source_unit: self.current_source_unit,
-            contract_definition: Some(self.contract_definition),
-            struct_definition
-        }
-    }
-
-    pub fn create_enum_definition_context(&self, enum_definition: &'a EnumDefinition) -> EnumDefinitionContext<'a> {
-        EnumDefinitionContext {
-            source_units: self.source_units,
-            current_source_unit: self.current_source_unit,
-            contract_definition: Some(self.contract_definition),
-            enum_definition
-        }
-    }
-}
-
 pub struct StructDefinitionContext<'a> {
     pub source_units: &'a [SourceUnit],
     pub current_source_unit: &'a SourceUnit,
