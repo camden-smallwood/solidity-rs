@@ -8,11 +8,11 @@ Some legacy versions of Solidity are inherently supported, but the focus is 0.8.
 - [x] `no_spdx_identifier`
 - [x] `floating_solidity_version`
 - [x] `node_modules_imports`
+- [x] `abstract_contracts`
 - [x] `large_literals`
 - [ ] ~~`tight_variable_packing`~~ (WIP)
 - [x] `redundant_getter_function`
 - [x] `require_without_message`
-- [x] `zero_address_parameters`
 - [x] `state_variable_shadowing`
 - [x] `explicit_variable_return`
 - [x] `unused_return`
@@ -22,11 +22,12 @@ Some legacy versions of Solidity are inherently supported, but the focus is 0.8.
 - [x] `raw_address_transfer`
 - [x] `safe_erc20_functions`
 - [x] `unchecked_erc20_transfer`
+- [x] `unpaid_payable_functions`
 - [ ] ~~`divide_before_multiply`~~ (WIP)
 - [ ] ~~`comparison_utilization`~~ (WIP)
 - [x] `assignment_comparisons`
 - [x] `state_variable_mutability`
-- [x] `unreferenced_state_variables`
+- [x] `unused_state_variables`
 - [x] `ineffectual_statements`
 - [x] `inline_assembly`
 - [ ] ~~`unchecked_casting`~~ (WIP)
