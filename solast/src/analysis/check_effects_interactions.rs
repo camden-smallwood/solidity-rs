@@ -1,18 +1,16 @@
 use super::{AstVisitor, FunctionDefinitionContext, IdentifierContext, StatementContext};
-use solidity::ast::{NodeID, SourceUnit};
+use solidity::ast::*;
 use std::{collections::HashMap, io};
 
-pub struct CheckEffectsInteractionsVisitor<'a> {
-    pub source_units: &'a [SourceUnit],
+pub struct CheckEffectsInteractionsVisitor {
     pub makes_external_call: bool,
     pub makes_post_external_call_assignment: bool,
     pub bindings: HashMap<NodeID, Vec<NodeID>>,
 }
 
-impl<'a> CheckEffectsInteractionsVisitor<'a> {
-    pub fn new(source_units: &'a [SourceUnit]) -> Self {
+impl Default for CheckEffectsInteractionsVisitor {
+    fn default() -> Self {
         Self {
-            source_units,
             makes_external_call: false,
             makes_post_external_call_assignment: false,
             bindings: HashMap::new(),
@@ -20,7 +18,7 @@ impl<'a> CheckEffectsInteractionsVisitor<'a> {
     }
 }
 
-impl AstVisitor for CheckEffectsInteractionsVisitor<'_> {
+impl AstVisitor for CheckEffectsInteractionsVisitor {
     fn visit_function_definition<'a>(&mut self, _context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
         self.makes_external_call = false;
         self.makes_post_external_call_assignment = false;
@@ -62,19 +60,19 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_> {
         ) = context.statement
         {
             let ids = context.contract_definition.get_assigned_state_variables(
-                self.source_units,
+                context.source_units,
                 context.definition_node,
                 expression,
             );
 
             for &id in ids.iter() {
-                if context.contract_definition.hierarchy_contains_state_variable(self.source_units, id) {
+                if context.contract_definition.hierarchy_contains_state_variable(context.source_units, id) {
                     let state_variable = {
                         let mut state_variable = None;
 
                         if let Some(contract_ids) = context.contract_definition.linearized_base_contracts.as_ref() {
                             for &contract_id in contract_ids.iter() {
-                                for source_unit in self.source_units.iter() {
+                                for source_unit in context.source_units.iter() {
                                     if let Some(contract_definition) = source_unit.contract_definition(contract_id) {
                                         if let Some(variable_declaration) = contract_definition.variable_declaration(id) {
                                             state_variable = Some(variable_declaration);
@@ -125,7 +123,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_> {
             return Ok(());
         }
 
-        for source_unit in self.source_units.iter() {
+        for source_unit in context.source_units.iter() {
             if let Some(function_definition) = source_unit.function_definition(context.identifier.referenced_declaration) {
                 if let solidity::ast::Visibility::External = function_definition.visibility {
                     self.makes_external_call = true;
@@ -143,7 +141,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_> {
         }
 
         if let Some(referenced_declaration) = context.member_access.referenced_declaration {
-            for source_unit in self.source_units.iter() {
+            for source_unit in context.source_units.iter() {
                 if let Some(function_definition) = source_unit.function_definition(referenced_declaration)
                 {
                     if let solidity::ast::Visibility::External = function_definition.visibility {
@@ -181,7 +179,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor<'_> {
         }
 
         let ids = context.contract_definition.get_assigned_state_variables(
-            self.source_units,
+            context.source_units,
             context.definition_node,
             context.assignment.left_hand_side.as_ref(),
         );

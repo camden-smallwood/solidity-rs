@@ -1,5 +1,5 @@
 use super::{AstVisitor, FunctionDefinitionContext};
-use solidity::ast::{NodeID, SourceUnit};
+use solidity::ast::*;
 use std::{collections::HashMap, io};
 
 struct FunctionInfo {
@@ -8,21 +8,19 @@ struct FunctionInfo {
     approve: bool,
 }
 
-pub struct SafeERC20FunctionsVisitor<'a> {
-    pub source_units: &'a [SourceUnit],
+pub struct SafeERC20FunctionsVisitor {
     functions: HashMap<NodeID, FunctionInfo>,
 }
 
-impl<'a> SafeERC20FunctionsVisitor<'a> {
-    pub fn new(source_units: &'a [SourceUnit]) -> Self {
+impl Default for SafeERC20FunctionsVisitor {
+    fn default() -> Self {
         Self {
-            source_units,
             functions: HashMap::new(),
         }
     }
 }
 
-impl AstVisitor for SafeERC20FunctionsVisitor<'_> {
+impl AstVisitor for SafeERC20FunctionsVisitor {
     fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
         if !self.functions.contains_key(&context.function_definition.id) {
             self.functions.insert(
@@ -109,7 +107,7 @@ impl AstVisitor for SafeERC20FunctionsVisitor<'_> {
         };
 
         for referenced_declaration in context.function_call.expression.referenced_declarations() {
-            for source_unit in self.source_units.iter() {
+            for source_unit in context.source_units.iter() {
                 if let Some((called_contract_definition, called_function_definition)) =
                     source_unit.function_and_contract_definition(referenced_declaration)
                 {

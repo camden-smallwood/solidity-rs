@@ -1,22 +1,20 @@
 use super::{AstVisitor, FunctionDefinitionContext};
-use solidity::ast::{NodeID, SourceUnit};
+use solidity::ast::*;
 use std::{collections::HashMap, io};
 
-pub struct RawAddressTransferVisitor<'a> {
-    pub source_units: &'a [SourceUnit],
+pub struct RawAddressTransferVisitor {
     functions_transfer: HashMap<NodeID, usize>,
 }
 
-impl<'a> RawAddressTransferVisitor<'a> {
-    pub fn new(source_units: &'a [SourceUnit]) -> Self {
+impl Default for RawAddressTransferVisitor {
+    fn default() -> Self {
         Self {
-            source_units,
             functions_transfer: HashMap::new(),
         }
     }
 }
 
-impl AstVisitor for RawAddressTransferVisitor<'_> {
+impl AstVisitor for RawAddressTransferVisitor {
     fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
         if !self.functions_transfer.contains_key(&context.function_definition.id) {
             self.functions_transfer.insert(context.function_definition.id, 0);

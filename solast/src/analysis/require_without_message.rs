@@ -1,22 +1,20 @@
 use super::{AstVisitor, FunctionDefinitionContext, ModifierDefinitionContext};
-use solidity::ast::{NodeID, SourceUnit};
+use solidity::ast::*;
 use std::{collections::HashMap, io};
 
-pub struct RequireWithoutMessageVisitor<'a> {
-    pub source_units: &'a [SourceUnit],
+pub struct RequireWithoutMessageVisitor {
     pub requirement_counts: HashMap<NodeID, usize>,
 }
 
-impl<'a> RequireWithoutMessageVisitor<'a> {
-    pub fn new(source_units: &'a [SourceUnit]) -> Self {
+impl Default for RequireWithoutMessageVisitor {
+    fn default() -> Self {
         Self {
-            source_units,
             requirement_counts: HashMap::new(),
         }
     }
 }
 
-impl AstVisitor for RequireWithoutMessageVisitor<'_> {
+impl AstVisitor for RequireWithoutMessageVisitor {
     fn leave_modifier_definition<'a>(&mut self, context: &mut ModifierDefinitionContext<'a>) -> io::Result<()> {
         if let Some(&requirement_count) = self.requirement_counts.get(&context.modifier_definition.id) {
             println!(

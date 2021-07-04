@@ -2,15 +2,9 @@ use crate::analysis::AstVisitor;
 use solidity::ast::*;
 use std::io;
 
-pub struct UnpaidPayableFunctionsVisitor<'a> {
-    source_units: &'a [SourceUnit],
-}
+pub struct UnpaidPayableFunctionsVisitor;
 
-impl<'a> UnpaidPayableFunctionsVisitor<'a> {
-    pub fn new(source_units: &'a [SourceUnit]) -> Self {
-        Self { source_units }
-    }
-
+impl UnpaidPayableFunctionsVisitor {
     fn print_message(
         &mut self,
         contract_definition: &ContractDefinition,
@@ -88,11 +82,11 @@ impl<'a> UnpaidPayableFunctionsVisitor<'a> {
     }
 }
 
-impl AstVisitor for UnpaidPayableFunctionsVisitor<'_> {
+impl AstVisitor for UnpaidPayableFunctionsVisitor {
     fn visit_function_call<'a, 'b>(&mut self, context: &mut super::FunctionCallContext<'a, 'b>) -> io::Result<()> {
         match context.function_call.expression.as_ref() {
             solidity::ast::Expression::Identifier(identifier) => {
-                for source_unit in self.source_units.iter() {
+                for source_unit in context.source_units.iter() {
                     if let Some((called_contract_definition, called_definition_node)) = source_unit.find_contract_definition_node(identifier.referenced_declaration) {
                         if let ContractDefinitionNode::FunctionDefinition(FunctionDefinition {
                             state_mutability: StateMutability::Payable,
@@ -116,7 +110,7 @@ impl AstVisitor for UnpaidPayableFunctionsVisitor<'_> {
                     None => return Ok(()),
                 };
 
-                for source_unit in self.source_units.iter() {
+                for source_unit in context.source_units.iter() {
                     if let Some((called_contract_definition, called_definition_node)) = source_unit.find_contract_definition_node(referenced_declaration) {
                         if let ContractDefinitionNode::FunctionDefinition(FunctionDefinition {
                             state_mutability: StateMutability::Payable,

@@ -412,6 +412,174 @@ pub struct NewExpressionContext<'a, 'b> {
     pub new_expression: &'a NewExpression,
 }
 
+pub struct InlineAssemblyContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: &'a Statement,
+    pub inline_assembly: &'a InlineAssembly,
+}
+
+pub struct YulBlockContext<'a, 'b, 'c> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: &'a Statement,
+    pub inline_assembly: &'a InlineAssembly,
+    pub yul_blocks: &'c mut Vec<&'a YulBlock>,
+    pub yul_block: &'a YulBlock,
+}
+
+pub struct YulStatementContext<'a, 'b, 'c> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: &'a Statement,
+    pub inline_assembly: &'a InlineAssembly,
+    pub yul_blocks: &'c mut Vec<&'a YulBlock>,
+    pub yul_statement: &'a YulStatement,
+}
+
+pub struct YulIfContext<'a, 'b, 'c> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: &'a Statement,
+    pub inline_assembly: &'a InlineAssembly,
+    pub yul_blocks: &'c mut Vec<&'a YulBlock>,
+    pub yul_statement: &'a YulStatement,
+    pub yul_if: &'a YulIf,
+}
+
+pub struct YulSwitchContext<'a, 'b, 'c> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: &'a Statement,
+    pub inline_assembly: &'a InlineAssembly,
+    pub yul_blocks: &'c mut Vec<&'a YulBlock>,
+    pub yul_statement: &'a YulStatement,
+    pub yul_switch: &'a YulSwitch,
+}
+
+pub struct YulCaseContext<'a, 'b, 'c> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: &'a Statement,
+    pub inline_assembly: &'a InlineAssembly,
+    pub yul_blocks: &'c mut Vec<&'a YulBlock>,
+    pub yul_statement: &'a YulStatement,
+    pub yul_switch: &'a YulSwitch,
+    pub yul_case: &'a YulCase,
+}
+
+pub struct YulAssignmentContext<'a, 'b, 'c> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: &'a Statement,
+    pub inline_assembly: &'a InlineAssembly,
+    pub yul_blocks: &'c mut Vec<&'a YulBlock>,
+    pub yul_statement: &'a YulStatement,
+    pub yul_assignment: &'a YulAssignment,
+}
+
+pub struct YulVariableDeclarationContext<'a, 'b, 'c> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: &'a Statement,
+    pub inline_assembly: &'a InlineAssembly,
+    pub yul_blocks: &'c mut Vec<&'a YulBlock>,
+    pub yul_statement: &'a YulStatement,
+    pub yul_variable_declaration: &'a YulVariableDeclaration,
+}
+
+pub struct YulExpressionStatementContext<'a, 'b, 'c> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: &'a Statement,
+    pub inline_assembly: &'a InlineAssembly,
+    pub yul_blocks: &'c mut Vec<&'a YulBlock>,
+    pub yul_statement: &'a YulStatement,
+    pub yul_expression_statement: &'a YulExpressionStatement,
+}
+
+pub struct YulExpressionContext<'a, 'b, 'c> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: &'a Statement,
+    pub inline_assembly: &'a InlineAssembly,
+    pub yul_blocks: &'c mut Vec<&'a YulBlock>,
+    pub yul_statement: Option<&'a YulStatement>,
+    pub yul_expression: &'a YulExpression,
+}
+
+pub struct YulLiteralContext<'a, 'b, 'c> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: &'a Statement,
+    pub inline_assembly: &'a InlineAssembly,
+    pub yul_blocks: &'c mut Vec<&'a YulBlock>,
+    pub yul_statement: Option<&'a YulStatement>,
+    pub yul_expression: &'a YulExpression,
+    pub yul_literal: &'a YulLiteral,
+}
+
+pub struct YulIdentifierContext<'a, 'b, 'c> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: &'a Statement,
+    pub inline_assembly: &'a InlineAssembly,
+    pub yul_blocks: &'c mut Vec<&'a YulBlock>,
+    pub yul_statement: Option<&'a YulStatement>,
+    pub yul_expression: Option<&'a YulExpression>,
+    pub yul_identifier: &'a YulIdentifier,
+}
+
+pub struct YulFunctionCallContext<'a, 'b, 'c> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: &'a Statement,
+    pub inline_assembly: &'a InlineAssembly,
+    pub yul_blocks: &'c mut Vec<&'a YulBlock>,
+    pub yul_statement: Option<&'a YulStatement>,
+    pub yul_expression: &'a YulExpression,
+    pub yul_function_call: &'a YulFunctionCall,
+}
+
 #[allow(unused_variables)]
 pub trait AstVisitor {
     fn visit_source_unit<'a>(&mut self, context: &mut SourceUnitContext<'a>) -> io::Result<()> { Ok(()) }
@@ -528,6 +696,45 @@ pub trait AstVisitor {
     fn visit_new_expression<'a, 'b>(&mut self, context: &mut NewExpressionContext<'a, 'b>) -> io::Result<()> { Ok(()) }
     fn leave_new_expression<'a, 'b>(&mut self, context: &mut NewExpressionContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
+    fn visit_inline_assembly<'a, 'b>(&mut self, context: &mut InlineAssemblyContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_inline_assembly<'a, 'b>(&mut self, context: &mut InlineAssemblyContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+
+    fn visit_yul_block<'a, 'b, 'c>(&mut self, context: &mut YulBlockContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+    fn leave_yul_block<'a, 'b, 'c>(&mut self, context: &mut YulBlockContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+
+    fn visit_yul_statement<'a, 'b, 'c>(&mut self, context: &mut YulStatementContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+    fn leave_yul_statement<'a, 'b, 'c>(&mut self, context: &mut YulStatementContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+
+    fn visit_yul_if<'a, 'b, 'c>(&mut self, context: &mut YulIfContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+    fn leave_yul_if<'a, 'b, 'c>(&mut self, context: &mut YulIfContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+
+    fn visit_yul_switch<'a, 'b, 'c>(&mut self, context: &mut YulSwitchContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+    fn leave_yul_switch<'a, 'b, 'c>(&mut self, context: &mut YulSwitchContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+
+    fn visit_yul_case<'a, 'b, 'c>(&mut self, context: &mut YulCaseContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+    fn leave_yul_case<'a, 'b, 'c>(&mut self, context: &mut YulCaseContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+
+    fn visit_yul_assignment<'a, 'b, 'c>(&mut self, context: &mut YulAssignmentContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+    fn leave_yul_assignment<'a, 'b, 'c>(&mut self, context: &mut YulAssignmentContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+
+    fn visit_yul_variable_declaration<'a, 'b, 'c>(&mut self, context: &mut YulVariableDeclarationContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+    fn leave_yul_variable_declaration<'a, 'b, 'c>(&mut self, context: &mut YulVariableDeclarationContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+
+    fn visit_yul_expression_statement<'a, 'b, 'c>(&mut self, context: &mut YulExpressionStatementContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+    fn leave_yul_expression_statement<'a, 'b, 'c>(&mut self, context: &mut YulExpressionStatementContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+
+    fn visit_yul_expression<'a, 'b, 'c>(&mut self, context: &mut YulExpressionContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+    fn leave_yul_expression<'a, 'b, 'c>(&mut self, context: &mut YulExpressionContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+
+    fn visit_yul_literal<'a, 'b, 'c>(&mut self, context: &mut YulLiteralContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+    fn leave_yul_literal<'a, 'b, 'c>(&mut self, context: &mut YulLiteralContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+
+    fn visit_yul_identifier<'a, 'b, 'c>(&mut self, context: &mut YulIdentifierContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+    fn leave_yul_identifier<'a, 'b, 'c>(&mut self, context: &mut YulIdentifierContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+
+    fn visit_yul_function_call<'a, 'b, 'c>(&mut self, context: &mut YulFunctionCallContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+    fn leave_yul_function_call<'a, 'b, 'c>(&mut self, context: &mut YulFunctionCallContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+
     fn visit_unhandled_statement(
         &mut self,
         source_unit: &SourceUnit,
@@ -544,200 +751,6 @@ pub trait AstVisitor {
         node_type: &NodeType,
         src: &Option<String>,
         id: &Option<NodeID>,
-    ) -> io::Result<()> {
-        Ok(())
-    }
-
-    fn visit_inline_assembly<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-    ) -> io::Result<()> {
-        Ok(())
-    }
-
-    fn visit_yul_block<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_block: &'a YulBlock,
-    ) -> io::Result<()> {
-        Ok(())
-    }
-
-    fn visit_yul_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: &'a YulStatement,
-    ) -> io::Result<()> {
-        Ok(())
-    }
-
-    fn visit_yul_if<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: &'a YulStatement,
-        yul_if: &'a YulIf,
-    ) -> io::Result<()> {
-        Ok(())
-    }
-
-    fn visit_yul_switch<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: &'a YulStatement,
-        yul_switch: &'a YulSwitch,
-    ) -> io::Result<()> {
-        Ok(())
-    }
-
-    fn visit_yul_case<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: &'a YulStatement,
-        yul_switch: &'a YulSwitch,
-        yul_case: &'a YulCase,
-    ) -> io::Result<()> {
-        Ok(())
-    }
-
-    fn visit_yul_assignment<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: &'a YulStatement,
-        yul_assignment: &'a YulAssignment,
-    ) -> io::Result<()> {
-        Ok(())
-    }
-
-    fn visit_yul_variable_declaration<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: &'a YulStatement,
-        yul_variable_declaration: &'a YulVariableDeclaration,
-    ) -> io::Result<()> {
-        Ok(())
-    }
-
-    fn visit_yul_expression_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: &'a YulStatement,
-        yul_expression_statement: &'a YulExpressionStatement,
-    ) -> io::Result<()> {
-        Ok(())
-    }
-
-    fn visit_yul_expression<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: Option<&'a YulStatement>,
-        yul_expression: &'a YulExpression,
-    ) -> io::Result<()> {
-        Ok(())
-    }
-
-    fn visit_yul_literal<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: Option<&'a YulStatement>,
-        yul_expression: &'a YulExpression,
-        yul_literal: &'a YulLiteral,
-    ) -> io::Result<()> {
-        Ok(())
-    }
-
-    fn visit_yul_identifier<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: Option<&'a YulStatement>,
-        yul_expression: Option<&'a YulExpression>,
-        yul_identifier: &'a YulIdentifier,
-    ) -> io::Result<()> {
-        Ok(())
-    }
-
-    fn visit_yul_function_call<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: Option<&'a YulStatement>,
-        yul_expression: &'a YulExpression,
-        yul_function_call: &'a YulFunctionCall,
     ) -> io::Result<()> {
         Ok(())
     }
@@ -1292,14 +1305,18 @@ impl AstVisitor for AstVisitorData<'_> {
             }
 
             Statement::InlineAssembly(inline_assembly) => {
-                self.visit_inline_assembly(
-                    context.current_source_unit,
-                    context.contract_definition,
-                    context.definition_node,
-                    context.blocks,
-                    context.statement,
+                let mut context = InlineAssemblyContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
                     inline_assembly,
-                )?;
+                };
+
+                self.visit_inline_assembly(&mut context)?;
+                self.leave_inline_assembly(&mut context)?;
             }
 
             Statement::UnhandledStatement { node_type, src, id } => {
@@ -2389,181 +2406,172 @@ impl AstVisitor for AstVisitorData<'_> {
         }
     }
 
-    fn visit_inline_assembly<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-    ) -> io::Result<()> {
+    fn visit_inline_assembly<'a, 'b>(&mut self, context: &mut InlineAssemblyContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_inline_assembly(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                inline_assembly,
-            )?;
+            visitor.visit_inline_assembly(context)?;
         }
 
-        if let Some(yul_block) = inline_assembly.ast.as_ref() {
+        if let Some(yul_block) = context.inline_assembly.ast.as_ref() {
             let mut yul_blocks = vec![];
 
-            self.visit_yul_block(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                inline_assembly,
-                &mut yul_blocks,
+            let mut context = YulBlockContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: context.blocks,
+                statement: context.statement,
+                inline_assembly: context.inline_assembly,
+                yul_blocks: &mut yul_blocks,
                 yul_block,
-            )?;
+            };
+
+            self.visit_yul_block(&mut context)?;
+            self.leave_yul_block(&mut context)?;
         }
 
         Ok(())
     }
 
-    fn visit_yul_block<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_block: &'a YulBlock,
-    ) -> io::Result<()> {
-        yul_blocks.push(yul_block);
-
+    fn leave_inline_assembly<'a, 'b>(&mut self, context: &mut InlineAssemblyContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_yul_block(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                inline_assembly,
-                yul_blocks,
-                yul_block,
-            )?;
+            visitor.leave_inline_assembly(context)?;
         }
-
-        for yul_statement in yul_block.statements.iter() {
-            self.visit_yul_statement(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                inline_assembly,
-                yul_blocks,
-                yul_statement,
-            )?;
-        }
-
-        yul_blocks.pop();
 
         Ok(())
     }
 
-    fn visit_yul_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: &'a YulStatement,
-    ) -> io::Result<()> {
+    fn visit_yul_block<'a, 'b, 'c>(&mut self, context: &mut YulBlockContext<'a, 'b, 'c>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_yul_statement(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                inline_assembly,
-                yul_blocks,
-                yul_statement,
-            )?;
+            visitor.visit_yul_block(context)?;
         }
 
-        match yul_statement {
+        context.yul_blocks.push(context.yul_block);
+
+        for yul_statement in context.yul_block.statements.iter() {
+            let mut context = YulStatementContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: context.blocks,
+                statement: context.statement,
+                inline_assembly: context.inline_assembly,
+                yul_blocks: context.yul_blocks,
+                yul_statement: yul_statement,
+            };
+
+            self.visit_yul_statement(&mut context)?;
+            self.leave_yul_statement(&mut context)?;
+        }
+
+        Ok(())
+    }
+
+    fn leave_yul_block<'a, 'b, 'c>(&mut self, context: &mut YulBlockContext<'a, 'b, 'c>) -> io::Result<()> {
+        context.yul_blocks.pop();
+
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_yul_block(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_yul_statement<'a, 'b, 'c>(&mut self, context: &mut YulStatementContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_yul_statement(context)?;
+        }
+
+        match context.yul_statement {
             YulStatement::YulIf(yul_if) => {
-                self.visit_yul_if(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
-                    inline_assembly,
-                    yul_blocks,
-                    yul_statement,
+                let mut context = YulIfContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
+                    inline_assembly: context.inline_assembly,
+                    yul_blocks: context.yul_blocks,
+                    yul_statement: context.yul_statement,
                     yul_if,
-                )?;
+                };
+
+                self.visit_yul_if(&mut context)?;
+                self.leave_yul_if(&mut context)?;
             }
 
             YulStatement::YulSwitch(yul_switch) => {
-                self.visit_yul_switch(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
-                    inline_assembly,
-                    yul_blocks,
-                    yul_statement,
+                let mut context = YulSwitchContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
+                    inline_assembly: context.inline_assembly,
+                    yul_blocks: context.yul_blocks,
+                    yul_statement: context.yul_statement,
                     yul_switch,
-                )?;
+                };
+
+                self.visit_yul_switch(&mut context)?;
+                self.leave_yul_switch(&mut context)?;
             }
 
             YulStatement::YulAssignment(yul_assignment) => {
-                self.visit_yul_assignment(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
-                    inline_assembly,
-                    yul_blocks,
-                    yul_statement,
+                let mut context = YulAssignmentContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
+                    inline_assembly: context.inline_assembly,
+                    yul_blocks: context.yul_blocks,
+                    yul_statement: context.yul_statement,
                     yul_assignment,
-                )?;
+                };
+
+                self.visit_yul_assignment(&mut context)?;
+                self.leave_yul_assignment(&mut context)?;
             }
 
             YulStatement::YulVariableDeclaration(yul_variable_declaration) => {
-                self.visit_yul_variable_declaration(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
-                    inline_assembly,
-                    yul_blocks,
-                    yul_statement,
+                let mut context = YulVariableDeclarationContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
+                    inline_assembly: context.inline_assembly,
+                    yul_blocks: context.yul_blocks,
+                    yul_statement: context.yul_statement,
                     yul_variable_declaration,
-                )?;
+                };
+
+                self.visit_yul_variable_declaration(&mut context)?;
+                self.leave_yul_variable_declaration(&mut context)?;
             }
 
             YulStatement::YulExpressionStatement(yul_expression_statement) => {
-                self.visit_yul_expression_statement(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
-                    inline_assembly,
-                    yul_blocks,
-                    yul_statement,
+                let mut context = YulExpressionStatementContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
+                    inline_assembly: context.inline_assembly,
+                    yul_blocks: context.yul_blocks,
+                    yul_statement: context.yul_statement,
                     yul_expression_statement,
-                )?;
+                };
+
+                self.visit_yul_expression_statement(&mut context)?;
+                self.leave_yul_expression_statement(&mut context)?;
             }
 
             YulStatement::UnhandledYulStatement { node_type, src, id } => {
@@ -2577,376 +2585,335 @@ impl AstVisitor for AstVisitorData<'_> {
         Ok(())
     }
 
-    fn visit_yul_if<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: &'a YulStatement,
-        yul_if: &'a YulIf,
-    ) -> io::Result<()> {
+    fn leave_yul_statement<'a, 'b, 'c>(&mut self, context: &mut YulStatementContext<'a, 'b, 'c>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_yul_if(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                inline_assembly,
-                yul_blocks,
-                yul_statement,
-                yul_if,
-            )?;
+            visitor.leave_yul_statement(context)?;
         }
-
-        self.visit_yul_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            inline_assembly,
-            yul_blocks,
-            Some(yul_statement),
-            &yul_if.condition,
-        )?;
-
-        self.visit_yul_block(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            inline_assembly,
-            yul_blocks,
-            &yul_if.body,
-        )?;
 
         Ok(())
     }
 
-    fn visit_yul_switch<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: &'a YulStatement,
-        yul_switch: &'a YulSwitch,
-    ) -> io::Result<()> {
+    fn visit_yul_if<'a, 'b, 'c>(&mut self, context: &mut YulIfContext<'a, 'b, 'c>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_yul_switch(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                inline_assembly,
-                yul_blocks,
-                yul_statement,
-                yul_switch,
-            )?;
+            visitor.visit_yul_if(context)?;
         }
 
-        self.visit_yul_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            inline_assembly,
-            yul_blocks,
-            Some(yul_statement),
-            &yul_switch.expression,
-        )?;
+        let mut condition_context = YulExpressionContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            inline_assembly: context.inline_assembly,
+            yul_blocks: context.yul_blocks,
+            yul_statement: Some(context.yul_statement),
+            yul_expression: &context.yul_if.condition,
+        };
 
-        for yul_case in yul_switch.cases.iter() {
-            self.visit_yul_case(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                inline_assembly,
-                yul_blocks,
-                yul_statement,
-                yul_switch,
+        self.visit_yul_expression(&mut condition_context)?;
+        self.leave_yul_expression(&mut condition_context)?;
+
+        let mut body_context = YulBlockContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            inline_assembly: context.inline_assembly,
+            yul_blocks: context.yul_blocks,
+            yul_block: &context.yul_if.body,
+        };
+
+        self.visit_yul_block(&mut body_context)?;
+        self.leave_yul_block(&mut body_context)?;
+
+        Ok(())
+    }
+
+    fn leave_yul_if<'a, 'b, 'c>(&mut self, context: &mut YulIfContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_yul_if(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_yul_switch<'a, 'b, 'c>(&mut self, context: &mut YulSwitchContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_yul_switch(context)?;
+        }
+
+        let mut expression_context = YulExpressionContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            inline_assembly: context.inline_assembly,
+            yul_blocks: context.yul_blocks,
+            yul_statement: Some(context.yul_statement),
+            yul_expression: &context.yul_switch.expression,
+        };
+
+        self.visit_yul_expression(&mut expression_context)?;
+        self.leave_yul_expression(&mut expression_context)?;
+
+        for yul_case in context.yul_switch.cases.iter() {
+            let mut case_context = YulCaseContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: context.blocks,
+                statement: context.statement,
+                inline_assembly: context.inline_assembly,
+                yul_blocks: context.yul_blocks,
+                yul_statement: context.yul_statement,
+                yul_switch: context.yul_switch,
                 yul_case,
-            )?;
+            };
+    
+            self.visit_yul_case(&mut case_context)?;
+            self.leave_yul_case(&mut case_context)?;
         }
 
         Ok(())
     }
 
-    fn visit_yul_case<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: &'a YulStatement,
-        yul_switch: &'a YulSwitch,
-        yul_case: &'a YulCase,
-    ) -> io::Result<()> {
+    fn leave_yul_switch<'a, 'b, 'c>(&mut self, context: &mut YulSwitchContext<'a, 'b, 'c>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_yul_case(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                inline_assembly,
-                yul_blocks,
-                yul_statement,
-                yul_switch,
-                yul_case,
-            )?;
+            visitor.leave_yul_switch(context)?;
         }
-
-        self.visit_yul_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            inline_assembly,
-            yul_blocks,
-            Some(yul_statement),
-            &yul_case.value,
-        )?;
-
-        self.visit_yul_block(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            inline_assembly,
-            yul_blocks,
-            &yul_case.body,
-        )?;
 
         Ok(())
     }
 
-    fn visit_yul_assignment<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: &'a YulStatement,
-        yul_assignment: &'a YulAssignment,
-    ) -> io::Result<()> {
+    fn visit_yul_case<'a, 'b, 'c>(&mut self, context: &mut YulCaseContext<'a, 'b, 'c>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_yul_assignment(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                inline_assembly,
-                yul_blocks,
-                yul_statement,
-                yul_assignment,
-            )?;
+            visitor.visit_yul_case(context)?;
         }
 
-        for yul_identifier in yul_assignment.variable_names.iter() {
-            self.visit_yul_identifier(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                inline_assembly,
-                yul_blocks,
-                Some(yul_statement),
-                None,
+        let mut value_context = YulExpressionContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            inline_assembly: context.inline_assembly,
+            yul_blocks: context.yul_blocks,
+            yul_statement: Some(context.yul_statement),
+            yul_expression: &context.yul_case.value,
+        };
+
+        self.visit_yul_expression(&mut value_context)?;
+        self.leave_yul_expression(&mut value_context)?;
+
+        let mut body_context = YulBlockContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            inline_assembly: context.inline_assembly,
+            yul_blocks: context.yul_blocks,
+            yul_block: &context.yul_case.body,
+        };
+
+        self.visit_yul_block(&mut body_context)?;
+        self.leave_yul_block(&mut body_context)?;
+
+        Ok(())
+    }
+
+    fn leave_yul_case<'a, 'b, 'c>(&mut self, context: &mut YulCaseContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_yul_case(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_yul_assignment<'a, 'b, 'c>(&mut self, context: &mut YulAssignmentContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_yul_assignment(context)?;
+        }
+
+        for yul_identifier in context.yul_assignment.variable_names.iter() {
+            let mut context = YulIdentifierContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: context.blocks,
+                statement: context.statement,
+                inline_assembly: context.inline_assembly,
+                yul_blocks: context.yul_blocks,
+                yul_statement: Some(context.yul_statement),
+                yul_expression: None,
                 yul_identifier,
-            )?;
+            };
+
+            self.visit_yul_identifier(&mut context)?;
+            self.leave_yul_identifier(&mut context)?;
         }
 
-        self.visit_yul_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            inline_assembly,
-            yul_blocks,
-            Some(yul_statement),
-            &yul_assignment.value,
-        )?;
+        let mut value_context = YulExpressionContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            inline_assembly: context.inline_assembly,
+            yul_blocks: context.yul_blocks,
+            yul_statement: Some(context.yul_statement),
+            yul_expression: &context.yul_assignment.value,
+        };
+
+        self.visit_yul_expression(&mut value_context)?;
+        self.leave_yul_expression(&mut value_context)?;
 
         Ok(())
     }
 
-    fn visit_yul_variable_declaration<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: &'a YulStatement,
-        yul_variable_declaration: &'a YulVariableDeclaration,
-    ) -> io::Result<()> {
+    fn leave_yul_assignment<'a, 'b, 'c>(&mut self, context: &mut YulAssignmentContext<'a, 'b, 'c>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_yul_variable_declaration(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                inline_assembly,
-                yul_blocks,
-                yul_statement,
-                yul_variable_declaration,
-            )?;
+            visitor.leave_yul_assignment(context)?;
         }
-
-        self.visit_yul_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            inline_assembly,
-            yul_blocks,
-            Some(yul_statement),
-            &yul_variable_declaration.value,
-        )?;
 
         Ok(())
     }
 
-    fn visit_yul_expression_statement<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: &'a YulStatement,
-        yul_expression_statement: &'a YulExpressionStatement,
-    ) -> io::Result<()> {
+    fn visit_yul_variable_declaration<'a, 'b, 'c>(&mut self, context: &mut YulVariableDeclarationContext<'a, 'b, 'c>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_yul_expression_statement(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                inline_assembly,
-                yul_blocks,
-                yul_statement,
-                yul_expression_statement,
-            )?;
+            visitor.visit_yul_variable_declaration(context)?;
         }
 
-        self.visit_yul_expression(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            inline_assembly,
-            yul_blocks,
-            Some(yul_statement),
-            &yul_expression_statement.expression,
-        )?;
+        let mut value_context = YulExpressionContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            inline_assembly: context.inline_assembly,
+            yul_blocks: context.yul_blocks,
+            yul_statement: Some(context.yul_statement),
+            yul_expression: &context.yul_variable_declaration.value,
+        };
+
+        self.visit_yul_expression(&mut value_context)?;
+        self.leave_yul_expression(&mut value_context)?;
 
         Ok(())
     }
 
-    fn visit_yul_expression<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: Option<&'a YulStatement>,
-        yul_expression: &'a YulExpression,
-    ) -> io::Result<()> {
+    fn leave_yul_variable_declaration<'a, 'b, 'c>(&mut self, context: &mut YulVariableDeclarationContext<'a, 'b, 'c>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_yul_expression(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                inline_assembly,
-                yul_blocks,
-                yul_statement,
-                yul_expression,
-            )?;
+            visitor.leave_yul_variable_declaration(context)?;
         }
 
-        match yul_expression {
+        Ok(())
+    }
+
+    fn visit_yul_expression_statement<'a, 'b, 'c>(&mut self, context: &mut YulExpressionStatementContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_yul_expression_statement(context)?;
+        }
+
+        let mut expression_context = YulExpressionContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            inline_assembly: context.inline_assembly,
+            yul_blocks: context.yul_blocks,
+            yul_statement: Some(context.yul_statement),
+            yul_expression: &context.yul_expression_statement.expression,
+        };
+
+        self.visit_yul_expression(&mut expression_context)?;
+        self.leave_yul_expression(&mut expression_context)?;
+
+        Ok(())
+    }
+
+    fn leave_yul_expression_statement<'a, 'b, 'c>(&mut self, context: &mut YulExpressionStatementContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_yul_expression_statement(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_yul_expression<'a, 'b, 'c>(&mut self, context: &mut YulExpressionContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_yul_expression(context)?;
+        }
+
+        match context.yul_expression {
             YulExpression::YulLiteral(yul_literal) => {
-                self.visit_yul_literal(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
-                    inline_assembly,
-                    yul_blocks,
-                    yul_statement,
-                    yul_expression,
-                    yul_literal,
-                )?;
+                let mut literal_context = YulLiteralContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
+                    inline_assembly: context.inline_assembly,
+                    yul_blocks: context.yul_blocks,
+                    yul_statement: context.yul_statement,
+                    yul_expression: context.yul_expression,
+                    yul_literal
+                };
+        
+                self.visit_yul_literal(&mut literal_context)?;
+                self.leave_yul_literal(&mut literal_context)?;
             }
 
             YulExpression::YulIdentifier(yul_identifier) => {
-                self.visit_yul_identifier(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
-                    inline_assembly,
-                    yul_blocks,
-                    yul_statement,
-                    Some(yul_expression),
-                    yul_identifier,
-                )?;
+                let mut identifier_context = YulIdentifierContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
+                    inline_assembly: context.inline_assembly,
+                    yul_blocks: context.yul_blocks,
+                    yul_statement: context.yul_statement,
+                    yul_expression: Some(context.yul_expression),
+                    yul_identifier
+                };
+        
+                self.visit_yul_identifier(&mut identifier_context)?;
+                self.leave_yul_identifier(&mut identifier_context)?;
             }
 
             YulExpression::YulFunctionCall(yul_function_call) => {
-                self.visit_yul_function_call(
-                    source_unit,
-                    contract_definition,
-                    definition_node,
-                    blocks,
-                    statement,
-                    inline_assembly,
-                    yul_blocks,
-                    yul_statement,
-                    yul_expression,
-                    yul_function_call,
-                )?;
+                let mut function_call_context = YulFunctionCallContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
+                    inline_assembly: context.inline_assembly,
+                    yul_blocks: context.yul_blocks,
+                    yul_statement: context.yul_statement,
+                    yul_expression: context.yul_expression,
+                    yul_function_call
+                };
+        
+                self.visit_yul_function_call(&mut function_call_context)?;
+                self.leave_yul_function_call(&mut function_call_context)?;
             }
 
             YulExpression::UnhandledYulExpression { node_type, src, id } => {
@@ -2960,121 +2927,84 @@ impl AstVisitor for AstVisitorData<'_> {
         Ok(())
     }
 
-    fn visit_yul_literal<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: Option<&'a YulStatement>,
-        yul_expression: &'a YulExpression,
-        yul_literal: &'a YulLiteral,
-    ) -> io::Result<()> {
+    fn leave_yul_expression<'a, 'b, 'c>(&mut self, context: &mut YulExpressionContext<'a, 'b, 'c>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_yul_literal(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                inline_assembly,
-                yul_blocks,
-                yul_statement,
-                yul_expression,
-                yul_literal,
-            )?;
+            visitor.leave_yul_expression(context)?;
         }
 
         Ok(())
     }
 
-    fn visit_yul_identifier<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: Option<&'a YulStatement>,
-        yul_expression: Option<&'a YulExpression>,
-        yul_identifier: &'a YulIdentifier,
-    ) -> io::Result<()> {
+    fn visit_yul_literal<'a, 'b, 'c>(&mut self, context: &mut YulLiteralContext<'a, 'b, 'c>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_yul_identifier(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                inline_assembly,
-                yul_blocks,
-                yul_statement,
-                yul_expression,
-                yul_identifier,
-            )?;
+            visitor.visit_yul_literal(context)?;
         }
 
         Ok(())
     }
 
-    fn visit_yul_function_call<'a>(
-        &mut self,
-        source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        blocks: &mut Vec<&'a Block>,
-        statement: &'a Statement,
-        inline_assembly: &'a InlineAssembly,
-        yul_blocks: &mut Vec<&'a YulBlock>,
-        yul_statement: Option<&'a YulStatement>,
-        yul_expression: &'a YulExpression,
-        yul_function_call: &'a YulFunctionCall,
-    ) -> io::Result<()> {
+    fn leave_yul_literal<'a, 'b, 'c>(&mut self, context: &mut YulLiteralContext<'a, 'b, 'c>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
-            visitor.visit_yul_function_call(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                inline_assembly,
-                yul_blocks,
-                yul_statement,
-                yul_expression,
-                yul_function_call,
-            )?;
+            visitor.leave_yul_literal(context)?;
         }
 
-        self.visit_yul_identifier(
-            source_unit,
-            contract_definition,
-            definition_node,
-            blocks,
-            statement,
-            inline_assembly,
-            yul_blocks,
-            yul_statement,
-            Some(yul_expression),
-            &yul_function_call.function_name,
-        )?;
+        Ok(())
+    }
 
-        for yul_expression in yul_function_call.arguments.iter() {
-            self.visit_yul_expression(
-                source_unit,
-                contract_definition,
-                definition_node,
-                blocks,
-                statement,
-                inline_assembly,
-                yul_blocks,
-                yul_statement,
-                yul_expression,
-            )?;
+    fn visit_yul_identifier<'a, 'b, 'c>(&mut self, context: &mut YulIdentifierContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_yul_identifier(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn leave_yul_identifier<'a, 'b, 'c>(&mut self, context: &mut YulIdentifierContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_yul_identifier(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_yul_function_call<'a, 'b, 'c>(&mut self, context: &mut YulFunctionCallContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_yul_function_call(context)?;
+        }
+
+        let mut identifier_context = YulIdentifierContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            inline_assembly: context.inline_assembly,
+            yul_blocks: context.yul_blocks,
+            yul_statement: context.yul_statement,
+            yul_expression: Some(context.yul_expression),
+            yul_identifier: &context.yul_function_call.function_name,
+        };
+
+        self.visit_yul_identifier(&mut identifier_context)?;
+        self.leave_yul_identifier(&mut identifier_context)?;
+
+        for yul_expression in context.yul_function_call.arguments.iter() {
+            let mut expression_context = YulExpressionContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: context.blocks,
+                statement: context.statement,
+                inline_assembly: context.inline_assembly,
+                yul_blocks: context.yul_blocks,
+                yul_statement: context.yul_statement,
+                yul_expression
+            };
+    
+            self.visit_yul_expression(&mut expression_context)?;
+            self.leave_yul_expression(&mut expression_context)?;
         }
 
         Ok(())

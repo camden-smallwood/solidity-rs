@@ -1,5 +1,5 @@
 use super::{AstVisitor, BlockContext, FunctionDefinitionContext};
-use solidity::ast::{NodeID, SourceUnit};
+use solidity::ast::*;
 use std::{
     collections::{HashMap, HashSet},
     io,
@@ -13,23 +13,21 @@ struct FunctionInfo {
     pub occurance_count: usize,
 }
 
-pub struct UncheckedERC20TransferVisitor<'a> {
-    source_units: &'a [SourceUnit],
+pub struct UncheckedERC20TransferVisitor {
     block_info: HashMap<NodeID, BlockInfo>,
     function_info: HashMap<NodeID, FunctionInfo>,
 }
 
-impl<'a> UncheckedERC20TransferVisitor<'a> {
-    pub fn new(source_units: &'a [SourceUnit]) -> Self {
+impl Default for UncheckedERC20TransferVisitor {
+    fn default() -> Self {
         Self {
-            source_units,
             block_info: HashMap::new(),
             function_info: HashMap::new(),
         }
     }
 }
 
-impl AstVisitor for UncheckedERC20TransferVisitor<'_> {
+impl AstVisitor for UncheckedERC20TransferVisitor {
     fn visit_block<'a, 'b>(&mut self, context: &mut BlockContext<'a, 'b>) -> io::Result<()> {
         if !self.block_info.contains_key(&context.block.id) {
             self.block_info.insert(
@@ -171,7 +169,7 @@ impl AstVisitor for UncheckedERC20TransferVisitor<'_> {
         };
 
         for referenced_declaration in context.function_call.expression.referenced_declarations() {
-            for source_unit in self.source_units.iter() {
+            for source_unit in context.source_units.iter() {
                 if let Some((called_contract_definition, called_function_definition)) =
                     source_unit.function_and_contract_definition(referenced_declaration)
                 {

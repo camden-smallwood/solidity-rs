@@ -1,18 +1,6 @@
 use super::{AssignmentContext, AstVisitor, FunctionDefinitionContext};
-
-use solidity::ast::{
-    Block, BlockOrStatement, ContractDefinition, ContractDefinitionNode,
-    NodeID, SourceUnit, Statement,
-};
-
-use yul::{
-    InlineAssembly, YulAssignment, YulBlock, YulStatement
-};
-
-use std::{
-    collections::{HashMap, HashSet},
-    io,
-};
+use solidity::ast::{BlockOrStatement, ContractDefinitionNode, NodeID};
+use std::{collections::{HashMap, HashSet}, io};
 
 struct FunctionInfo {
     assigned_return_variables: HashSet<NodeID>,
@@ -107,19 +95,8 @@ impl AstVisitor for MissingReturnVisitor {
         Ok(())
     }
 
-    fn visit_yul_assignment<'a>(
-        &mut self,
-        _source_unit: &'a SourceUnit,
-        _contract_definition: &'a ContractDefinition,
-        _definition_node: &'a ContractDefinitionNode,
-        _blocks: &mut Vec<&'a Block>,
-        _statement: &'a Statement,
-        _inline_assembly: &'a InlineAssembly,
-        _yul_blocks: &mut Vec<&'a YulBlock>,
-        _yul_statement: &'a YulStatement,
-        yul_assignment: &'a YulAssignment
-    ) -> io::Result<()> {
-        let function_definition = match _definition_node {
+    fn visit_yul_assignment<'a, 'b, 'c>(&mut self, context: &mut super::YulAssignmentContext<'a, 'b, 'c>) -> io::Result<()> {
+        let function_definition = match context.definition_node {
             ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition,
             _ => return Ok(())
         };
@@ -129,7 +106,7 @@ impl AstVisitor for MissingReturnVisitor {
             _ => return Ok(())
         };
 
-        for yul_identifier in yul_assignment.variable_names.iter() {
+        for yul_identifier in context.yul_assignment.variable_names.iter() {
             if let Some(variable_declaration) = function_definition.return_parameters.parameters.iter().find(|p| p.name == yul_identifier.name) {
                 if !function_info.assigned_return_variables.contains(&variable_declaration.id) {
                     function_info.assigned_return_variables.insert(variable_declaration.id);

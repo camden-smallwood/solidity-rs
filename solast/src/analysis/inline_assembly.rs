@@ -1,9 +1,7 @@
 use super::AstVisitor;
-use solidity::ast::{
-    Block, ContractDefinition, ContractDefinitionNode, FunctionKind, NodeID, SourceUnit, Statement,
-};
+use solidity::ast::{ContractDefinitionNode, FunctionKind, NodeID,};
 use std::{collections::HashSet, io};
-use yul::{InlineAssembly, YulBlock, YulExpression, YulFunctionCall, YulIdentifier, YulLiteral, YulStatement};
+use yul::{YulExpression, YulFunctionCall, YulIdentifier, YulLiteral};
 
 pub struct InlineAssemblyVisitor {
     reported_functions: HashSet<NodeID>,
@@ -18,16 +16,8 @@ impl Default for InlineAssemblyVisitor {
 }
 
 impl AstVisitor for InlineAssemblyVisitor {
-    fn visit_inline_assembly<'a>(
-        &mut self,
-        _source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        _blocks: &mut Vec<&'a Block>,
-        _statement: &'a Statement,
-        _inline_assembly: &'a InlineAssembly,
-    ) -> io::Result<()> {
-        let function_definition = match definition_node {
+    fn visit_inline_assembly<'a, 'b>(&mut self, context: &mut super::InlineAssemblyContext<'a, 'b>) -> io::Result<()> {
+        let function_definition = match context.definition_node {
             ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition,
             _ => return Ok(()),
         };
@@ -39,9 +29,9 @@ impl AstVisitor for InlineAssemblyVisitor {
                 "\t{} {} {} contains inline assembly usage",
                 format!("{:?}", function_definition.visibility),
                 if let FunctionKind::Constructor = function_definition.kind {
-                    format!("{}", contract_definition.name)
+                    format!("{}", context.contract_definition.name)
                 } else {
-                    format!("{}.{}", contract_definition.name, function_definition.name)
+                    format!("{}.{}", context.contract_definition.name, function_definition.name)
                 },
                 function_definition.kind,
             );
@@ -50,27 +40,15 @@ impl AstVisitor for InlineAssemblyVisitor {
         Ok(())
     }
 
-    fn visit_yul_function_call<'a>(
-        &mut self,
-        _source_unit: &'a SourceUnit,
-        contract_definition: &'a ContractDefinition,
-        definition_node: &'a ContractDefinitionNode,
-        _blocks: &mut Vec<&'a Block>,
-        _statement: &'a Statement,
-        _inline_assembly: &'a InlineAssembly,
-        _yul_blocks: &mut Vec<&'a YulBlock>,
-        _yul_statement: Option<&'a YulStatement>,
-        _yul_expression: &'a YulExpression,
-        yul_function_call: &'a YulFunctionCall,
-    ) -> io::Result<()> {
-        let function_definition = match definition_node {
+    fn visit_yul_function_call<'a, 'b, 'c>(&mut self, context: &mut super::YulFunctionCallContext<'a, 'b, 'c>) -> io::Result<()> {
+        let function_definition = match context.definition_node {
             ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition,
             _ => return Ok(()),
         };
 
-        match yul_function_call.function_name.name.as_str() {
+        match context.yul_function_call.function_name.name.as_str() {
             "mload" => {
-                let value = match yul_function_call.arguments.first() {
+                let value = match context.yul_function_call.arguments.first() {
                     Some(
                         YulExpression::YulLiteral(YulLiteral {
                             value: Some(value),
@@ -94,9 +72,9 @@ impl AstVisitor for InlineAssemblyVisitor {
                         "\t{} {} {} contains inline assembly which loads the free memory pointer",
                         format!("{:?}", function_definition.visibility),
                         if function_definition.kind == FunctionKind::Constructor {
-                            format!("{}", contract_definition.name)
+                            format!("{}", context.contract_definition.name)
                         } else {
-                            format!("{}.{}", contract_definition.name, function_definition.name)
+                            format!("{}.{}", context.contract_definition.name, function_definition.name)
                         },
                         function_definition.kind
                     );
@@ -104,7 +82,7 @@ impl AstVisitor for InlineAssemblyVisitor {
             }
 
             "calldatacopy" => {
-                let arguments = match yul_function_call.arguments.iter().nth(2) {
+                let arguments = match context.yul_function_call.arguments.iter().nth(2) {
                     Some(YulExpression::YulFunctionCall(YulFunctionCall {
                         function_name: YulIdentifier { name },
                         arguments,
@@ -146,9 +124,9 @@ impl AstVisitor for InlineAssemblyVisitor {
                         "\t{} {} {} contains inline assembly which copies arbitrary function arguments",
                         format!("{:?}", function_definition.visibility),
                         if function_definition.kind == FunctionKind::Constructor {
-                            format!("{}", contract_definition.name)
+                            format!("{}", context.contract_definition.name)
                         } else {
-                            format!("{}.{}", contract_definition.name, function_definition.name)
+                            format!("{}.{}", context.contract_definition.name, function_definition.name)
                         },
                         function_definition.kind
                     );

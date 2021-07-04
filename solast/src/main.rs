@@ -3,41 +3,41 @@ use std::{collections::HashSet, env, fs::File, io, path::PathBuf};
 pub mod analysis;
 pub mod truffle;
 
-const VISITORS: &'static [(&'static str, for<'a> fn(&'a [solidity::ast::SourceUnit]) -> Box<dyn analysis::AstVisitor + 'a>)] = &[
-    ("no_spdx_identifier", |_| Box::new(analysis::NoSpdxIdentifierVisitor)),
-    ("floating_solidity_version", |_| Box::new(analysis::FloatingSolidityVersionVisitor)),
-    ("node_modules_imports", |_| Box::new(analysis::NodeModulesImportsVisitor)),
-    ("abstract_contracts", |_| Box::new(analysis::AbstractContractsVisitor)),
-    ("large_literals", |_| Box::new(analysis::LargeLiteralsVisitor::default())),
-    ("tight_variable_packing", |_| Box::new(analysis::TightVariablePackingVisitor::default())),
-    ("redundant_getter_function", |source_units| Box::new(analysis::RedundantGetterFunctionVisitor::new(source_units))),
-    ("require_without_message", |source_units| Box::new(analysis::RequireWithoutMessageVisitor::new(source_units))),
-    ("state_variable_shadowing", |source_units| Box::new(analysis::StateVariableShadowingVisitor::new(source_units))),
-    ("explicit_variable_return", |_| Box::new(analysis::ExplicitVariableReturnVisitor::default())),
-    ("unused_return", |_| Box::new(analysis::UnusedReturnVisitor)),
-    ("storage_array_loop", |source_units| Box::new(analysis::StorageArrayLoopVisitor::new(source_units))),
-    ("external_calls_in_loop", |source_units| Box::new(analysis::ExternalCallsInLoopVisitor::new(source_units))),
-    ("check_effects_interactions", |source_units| Box::new(analysis::CheckEffectsInteractionsVisitor::new(source_units))),
-    ("raw_address_transfer", |source_units| Box::new(analysis::RawAddressTransferVisitor::new(source_units))),
-    ("safe_erc20_functions", |source_units| Box::new(analysis::SafeERC20FunctionsVisitor::new(source_units))),
-    ("unchecked_erc20_transfer", |source_units| Box::new(analysis::UncheckedERC20TransferVisitor::new(source_units))),
-    ("unpaid_payable_functions", |source_units| Box::new(analysis::UnpaidPayableFunctionsVisitor::new(source_units))),
-    ("divide_before_multiply", |_| Box::new(analysis::DivideBeforeMultiplyVisitor)),
-    ("comparison_utilization", |_| Box::new(analysis::ComparisonUtilizationVisitor)),
-    ("assignment_comparisons", |_| Box::new(analysis::AssignmentComparisonsVisitor)),
-    ("state_variable_mutability", |source_units| Box::new(analysis::StateVariableMutabilityVisitor::new(source_units))),
-    ("unused_state_variables", |_| Box::new(analysis::UnusedStateVariablesVisitor::default())),
-    ("ineffectual_statements", |_| Box::new(analysis::IneffectualStatementsVisitor)),
-    ("inline_assembly", |_| Box::new(analysis::InlineAssemblyVisitor::default())),
-    ("unchecked_casting", |_| Box::new(analysis::UncheckedCastingVisitor)),
-    ("unnecessary_pragmas", |_| Box::new(analysis::UnnecessaryPragmasVisitor)),
-    ("missing_return", |_| Box::new(analysis::MissingReturnVisitor::default())),
-    ("redundant_state_variable_access", |_| Box::new(analysis::RedundantStateVariableAccessVisitor)),
-    ("unnecessary_comparisons", |_| Box::new(analysis::UnnecessaryComparisonsVisitor)),
-    ("assert_usage", |_| Box::new(analysis::AssertUsageVisitor::default())),
-    ("unrestricted_setter_functions", |_| Box::new(analysis::UnrestrictedSetterFunctionsVisitor)),
-    ("manipulatable_balance_usage", |_| Box::new(analysis::ManipulatableBalanceUsageVisitor)),
-    ("redundant_assignments", |_| Box::new(analysis::RedundantAssignmentsVisitor)),
+const VISITORS: &'static [(&'static str, fn() -> Box<dyn analysis::AstVisitor>)] = &[
+    ("no_spdx_identifier", || Box::new(analysis::NoSpdxIdentifierVisitor)),
+    ("floating_solidity_version", || Box::new(analysis::FloatingSolidityVersionVisitor)),
+    ("node_modules_imports", || Box::new(analysis::NodeModulesImportsVisitor)),
+    ("abstract_contracts", || Box::new(analysis::AbstractContractsVisitor)),
+    ("large_literals", || Box::new(analysis::LargeLiteralsVisitor::default())),
+    ("tight_variable_packing", || Box::new(analysis::TightVariablePackingVisitor::default())),
+    ("redundant_getter_function", || Box::new(analysis::RedundantGetterFunctionVisitor)),
+    ("require_without_message", || Box::new(analysis::RequireWithoutMessageVisitor::default())),
+    ("state_variable_shadowing", || Box::new(analysis::StateVariableShadowingVisitor)),
+    ("explicit_variable_return", || Box::new(analysis::ExplicitVariableReturnVisitor::default())),
+    ("unused_return", || Box::new(analysis::UnusedReturnVisitor)),
+    ("storage_array_loop", || Box::new(analysis::StorageArrayLoopVisitor::default())),
+    ("external_calls_in_loop", || Box::new(analysis::ExternalCallsInLoopVisitor::default())),
+    ("check_effects_interactions", || Box::new(analysis::CheckEffectsInteractionsVisitor::default())),
+    ("raw_address_transfer", || Box::new(analysis::RawAddressTransferVisitor::default())),
+    ("safe_erc20_functions", || Box::new(analysis::SafeERC20FunctionsVisitor::default())),
+    ("unchecked_erc20_transfer", || Box::new(analysis::UncheckedERC20TransferVisitor::default())),
+    ("unpaid_payable_functions", || Box::new(analysis::UnpaidPayableFunctionsVisitor)),
+    ("divide_before_multiply", || Box::new(analysis::DivideBeforeMultiplyVisitor)),
+    ("comparison_utilization", || Box::new(analysis::ComparisonUtilizationVisitor)),
+    ("assignment_comparisons", || Box::new(analysis::AssignmentComparisonsVisitor)),
+    ("state_variable_mutability", || Box::new(analysis::StateVariableMutabilityVisitor::default())),
+    ("unused_state_variables", || Box::new(analysis::UnusedStateVariablesVisitor::default())),
+    ("ineffectual_statements", || Box::new(analysis::IneffectualStatementsVisitor)),
+    ("inline_assembly", || Box::new(analysis::InlineAssemblyVisitor::default())),
+    ("unchecked_casting", || Box::new(analysis::UncheckedCastingVisitor)),
+    ("unnecessary_pragmas", || Box::new(analysis::UnnecessaryPragmasVisitor)),
+    ("missing_return", || Box::new(analysis::MissingReturnVisitor::default())),
+    ("redundant_state_variable_access", || Box::new(analysis::RedundantStateVariableAccessVisitor)),
+    ("unnecessary_comparisons", || Box::new(analysis::UnnecessaryComparisonsVisitor)),
+    ("assert_usage", || Box::new(analysis::AssertUsageVisitor::default())),
+    ("unrestricted_setter_functions", || Box::new(analysis::UnrestrictedSetterFunctionsVisitor)),
+    ("manipulatable_balance_usage", || Box::new(analysis::ManipulatableBalanceUsageVisitor)),
+    ("redundant_assignments", || Box::new(analysis::RedundantAssignmentsVisitor)),
 ];
 
 fn main() -> io::Result<()> {
@@ -331,9 +331,9 @@ fn main() -> io::Result<()> {
         Box::new(analysis::SourceUnitVisitor::new(source_units.as_slice())),
     ];
 
-    for &(visitor_name, visitor_constructor_fn) in VISITORS {
+    for &(visitor_name, create_visitor) in VISITORS {
         if visitor_names.is_empty() || visitor_names.contains(visitor_name) {
-            visitors.push(visitor_constructor_fn(source_units.as_slice()));
+            visitors.push(create_visitor());
         }
     }
 

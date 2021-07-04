@@ -1,5 +1,5 @@
 use super::{AstVisitor, ForStatementContext, FunctionDefinitionContext, VariableDeclarationContext};
-use solidity::ast::{NodeID, SourceUnit};
+use solidity::ast::*;
 use std::{
     collections::{HashMap, HashSet},
     io,
@@ -9,21 +9,21 @@ struct FunctionInfo {
     pub loops_over_storage_array: bool,
 }
 
-pub struct StorageArrayLoopVisitor<'a> {
-    pub source_units: &'a [SourceUnit],
+pub struct StorageArrayLoopVisitor {
     storage_arrays: HashSet<NodeID>,
     functions: HashMap<NodeID, FunctionInfo>,
 }
 
-impl<'a> StorageArrayLoopVisitor<'a> {
-    pub fn new(source_units: &'a [SourceUnit]) -> Self {
+impl Default for StorageArrayLoopVisitor {
+    fn default() -> Self {
         Self {
-            source_units,
             storage_arrays: HashSet::new(),
             functions: HashMap::new(),
         }
     }
+}
 
+impl StorageArrayLoopVisitor {
     fn expression_contains_storage_array_length(&self, expression: &solidity::ast::Expression) -> bool {
         match expression {
             solidity::ast::Expression::BinaryOperation(binary_operation) => {
@@ -82,7 +82,7 @@ impl<'a> StorageArrayLoopVisitor<'a> {
     }
 }
 
-impl AstVisitor for StorageArrayLoopVisitor<'_> {
+impl AstVisitor for StorageArrayLoopVisitor {
     fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
         if !self.functions.contains_key(&context.function_definition.id) {
             self.functions.insert(

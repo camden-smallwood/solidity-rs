@@ -1,24 +1,22 @@
 use super::{AstVisitor, FunctionDefinitionContext};
-use solidity::ast::{NodeID, SourceUnit};
+use solidity::ast::*;
 use std::io;
 
-pub struct ExternalCallsInLoopVisitor<'a> {
-    source_units: &'a [SourceUnit],
+pub struct ExternalCallsInLoopVisitor {
     loop_ids: Vec<NodeID>,
     makes_external_call: bool,
 }
 
-impl<'a> ExternalCallsInLoopVisitor<'a> {
-    pub fn new(source_units: &'a [SourceUnit]) -> Self {
+impl Default for ExternalCallsInLoopVisitor {
+    fn default() -> Self {
         Self {
-            source_units,
             loop_ids: vec![],
             makes_external_call: false,
         }
     }
 }
 
-impl AstVisitor for ExternalCallsInLoopVisitor<'_> {
+impl AstVisitor for ExternalCallsInLoopVisitor {
     fn visit_function_definition<'a>(&mut self, _context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
         self.loop_ids.clear();
         self.makes_external_call = false;
@@ -106,7 +104,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_> {
             return Ok(());
         }
 
-        for source_unit in self.source_units.iter() {
+        for source_unit in context.source_units.iter() {
             let function_definition =
                 match source_unit.function_definition(context.identifier.referenced_declaration) {
                     Some(function_definition) => function_definition,
@@ -133,7 +131,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor<'_> {
         }
 
         if let Some(referenced_declaration) = context.member_access.referenced_declaration {
-            for source_unit in self.source_units.iter() {
+            for source_unit in context.source_units.iter() {
                 if let Some(function_definition) =
                     source_unit.function_definition(referenced_declaration)
                 {

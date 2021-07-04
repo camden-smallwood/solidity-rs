@@ -1,19 +1,9 @@
 use super::{AstVisitor, FunctionDefinitionContext};
-use solidity::ast::SourceUnit;
 use std::io;
 
-pub struct StateVariableShadowingVisitor<'a> {
-    pub source_units: &'a [SourceUnit],
+pub struct StateVariableShadowingVisitor;
 
-}
-
-impl<'a> StateVariableShadowingVisitor<'a> {
-    pub fn new(source_units: &'a [SourceUnit]) -> Self {
-        Self { source_units }
-    }
-}
-
-impl AstVisitor for StateVariableShadowingVisitor<'_> {
+impl AstVisitor for StateVariableShadowingVisitor {
     fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
         let contract_ids = match context.contract_definition.linearized_base_contracts.as_ref() {
             Some(contract_ids) => contract_ids,
@@ -23,7 +13,7 @@ impl AstVisitor for StateVariableShadowingVisitor<'_> {
         for &base_contract_id in contract_ids.iter() {
             let mut base_contract_definition = None;
 
-            for source_unit in self.source_units.iter() {
+            for source_unit in context.source_units.iter() {
                 if let Some(contract_definition) = source_unit.contract_definition(base_contract_id) {
                     base_contract_definition = Some(contract_definition);
                     break;

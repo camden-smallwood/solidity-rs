@@ -1,18 +1,10 @@
 use super::{AstVisitor, FunctionDefinitionContext};
-use solidity::ast::SourceUnit;
+use solidity::ast::*;
 use std::io;
 
-pub struct RedundantGetterFunctionVisitor<'a> {
-    pub source_units: &'a [SourceUnit],
-}
+pub struct RedundantGetterFunctionVisitor;
 
-impl<'a> RedundantGetterFunctionVisitor<'a> {
-    pub fn new(source_units: &'a [SourceUnit]) -> Self {
-        Self { source_units }
-    }
-}
-
-impl AstVisitor for RedundantGetterFunctionVisitor<'_> {
+impl AstVisitor for RedundantGetterFunctionVisitor {
     fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
         if context.function_definition.name.is_empty() || context.function_definition.body.is_none() {
             return Ok(());
@@ -22,7 +14,7 @@ impl AstVisitor for RedundantGetterFunctionVisitor<'_> {
             return Ok(());
         }
 
-        if context.function_definition.visibility != solidity::ast::Visibility::Public {
+        if context.function_definition.visibility != Visibility::Public {
             return Ok(());
         }
 
@@ -38,12 +30,12 @@ impl AstVisitor for RedundantGetterFunctionVisitor<'_> {
         }
 
         let return_statement = match &statements[0] {
-            solidity::ast::Statement::Return(return_statement) => return_statement,
+            Statement::Return(return_statement) => return_statement,
             _ => return Ok(()),
         };
 
         let variable_declaration = match return_statement.expression.as_ref() {
-            Some(solidity::ast::Expression::Identifier(identifier)) => {
+            Some(Expression::Identifier(identifier)) => {
                 match context.contract_definition.variable_declaration(identifier.referenced_declaration) {
                     Some(variable_declaration) => variable_declaration,
                     None => return Ok(()),

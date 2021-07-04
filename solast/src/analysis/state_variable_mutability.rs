@@ -6,15 +6,13 @@ pub struct ContractInfo {
     variable_info: HashMap<NodeID, bool>,
 }
 
-pub struct StateVariableMutabilityVisitor<'a> {
-    source_units: &'a [SourceUnit],
+pub struct StateVariableMutabilityVisitor {
     contract_info: HashMap<NodeID, ContractInfo>,
 }
 
-impl<'a> StateVariableMutabilityVisitor<'a> {
-    pub fn new(source_units: &'a [SourceUnit]) -> Self {
+impl Default for StateVariableMutabilityVisitor {
+    fn default() -> Self {
         Self {
-            source_units,
             contract_info: HashMap::new(),
         }
     }
@@ -26,7 +24,7 @@ impl<'a> StateVariableMutabilityVisitor<'a> {
 //   if the local variable mutates state, don't suggest that the state variable should be immutable
 //
 
-impl AstVisitor for StateVariableMutabilityVisitor<'_> {
+impl AstVisitor for StateVariableMutabilityVisitor {
     fn leave_contract_definition<'a>(&mut self, context: &mut super::ContractDefinitionContext<'a>) -> io::Result<()> {
         if let Some(contract_info) = self.contract_info.get(&context.contract_definition.id) {
             for (&id, &assigned) in contract_info.variable_info.iter() {
@@ -81,7 +79,7 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_> {
         }
         
         let ids = context.contract_definition.get_assigned_state_variables(
-            self.source_units,
+            context.source_units,
             context.definition_node,
             context.assignment.left_hand_side.as_ref(),
         );
@@ -109,7 +107,7 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_> {
         }
         
         let ids = context.contract_definition.get_assigned_state_variables(
-            self.source_units,
+            context.source_units,
             context.definition_node,
             context.unary_operation.sub_expression.as_ref(),
         );
@@ -139,7 +137,7 @@ impl AstVisitor for StateVariableMutabilityVisitor<'_> {
                 }
                 
                 let ids = context.contract_definition.get_assigned_state_variables(
-                    self.source_units,
+                    context.source_units,
                     context.definition_node,
                     member_access.expression.as_ref(),
                 );
