@@ -43,7 +43,7 @@ const VISITOR_TYPES: &'static [(&'static str, fn() -> Box<dyn analysis::AstVisit
 
 fn main() -> io::Result<()> {
     let mut args = env::args();
-    let _ = args.next().unwrap();
+    args.next().ok_or(io::Error::from(io::ErrorKind::BrokenPipe))?;
 
     let mut path: Option<PathBuf> = None;
     let mut should_print_todo_list = false;
