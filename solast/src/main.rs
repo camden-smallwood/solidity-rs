@@ -4,7 +4,7 @@ mod analysis;
 mod truffle;
 mod todo_list;
 
-const VISITORS: &'static [(&'static str, fn() -> Box<dyn analysis::AstVisitor>)] = &[
+const VISITOR_TYPES: &'static [(&'static str, fn() -> Box<dyn analysis::AstVisitor>)] = &[
     ("no_spdx_identifier", || Box::new(analysis::NoSpdxIdentifierVisitor)),
     ("floating_solidity_version", || Box::new(analysis::FloatingSolidityVersionVisitor)),
     ("node_modules_imports", || Box::new(analysis::NodeModulesImportsVisitor)),
@@ -70,7 +70,7 @@ fn main() -> io::Result<()> {
                     contract_name = Some(s.trim_start_matches("contract=").into());
                 }
 
-                s if VISITORS.iter().find(|visitor| visitor.0 == s).is_some() => {
+                s if VISITOR_TYPES.iter().find(|visitor| visitor.0 == s).is_some() => {
                     if !visitor_names.contains(s) {
                         visitor_names.insert(s.into());
                     }
@@ -144,7 +144,7 @@ fn main() -> io::Result<()> {
         Box::new(analysis::SourceUnitVisitor::new(source_units.as_slice())),
     ];
 
-    for &(visitor_name, create_visitor) in VISITORS {
+    for &(visitor_name, create_visitor) in VISITOR_TYPES {
         if visitor_names.is_empty() || visitor_names.contains(visitor_name) {
             visitors.push(create_visitor());
         }
