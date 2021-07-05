@@ -30,6 +30,10 @@ impl super::AstVisitor for UnusedReturnVisitor {
 
         for source_unit in context.source_units.iter() {
             if let Some((called_contract_definition, called_function_definition)) = source_unit.function_and_contract_definition(referenced_declaration) {
+                if called_function_definition.return_parameters.parameters.is_empty() {
+                    return Ok(())
+                }
+                
                 match context.definition_node {
                     ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
                         "\tThe {} `{}` {} makes a call to the {} `{}` {}, ignoring the returned {}",
