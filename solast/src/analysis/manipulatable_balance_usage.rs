@@ -10,6 +10,64 @@ pub struct ManipulatableBalanceUsageVisitor;
 //
 
 impl AstVisitor for ManipulatableBalanceUsageVisitor {
+    fn visit_member_access<'a, 'b>(&mut self, context: &mut super::MemberAccessContext<'a, 'b>) -> std::io::Result<()> {
+        if context.member_access.member_name == "balance" {
+            if let Expression::FunctionCall(FunctionCall {
+                expression,
+                arguments,
+                ..
+            }) = context.member_access.expression.as_ref() {
+                if let Expression::ElementaryTypeNameExpression(ElementaryTypeNameExpression {
+                    type_name: TypeName::ElementaryTypeName(ElementaryTypeName { name, .. }),
+                    ..
+                }) = expression.as_ref() {
+                    if name == "address" && arguments.len() == 1 {
+                        if let Expression::Identifier(Identifier {
+                            name,
+                            ..
+                        }) = arguments.first().unwrap() {
+                            if name == "this" {
+                                match context.definition_node {
+                                    ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                                        "\tThe {} {} in the `{}` {} contains manipulatable balance usage: `{}`",
+
+                                        function_definition.visibility,
+
+                                        if let FunctionKind::Constructor = function_definition.kind {
+                                            format!("{}", "constructor")
+                                        } else {
+                                            format!("`{}` {}", function_definition.name, function_definition.kind)
+                                        },
+
+                                        context.contract_definition.name,
+                                        context.contract_definition.kind,
+
+                                        context.member_access
+                                    ),
+
+                                    ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                                        "\tThe `{}` modifier in the `{}` {} contains manipulatable balance usage: `{}`",
+
+                                        modifier_definition.name,
+
+                                        context.contract_definition.name,
+                                        context.contract_definition.kind,
+
+                                        context.member_access
+                                    ),
+
+                                    _ => ()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     fn visit_function_call<'a, 'b>(&mut self, context: &mut super::FunctionCallContext<'a, 'b>) -> std::io::Result<()> {
         if context.function_call.arguments.len() != 1 {
             return Ok(())
