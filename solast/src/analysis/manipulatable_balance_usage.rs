@@ -1,5 +1,6 @@
-use super::AstVisitor;
+use super::{AstVisitor, FunctionCallContext, MemberAccessContext};
 use solidity::ast::*;
+use std::io;
 
 pub struct ManipulatableBalanceUsageVisitor;
 
@@ -10,7 +11,7 @@ pub struct ManipulatableBalanceUsageVisitor;
 //
 
 impl AstVisitor for ManipulatableBalanceUsageVisitor {
-    fn visit_member_access<'a, 'b>(&mut self, context: &mut super::MemberAccessContext<'a, 'b>) -> std::io::Result<()> {
+    fn visit_member_access<'a, 'b>(&mut self, context: &mut MemberAccessContext<'a, 'b>) -> io::Result<()> {
         if context.member_access.member_name == "balance" {
             if let Expression::FunctionCall(FunctionCall {
                 expression,
@@ -68,7 +69,7 @@ impl AstVisitor for ManipulatableBalanceUsageVisitor {
         Ok(())
     }
 
-    fn visit_function_call<'a, 'b>(&mut self, context: &mut super::FunctionCallContext<'a, 'b>) -> std::io::Result<()> {
+    fn visit_function_call<'a, 'b>(&mut self, context: &mut FunctionCallContext<'a, 'b>) -> io::Result<()> {
         if context.function_call.arguments.len() != 1 {
             return Ok(())
         }
