@@ -1,22 +1,19 @@
 use super::{AstVisitor, SourceUnitContext};
-use solidity::ast::SourceUnit;
 use std::io;
 
-pub struct SourceUnitVisitor<'a> {
-    pub source_units: &'a [SourceUnit],
-    pub first_file: bool,
+pub struct SourceUnitVisitor {
+    first_file: bool,
 }
 
-impl<'a> SourceUnitVisitor<'a> {
-    pub fn new(source_units: &'a [SourceUnit]) -> Self {
+impl Default for SourceUnitVisitor {
+    fn default() -> Self {
         Self {
-            source_units,
             first_file: true,
         }
     }
 }
 
-impl AstVisitor for SourceUnitVisitor<'_> {
+impl AstVisitor for SourceUnitVisitor {
     fn visit_source_unit<'a>(&mut self, context: &mut SourceUnitContext<'a>) -> io::Result<()> {
         if self.first_file {
             self.first_file = false;

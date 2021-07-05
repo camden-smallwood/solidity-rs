@@ -6,11 +6,11 @@ use std::{
 };
 
 struct BlockInfo {
-    pub verified_declarations: HashSet<NodeID>,
+    verified_declarations: HashSet<NodeID>,
 }
 
 struct FunctionInfo {
-    pub occurance_count: usize,
+    occurance_count: usize,
 }
 
 pub struct UncheckedERC20TransferVisitor {

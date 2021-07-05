@@ -141,7 +141,7 @@ fn main() -> io::Result<()> {
     }
 
     let mut visitors: Vec<Box<dyn analysis::AstVisitor>> = vec![
-        Box::new(analysis::SourceUnitVisitor::new(source_units.as_slice())),
+        Box::new(analysis::SourceUnitVisitor::default()),
     ];
 
     for &(visitor_name, create_visitor) in VISITOR_TYPES {

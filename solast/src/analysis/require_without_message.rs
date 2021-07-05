@@ -3,7 +3,7 @@ use solidity::ast::*;
 use std::{collections::HashMap, io};
 
 pub struct RequireWithoutMessageVisitor {
-    pub requirement_counts: HashMap<NodeID, usize>,
+    requirement_counts: HashMap<NodeID, usize>,
 }
 
 impl Default for RequireWithoutMessageVisitor {

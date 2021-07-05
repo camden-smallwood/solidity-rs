@@ -6,7 +6,7 @@ use std::{
 };
 
 struct FunctionInfo {
-    pub loops_over_storage_array: bool,
+    loops_over_storage_array: bool,
 }
 
 pub struct StorageArrayLoopVisitor {
