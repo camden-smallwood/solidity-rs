@@ -6,46 +6,41 @@ pub struct AssignmentComparisonsVisitor;
 
 impl AstVisitor for AssignmentComparisonsVisitor {
     fn visit_function_call<'a, 'b>(&mut self, context: &mut super::FunctionCallContext<'a, 'b>) -> io::Result<()> {
-        if let Expression::Identifier(Identifier { name, .. }) = context.function_call.expression.as_ref() {
-            if (name == "require" || name == "assert") && context.function_call.arguments.first().unwrap().contains_operation("=") {
-                match context.definition_node {
-                    solidity::ast::ContractDefinitionNode::FunctionDefinition(
-                        function_definition,
-                    ) => {
-                        println!(
-                            "\t{} {} {} contains a call to {} that performs an assignment",
+        let called_function_name = match context.function_call.expression.as_ref() {
+            Expression::Identifier(Identifier { name, .. }) if name == "require" || name == "assert" => name,
+            _ => return Ok(())
+        };
 
-                            format!("{:?}", function_definition.visibility),
+        if context.function_call.arguments.first().unwrap().contains_operation("=") {
+            match context.definition_node {
+                ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                    "\tThe {} {} in the `{}` {} contains a call to `{}` that performs an assignment",
 
-                            if function_definition.name.is_empty() {
-                                format!("{}", context.contract_definition.name)
-                            } else {
-                                format!("{}.{}", context.contract_definition.name, function_definition.name)
-                            },
+                    function_definition.visibility,
 
-                            function_definition.kind,
+                    if let FunctionKind::Constructor = function_definition.kind {
+                        format!("{}", function_definition.kind)
+                    } else {
+                        format!("`{}` {}", function_definition.name, function_definition.kind)
+                    },
 
-                            name
-                        );
-                    }
+                    context.contract_definition.name,
+                    context.contract_definition.kind,
 
-                    solidity::ast::ContractDefinitionNode::ModifierDefinition(
-                        modifier_definition,
-                    ) => {
-                        println!(
-                            "\t{} {} modifier contains a call to {} that performs an assignment",
-                            format!("{:?}", modifier_definition.visibility),
-                            if modifier_definition.name.is_empty() {
-                                format!("{}", context.contract_definition.name)
-                            } else {
-                                format!("{}.{}", context.contract_definition.name, modifier_definition.name)
-                            },
-                            name
-                        );
-                    }
+                    called_function_name
+                ),
 
-                    _ => (),
-                }
+                ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                    "\tThe `{}` modifier in the `{}` {} contains a call to `{}` that performs an assignment",
+                    modifier_definition.name,
+
+                    context.contract_definition.name,
+                    context.contract_definition.kind,
+
+                    called_function_name
+                ),
+
+                _ => ()
             }
         }
 
@@ -55,32 +50,30 @@ impl AstVisitor for AssignmentComparisonsVisitor {
     fn visit_if_statement<'a, 'b>(&mut self, context: &mut super::IfStatementContext<'a, 'b>) -> io::Result<()> {
         if context.if_statement.condition.contains_operation("=") {
             match context.definition_node {
-                solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
-                    println!(
-                        "\t{} {} {} contains an if statement with a condition that performs an assignment",
-                        format!("{:?}", function_definition.visibility),
-                        if function_definition.name.is_empty() {
-                            format!("{}", context.contract_definition.name)
-                        } else {
-                            format!("{}.{}", context.contract_definition.name, function_definition.name)
-                        },
-                        function_definition.kind
-                    );
-                }
+                ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                    "\tThe {} {} in the `{}` {} contains an if statement with a condition that performs an assignment",
 
-                solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
-                    println!(
-                        "\t{} {} modifier contains an if statement with a condition that performs an assignment",
-                        format!("{:?}", modifier_definition.visibility),
-                        if modifier_definition.name.is_empty() {
-                            format!("{}", context.contract_definition.name)
-                        } else {
-                            format!("{}.{}", context.contract_definition.name, modifier_definition.name)
-                        }
-                    );
-                }
+                    function_definition.visibility,
 
-                _ => (),
+                    if let FunctionKind::Constructor = function_definition.kind {
+                        format!("{}", function_definition.kind)
+                    } else {
+                        format!("`{}` {}", function_definition.name, function_definition.kind)
+                    },
+
+                    context.contract_definition.name,
+                    context.contract_definition.kind
+                ),
+
+                ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                    "\tThe `{}` modifier in the `{}` {} contains an if statement with a condition that performs an assignment",
+                    modifier_definition.name,
+
+                    context.contract_definition.name,
+                    context.contract_definition.kind
+                ),
+
+                _ => ()
             }
         }
 
@@ -91,36 +84,30 @@ impl AstVisitor for AssignmentComparisonsVisitor {
         if let Some(condition) = context.for_statement.condition.as_ref() {
             if condition.contains_operation("=") {
                 match context.definition_node {
-                    solidity::ast::ContractDefinitionNode::FunctionDefinition(
-                        function_definition,
-                    ) => {
-                        println!(
-                            "\t{} {} {} contains a for statement with a condition that performs an assignment",
-                            format!("{:?}", function_definition.visibility),
-                            if function_definition.name.is_empty() {
-                                format!("{}", context.contract_definition.name)
-                            } else {
-                                format!("{}.{}", context.contract_definition.name, function_definition.name)
-                            },
-                            function_definition.kind
-                        );
-                    }
-
-                    solidity::ast::ContractDefinitionNode::ModifierDefinition(
-                        modifier_definition,
-                    ) => {
-                        println!(
-                            "\t{} {} modifier contains a for statement with a condition that performs an assignment",
-                            format!("{:?}", modifier_definition.visibility),
-                            if modifier_definition.name.is_empty() {
-                                format!("{}", context.contract_definition.name)
-                            } else {
-                                format!("{}.{}", context.contract_definition.name, modifier_definition.name)
-                            }
-                        );
-                    }
-
-                    _ => (),
+                    ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                        "\tThe {} {} in the `{}` {} contains a for statement with a condition that performs an assignment",
+    
+                        function_definition.visibility,
+    
+                        if let FunctionKind::Constructor = function_definition.kind {
+                            format!("{}", function_definition.kind)
+                        } else {
+                            format!("`{}` {}", function_definition.name, function_definition.kind)
+                        },
+    
+                        context.contract_definition.name,
+                        context.contract_definition.kind
+                    ),
+    
+                    ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                        "\tThe `{}` modifier in the `{}` {} contains a for statement with a condition that performs an assignment",
+                        modifier_definition.name,
+    
+                        context.contract_definition.name,
+                        context.contract_definition.kind
+                    ),
+    
+                    _ => ()
                 }
             }
         }
@@ -131,32 +118,30 @@ impl AstVisitor for AssignmentComparisonsVisitor {
     fn visit_while_statement<'a, 'b>(&mut self, context: &mut super::WhileStatementContext<'a, 'b>) -> io::Result<()> {
         if context.while_statement.condition.contains_operation("=") {
             match context.definition_node {
-                solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
-                    println!(
-                        "\t{} {} {} contains a while statement with a condition that performs an assignment",
-                        format!("{:?}", function_definition.visibility),
-                        if function_definition.name.is_empty() {
-                            format!("{}", context.contract_definition.name)
-                        } else {
-                            format!("{}.{}", context.contract_definition.name, function_definition.name)
-                        },
-                        function_definition.kind
-                    );
-                }
+                ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                    "\tThe {} {} in the `{}` {} contains a while statement with a condition that performs an assignment",
 
-                solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
-                    println!(
-                        "\t{} {} modifier contains a while statement with a condition that performs an assignment",
-                        format!("{:?}", modifier_definition.visibility),
-                        if modifier_definition.name.is_empty() {
-                            format!("{}", context.contract_definition.name)
-                        } else {
-                            format!("{}.{}", context.contract_definition.name, modifier_definition.name)
-                        }
-                    );
-                }
+                    function_definition.visibility,
 
-                _ => (),
+                    if let FunctionKind::Constructor = function_definition.kind {
+                        format!("{}", function_definition.kind)
+                    } else {
+                        format!("`{}` {}", function_definition.name, function_definition.kind)
+                    },
+
+                    context.contract_definition.name,
+                    context.contract_definition.kind
+                ),
+
+                ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                    "\tThe `{}` modifier in the `{}` {} contains a while statement with a condition that performs an assignment",
+                    modifier_definition.name,
+
+                    context.contract_definition.name,
+                    context.contract_definition.kind
+                ),
+
+                _ => ()
             }
         }
 
@@ -166,32 +151,30 @@ impl AstVisitor for AssignmentComparisonsVisitor {
     fn visit_conditional<'a, 'b>(&mut self, context: &mut super::ConditionalContext<'a, 'b>) -> io::Result<()> {
         if context.conditional.condition.contains_operation("=") {
             match context.definition_node {
-                solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
-                    println!(
-                        "\t{} {} {} contains a conditional expression with a condition that performs an assignment",
-                        format!("{:?}", function_definition.visibility),
-                        if function_definition.name.is_empty() {
-                            format!("{}", context.contract_definition.name)
-                        } else {
-                            format!("{}.{}", context.contract_definition.name, function_definition.name)
-                        },
-                        function_definition.kind
-                    );
-                }
+                ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                    "\tThe {} {} in the `{}` {} contains a conditional expression with a condition that performs an assignment",
 
-                solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
-                    println!(
-                        "\t{} {} modifier contains a conditional expression with a condition that performs an assignment",
-                        format!("{:?}", modifier_definition.visibility),
-                        if modifier_definition.name.is_empty() {
-                            format!("{}", context.contract_definition.name)
-                        } else {
-                            format!("{}.{}", context.contract_definition.name, modifier_definition.name)
-                        }
-                    );
-                }
+                    function_definition.visibility,
 
-                _ => (),
+                    if let FunctionKind::Constructor = function_definition.kind {
+                        format!("{}", function_definition.kind)
+                    } else {
+                        format!("`{}` {}", function_definition.name, function_definition.kind)
+                    },
+
+                    context.contract_definition.name,
+                    context.contract_definition.kind
+                ),
+
+                ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                    "\tThe `{}` modifier in the `{}` {} contains a conditional expression with a condition that performs an assignment",
+                    modifier_definition.name,
+
+                    context.contract_definition.name,
+                    context.contract_definition.kind
+                ),
+
+                _ => ()
             }
         }
 

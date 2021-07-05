@@ -13,38 +13,36 @@ pub struct DivideBeforeMultiplyVisitor;
 impl AstVisitor for DivideBeforeMultiplyVisitor {
     fn visit_binary_operation<'a, 'b>(&mut self, context: &mut BinaryOperationContext<'a, 'b>) -> io::Result<()> {
         if context.binary_operation.operator != "*" {
-            return Ok(());
+            return Ok(())
         }
 
         if let Expression::BinaryOperation(left_operation) = context.binary_operation.left_expression.as_ref() {
             if left_operation.contains_operation("/") {
                 match context.definition_node {
-                    ContractDefinitionNode::FunctionDefinition(function_definition) => {
-                        println!(
-                            "\t{} {} {} performs a multiplication on the result of a division",
-                            format!("{:?}", function_definition.visibility),
-                            if function_definition.name.is_empty() {
-                                format!("{}", context.contract_definition.name)
-                            } else {
-                                format!("{}.{}", context.contract_definition.name, function_definition.name)
-                            },
-                            function_definition.kind
-                        );
-                    }
-
-                    ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
-                        println!(
-                            "\t{} {} modifier performs a multiplication on the result of a division",
-                            format!("{:?}", modifier_definition.visibility),
-                            if modifier_definition.name.is_empty() {
-                                format!("{}", context.contract_definition.name)
-                            } else {
-                                format!("{}.{}", context.contract_definition.name, modifier_definition.name)
-                            }
-                        );
-                    }
-
-                    _ => {}
+                    ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                        "\tThe {} {} in the `{}` {} performs a multiplication on the result of a division",
+    
+                        function_definition.visibility,
+    
+                        if let FunctionKind::Constructor = function_definition.kind {
+                            format!("{}", function_definition.kind)
+                        } else {
+                            format!("`{}` {}", function_definition.name, function_definition.kind)
+                        },
+    
+                        context.contract_definition.name,
+                        context.contract_definition.kind
+                    ),
+    
+                    ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                        "\tThe `{}` modifier in the `{}` {} performs a multiplication on the result of a division",
+                        modifier_definition.name,
+    
+                        context.contract_definition.name,
+                        context.contract_definition.kind
+                    ),
+    
+                    _ => ()
                 }
             }
         }

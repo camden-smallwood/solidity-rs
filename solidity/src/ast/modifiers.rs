@@ -43,7 +43,7 @@ impl Display for ModifierDefinition {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[serde(rename_all = "camelCase")]
 pub enum ModifierInvocationKind {
     ModifierInvocation,

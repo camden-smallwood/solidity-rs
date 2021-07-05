@@ -2,7 +2,7 @@ use crate::ast::{Documentation, Expression, NodeID, OverrideSpecifier, TypeDescr
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum Mutability {
     Immutable,
@@ -16,7 +16,7 @@ impl Display for Mutability {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum StateMutability {
     NonPayable,
@@ -31,7 +31,7 @@ impl Display for StateMutability {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum Visibility {
     Public,
@@ -46,7 +46,7 @@ impl Display for Visibility {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum StorageLocation {
     Default,
@@ -61,7 +61,7 @@ impl Display for StorageLocation {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VariableDeclaration {
     pub base_functions: Option<Vec<NodeID>>,

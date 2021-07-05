@@ -90,7 +90,7 @@ impl Display for InheritanceSpecifier {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OverrideSpecifier {
     pub overrides: Vec<IdentifierPath>,

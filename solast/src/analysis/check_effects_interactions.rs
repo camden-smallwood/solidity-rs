@@ -3,9 +3,9 @@ use solidity::ast::*;
 use std::{collections::HashMap, io};
 
 pub struct CheckEffectsInteractionsVisitor {
-    pub makes_external_call: bool,
-    pub makes_post_external_call_assignment: bool,
-    pub bindings: HashMap<NodeID, Vec<NodeID>>,
+    makes_external_call: bool,
+    makes_post_external_call_assignment: bool,
+    bindings: HashMap<NodeID, Vec<NodeID>>,
 }
 
 impl Default for CheckEffectsInteractionsVisitor {
@@ -27,8 +27,8 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
     }
 
     fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
-        if let solidity::ast::FunctionKind::Constructor = context.function_definition.kind {
-            return Ok(());
+        if let FunctionKind::Constructor = context.function_definition.kind {
+            return Ok(())
         }
 
         if self.makes_external_call && self.makes_post_external_call_assignment {
@@ -51,18 +51,15 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
     }
 
     fn visit_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> {
-        if let solidity::ast::Statement::VariableDeclarationStatement(
-            solidity::ast::VariableDeclarationStatement {
-                declarations,
-                initial_value: Some(expression),
-                ..
-            },
-        ) = context.statement
-        {
+        if let Statement::VariableDeclarationStatement(VariableDeclarationStatement {
+            declarations,
+            initial_value: Some(expression),
+            ..
+        }) = context.statement {
             let ids = context.contract_definition.get_assigned_state_variables(
                 context.source_units,
                 context.definition_node,
-                expression,
+                expression
             );
 
             for &id in ids.iter() {
@@ -91,6 +88,10 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
                     };
 
                     if declarations.len() > 1 {
+                        //
+                        // TODO: handle tuple or multiple assignments (is this actually necessary?)
+                        //
+                        
                         println!(
                             "\tWARNING: tuple or multiple assignments not handled: {:?} {:#?}",
                             ids, declarations
@@ -98,7 +99,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
                     } else {
                         let declaration = match declarations.first().unwrap().as_ref() {
                             Some(declaration) => declaration,
-                            None => return Ok(()),
+                            None => return Ok(())
                         };
 
                         if !self.bindings.contains_key(&state_variable.id) {
@@ -120,14 +121,14 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
 
     fn visit_identifier<'a, 'b>(&mut self, context: &mut IdentifierContext<'a, 'b>) -> io::Result<()> {
         if self.makes_external_call {
-            return Ok(());
+            return Ok(())
         }
 
         for source_unit in context.source_units.iter() {
             if let Some(function_definition) = source_unit.function_definition(context.identifier.referenced_declaration) {
-                if let solidity::ast::Visibility::External = function_definition.visibility {
+                if let Visibility::External = function_definition.visibility {
                     self.makes_external_call = true;
-                    return Ok(());
+                    return Ok(())
                 }
             }
         }
@@ -137,14 +138,13 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
 
     fn visit_member_access<'a, 'b>(&mut self, context: &mut super::MemberAccessContext<'a, 'b>) -> io::Result<()> {
         if self.makes_external_call {
-            return Ok(());
+            return Ok(())
         }
 
         if let Some(referenced_declaration) = context.member_access.referenced_declaration {
             for source_unit in context.source_units.iter() {
-                if let Some(function_definition) = source_unit.function_definition(referenced_declaration)
-                {
-                    if let solidity::ast::Visibility::External = function_definition.visibility {
+                if let Some(function_definition) = source_unit.function_definition(referenced_declaration) {
+                    if let Visibility::External = function_definition.visibility {
                         self.makes_external_call = true;
                         break;
                     }
@@ -157,25 +157,21 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
 
     fn visit_assignment<'a, 'b>(&mut self, context: &mut super::AssignmentContext<'a, 'b>) -> io::Result<()> {
         let function_definition = match context.definition_node {
-            solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition,
+            ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition,
             _ => return Ok(())
         };
 
         if !self.makes_external_call {
-            return Ok(());
+            return Ok(())
         }
 
         if self.makes_post_external_call_assignment {
-            return Ok(());
+            return Ok(())
         }
 
-        if function_definition
-            .modifiers
-            .iter()
-            .find(|m| m.modifier_name.name == "nonReentrant")
-            .is_some()
-        {
-            return Ok(());
+        // TODO: remove this ugly hack and check modifiers correctly
+        if function_definition.modifiers.iter().find(|m| m.modifier_name.name == "nonReentrant").is_some() {
+            return Ok(())
         }
 
         let ids = context.contract_definition.get_assigned_state_variables(
@@ -188,77 +184,62 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
             self.makes_post_external_call_assignment = true;
         }
 
+        // TODO: refactor this into a function, there's likely some edge cases missed
         match context.assignment.left_hand_side.as_ref() {
-            solidity::ast::Expression::Identifier(_) => {
+            Expression::Identifier(_) => {
                 // TODO: check if local variable is no longer bound to state variable
             }
 
-            solidity::ast::Expression::IndexAccess(_)
-            | solidity::ast::Expression::IndexRangeAccess(_)
-            | solidity::ast::Expression::MemberAccess(_) => {
-                match context.assignment.left_hand_side.root_expression() {
-                    Some(solidity::ast::Expression::Identifier(solidity::ast::Identifier {
-                        referenced_declaration,
-                        ..
-                    })) => {
-                        for (_state_variable_id, local_variable_ids) in self.bindings.iter() {
-                            if local_variable_ids.contains(referenced_declaration) {
-                                self.makes_post_external_call_assignment = true;
-                                return Ok(());
-                            }
+            Expression::IndexAccess(_)
+            | Expression::IndexRangeAccess(_)
+            | Expression::MemberAccess(_) => {
+                if let Some(Expression::Identifier(Identifier {
+                    referenced_declaration,
+                    ..
+                })) = context.assignment.left_hand_side.root_expression() {
+                    for (_state_variable_id, local_variable_ids) in self.bindings.iter() {
+                        if local_variable_ids.contains(referenced_declaration) {
+                            self.makes_post_external_call_assignment = true;
+                            return Ok(())
                         }
                     }
-
-                    _ => {}
                 }
             }
 
-            solidity::ast::Expression::TupleExpression(tuple_expression) => {
+            Expression::TupleExpression(tuple_expression) => {
                 for component in tuple_expression.components.iter() {
                     if let Some(component) = component {
                         match component {
-                            solidity::ast::Expression::Identifier(_) => {
+                            Expression::Identifier(_) => {
                                 // TODO: check if local variable is no longer bound to state variable
                             }
 
-                            solidity::ast::Expression::IndexAccess(_)
-                            | solidity::ast::Expression::IndexRangeAccess(_)
-                            | solidity::ast::Expression::MemberAccess(_) => {
-                                match component.root_expression() {
-                                    Some(solidity::ast::Expression::Identifier(
-                                        solidity::ast::Identifier {
-                                            referenced_declaration,
-                                            ..
-                                        },
-                                    )) => {
-                                        for (_state_variable_id, local_variable_ids) in
-                                            self.bindings.iter()
-                                        {
-                                            if local_variable_ids.contains(referenced_declaration) {
-                                                self.makes_post_external_call_assignment = true;
-                                                return Ok(());
-                                            }
+                            Expression::IndexAccess(_)
+                            | Expression::IndexRangeAccess(_)
+                            | Expression::MemberAccess(_) => {
+                                if let Some(Expression::Identifier(Identifier {
+                                    referenced_declaration,
+                                    ..
+                                })) = component.root_expression() {
+                                    for (_state_variable_id, local_variable_ids) in self.bindings.iter() {
+                                        if local_variable_ids.contains(referenced_declaration) {
+                                            self.makes_post_external_call_assignment = true;
+                                            return Ok(())
                                         }
                                     }
-
-                                    _ => {}
                                 }
                             }
 
-                            expression => {
-                                println!(
-                                    "\tWARNING: unhandled assignment in tuple {:#?}",
-                                    expression
-                                );
-                            }
+                            expression => println!(
+                                "\tWARNING: unhandled assignment in tuple {:#?}",
+                                expression
+                            )
                         }
                     }
                 }
             }
 
-            expression => {
-                println!("\tWARNING: unhandled assignment {:#?}", expression);
-            }
+            expression => println!("\tWARNING: unhandled assignment {:#?}", expression)
         }
 
         Ok(())

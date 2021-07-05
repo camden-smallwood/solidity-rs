@@ -2,7 +2,7 @@ use crate::ast::{Identifier, Literal, NodeID, NodeType, TypeDescriptions, TypeNa
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum Expression {
     Literal(Literal),
@@ -133,7 +133,7 @@ impl Display for Expression {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UnaryOperation {
     pub prefix: bool,
@@ -164,7 +164,7 @@ impl Display for UnaryOperation {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BinaryOperation {
     pub common_type: TypeDescriptions,
@@ -198,7 +198,7 @@ impl Display for BinaryOperation {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Conditional {
     pub condition: Box<Expression>,
@@ -231,7 +231,7 @@ impl Display for Conditional {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Assignment {
     pub left_hand_side: Box<Expression>,
@@ -262,7 +262,7 @@ impl Display for Assignment {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[serde(rename_all = "camelCase")]
 pub enum FunctionCallKind {
     FunctionCall,
@@ -270,7 +270,7 @@ pub enum FunctionCallKind {
     StructConstructorCall,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FunctionCall {
     pub kind: FunctionCallKind,
@@ -317,7 +317,7 @@ impl Display for FunctionCall {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FunctionCallOptions {
     pub names: Vec<String>,
@@ -366,7 +366,7 @@ impl Display for FunctionCallOptions {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IndexAccess {
     pub base_expression: Box<Expression>,
@@ -393,7 +393,7 @@ impl Display for IndexAccess {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IndexRangeAccess {
     pub base_expression: Box<Expression>,
@@ -433,7 +433,7 @@ impl Display for IndexRangeAccess {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MemberAccess {
     pub member_name: String,
@@ -461,7 +461,7 @@ impl Display for MemberAccess {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ElementaryTypeNameExpression {
     pub type_name: TypeName,
@@ -481,7 +481,7 @@ impl Display for ElementaryTypeNameExpression {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TupleExpression {
     pub components: Vec<Option<Expression>>,
@@ -526,7 +526,7 @@ impl Display for TupleExpression {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NewExpression {
     pub argument_types: Option<Vec<TypeDescriptions>>,

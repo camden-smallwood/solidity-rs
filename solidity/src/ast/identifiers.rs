@@ -2,7 +2,7 @@ use crate::ast::{NodeID, TypeDescriptions};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Identifier {
     pub argument_types: Option<Vec<TypeDescriptions>>,
@@ -20,7 +20,7 @@ impl Display for Identifier {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IdentifierPath {
     pub name: String,

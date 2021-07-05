@@ -17,10 +17,8 @@ impl AstVisitor for AbstractContractsVisitor {
         match context.contract_definition.is_abstract {
             None | Some(false) => {
                 println!(
-                    "\t{:?} {} {} is marked {} instead of marking {} as abstract.",
-                    context.contract_definition.kind,
+                    "\tThe constructor of the `{}` contract is marked {} instead of marking `{}` as abstract",
                     context.contract_definition.name,
-                    context.function_definition.kind,
                     context.function_definition.visibility,
                     context.contract_definition.name,
                 );
@@ -29,10 +27,8 @@ impl AstVisitor for AbstractContractsVisitor {
             Some(true) => {
                 if context.function_definition.visibility == Visibility::Internal {
                     println!(
-                        "\t{:?} {} {} is marked {} when {} is already marked as abstract.",
-                        context.contract_definition.kind,
+                        "\tThe constructor of the `{}` contract is marked {} when `{}` is already marked as abstract",
                         context.contract_definition.name,
-                        context.function_definition.kind,
                         context.function_definition.visibility,
                         context.contract_definition.name,
                     );
