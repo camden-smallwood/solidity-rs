@@ -33,12 +33,19 @@ impl Display for TypeName {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ElementaryTypeName {
     pub state_mutability: Option<StateMutability>,
     pub type_descriptions: TypeDescriptions,
     pub name: String,
+}
+
+impl PartialEq for ElementaryTypeName {
+    fn eq(&self, other: &Self) -> bool {
+        self.state_mutability.eq(&other.state_mutability) &&
+        self.type_descriptions.eq(&other.type_descriptions)
+    }
 }
 
 impl Display for ElementaryTypeName {
@@ -55,12 +62,18 @@ impl Display for ElementaryTypeName {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserDefinedTypeName {
     pub path_node: Option<IdentifierPath>,
     pub referenced_declaration: NodeID,
     pub type_descriptions: TypeDescriptions,
+}
+
+impl PartialEq for UserDefinedTypeName {
+    fn eq(&self, other: &Self) -> bool {
+        self.referenced_declaration.eq(&other.referenced_declaration)
+    }
 }
 
 impl Display for UserDefinedTypeName {
