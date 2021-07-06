@@ -12,7 +12,7 @@ pub enum LiteralKind {
     Address,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Literal {
     pub hex_value: Option<String>,

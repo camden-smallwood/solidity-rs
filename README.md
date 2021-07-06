@@ -39,6 +39,7 @@ Some legacy versions of Solidity are inherently supported, but the focus is 0.8.
 - [ ] ~~`unrestricted_setter_functions`~~ (WIP)
 - [ ] ~~`manipulatable_balance_usage`~~ (WIP)
 - [ ] ~~`redundant_assignments`~~ (WIP)
+- [x] `invalid_using_for_directives`
 
 ## Usage
 

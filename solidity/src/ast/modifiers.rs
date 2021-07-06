@@ -2,7 +2,7 @@ use crate::ast::{Block, Documentation, Expression, IdentifierPath, NodeID, Overr
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ModifierDefinition {
     pub body: Block,
@@ -50,7 +50,7 @@ pub enum ModifierInvocationKind {
     BaseConstructorSpecifier,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ModifierInvocation {
     pub arguments: Option<Vec<Expression>>,

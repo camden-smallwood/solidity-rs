@@ -39,6 +39,7 @@ const VISITOR_TYPES: &'static [(&'static str, fn() -> Box<dyn analysis::AstVisit
     ("unrestricted_setter_functions", || Box::new(analysis::UnrestrictedSetterFunctionsVisitor)),
     ("manipulatable_balance_usage", || Box::new(analysis::ManipulatableBalanceUsageVisitor)),
     ("redundant_assignments", || Box::new(analysis::RedundantAssignmentsVisitor)),
+    ("invalid_using_for_directives", || Box::new(analysis::InvalidUsingForDirectivesVisitor)),
 ];
 
 fn main() -> io::Result<()> {

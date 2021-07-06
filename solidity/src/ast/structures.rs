@@ -2,7 +2,7 @@ use crate::ast::{NodeID, VariableDeclaration, Visibility};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct StructDefinition {
     pub name: String,

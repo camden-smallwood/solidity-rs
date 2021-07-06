@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use yul::InlineAssembly;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum Statement {
     VariableDeclarationStatement(VariableDeclarationStatement),
@@ -61,7 +61,7 @@ impl Display for Statement {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ExpressionStatement {
     pub expression: Expression,
@@ -73,7 +73,7 @@ impl Display for ExpressionStatement {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct VariableDeclarationStatement {
     pub assignments: Vec<Option<NodeID>>,
@@ -115,7 +115,7 @@ impl Display for VariableDeclarationStatement {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum BlockOrStatement {
     Block(Box<Block>),
@@ -168,7 +168,7 @@ impl Display for BlockOrStatement {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct IfStatement {
     pub condition: Expression,
@@ -188,7 +188,7 @@ impl Display for IfStatement {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ForStatement {
     pub initialization_expression: Option<Box<Statement>>,
@@ -222,7 +222,7 @@ impl Display for ForStatement {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct WhileStatement {
     pub condition: Expression,
@@ -236,7 +236,7 @@ impl Display for WhileStatement {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct EmitStatement {
     pub event_call: Expression,
@@ -248,7 +248,7 @@ impl Display for EmitStatement {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct TryStatement {
     pub clauses: Vec<TryCatchClause>,
@@ -261,7 +261,7 @@ impl Display for TryStatement {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct RevertStatement {
     pub error_call: FunctionCall,
@@ -273,7 +273,7 @@ impl Display for RevertStatement {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct TryCatchClause {
     pub block: Block,
@@ -287,7 +287,7 @@ impl Display for TryCatchClause {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Block {
     pub statements: Vec<Statement>,
@@ -307,7 +307,7 @@ impl Display for Block {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Return {
     pub function_return_parameters: NodeID,

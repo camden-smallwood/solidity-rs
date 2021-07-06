@@ -2,7 +2,7 @@ use crate::ast::{Block, Documentation, Expression, ModifierInvocation, NodeID, O
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ParameterList {
     pub parameters: Vec<VariableDeclaration>,
@@ -41,7 +41,7 @@ impl Display for FunctionKind {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FunctionDefinition {
     pub base_functions: Option<Vec<NodeID>>,

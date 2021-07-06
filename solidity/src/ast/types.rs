@@ -2,14 +2,14 @@ use crate::ast::{IdentifierPath, Literal, NodeID, ParameterList, StateMutability
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct TypeDescriptions {
     pub type_identifier: Option<String>,
     pub type_string: Option<String>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum TypeName {
     ElementaryTypeName(ElementaryTypeName),
@@ -33,7 +33,7 @@ impl Display for TypeName {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ElementaryTypeName {
     pub state_mutability: Option<StateMutability>,
@@ -55,7 +55,7 @@ impl Display for ElementaryTypeName {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct UserDefinedTypeName {
     pub path_node: Option<IdentifierPath>,
@@ -73,7 +73,7 @@ impl Display for UserDefinedTypeName {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FunctionTypeName {
     pub visibility: Visibility,
@@ -83,7 +83,7 @@ pub struct FunctionTypeName {
     pub type_descriptions: TypeDescriptions,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ArrayTypeName {
     pub base_type: Box<TypeName>,
@@ -104,7 +104,7 @@ impl Display for ArrayTypeName {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Mapping {
     pub key_type: Box<TypeName>,

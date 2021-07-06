@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use crate::ast::{ContractDefinition, ContractDefinitionNode, EnumDefinition, Expression, FunctionDefinition, NodeID, StructDefinition};
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PragmaDirective {
     pub literals: Vec<String>,
@@ -10,7 +10,7 @@ pub struct PragmaDirective {
     pub id: NodeID,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SymbolAlias {
     pub foreign: Expression,
@@ -18,7 +18,7 @@ pub struct SymbolAlias {
     pub name_location: Option<String>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ImportDirective {
     pub file: String,
@@ -32,7 +32,7 @@ pub struct ImportDirective {
     pub id: NodeID,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum SourceUnitNode {
     PragmaDirective(PragmaDirective),
