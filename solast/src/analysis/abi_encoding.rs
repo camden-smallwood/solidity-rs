@@ -52,7 +52,7 @@ impl AstVisitor for AbiEncodingVisitor {
         // Only check if multiple arguments are supplied: abi.encodePacked(as, bs, ...)
         //
 
-        if context.function_call.arguments.len() <= 1 {
+        if context.function_call.arguments.len() < 2 {
             return Ok(())
         }
 
@@ -82,7 +82,9 @@ impl AstVisitor for AbiEncodingVisitor {
         if any_arguments_variably_sized {
             match context.definition_node {
                 ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                    "\tThe {} in the `{}` {} contains the potential for hash collisions: `{}`",
+                    "\tThe {} {} in the `{}` {} contains the potential for hash collisions: `{}`",
+
+                    function_definition.visibility,
     
                     if let FunctionKind::Constructor = function_definition.kind {
                         format!("{}", "constructor")
