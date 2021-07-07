@@ -5,7 +5,7 @@ pub struct InvalidUsingForDirectivesVisitor;
 impl AstVisitor for InvalidUsingForDirectivesVisitor {
     fn visit_using_for_directive<'a>(&mut self, context: &mut UsingForDirectiveContext<'a>) -> std::io::Result<()> {
         //
-        // Get the identifier of the used library's contract definition
+        // Get the identifier of the contract definition associated with the used library
         //
 
         let using_contract_id = match context.using_for_directive.library_name.referenced_declaration.as_ref() {
