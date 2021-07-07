@@ -2999,7 +2999,7 @@ pub fn visit_source_units<'a>(visitors: Vec<Box<dyn AstVisitor + 'a>>, source_un
     for source_unit in source_units.iter() {
         if let Some(path) = source_unit.absolute_path.as_ref() {
             if data.analyzed_paths.contains(path) {
-                return Ok(());
+                continue;
             }
 
             data.analyzed_paths.insert(path.clone());

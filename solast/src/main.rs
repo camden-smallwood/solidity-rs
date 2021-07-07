@@ -112,23 +112,35 @@ fn main() -> io::Result<()> {
             todo!("truffle project not compiled")
         }
 
+        let migrations_path = PathBuf::new()
+            .join("contracts")
+            .join("Migrations.sol")
+            .to_string_lossy()
+            .to_string();
+
         for path in std::fs::read_dir(build_path)? {
             let path = path?.path();
 
             if !path.exists() || !path.is_file() || !path.extension().map(|extension| extension == "json").unwrap_or(false) {
                 continue;
             }
-            
+
             let file: truffle::File = simd_json::from_reader(File::open(path)?)?;
 
             if let Some(source_unit) = file.ast {
+                if source_unit.absolute_path.as_ref().map(String::as_str).unwrap_or("").ends_with(migrations_path.as_str()) {
+                    continue;
+                }
+                
                 if let Some(contract_name) = contract_name.as_ref().map(String::as_str) {
                     if !source_unit.contract_definitions().iter().find(|c| c.name == contract_name).is_some() {
                         continue;
                     }
                 }
-                
-                source_units.push(source_unit);
+
+                if source_units.iter().find(|existing_source_unit| existing_source_unit.absolute_path == source_unit.absolute_path).is_none() {
+                    source_units.push(source_unit);
+                }
             }
         }
 
