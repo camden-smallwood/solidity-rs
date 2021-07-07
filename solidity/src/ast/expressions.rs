@@ -1,6 +1,6 @@
 use crate::ast::{Identifier, Literal, NodeID, NodeType, TypeDescriptions, TypeName};
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
+use std::fmt::{Display, Write};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(untagged)]
@@ -322,7 +322,8 @@ impl Display for FunctionCall {
 pub struct FunctionCallOptions {
     pub names: Vec<String>,
     pub options: Vec<Expression>,
-    pub argument_types: Vec<TypeDescriptions>,
+    pub arguments: Option<Vec<Expression>>,
+    pub argument_types: Option<Vec<TypeDescriptions>>,
     pub expression: Box<Expression>,
     pub is_constant: bool,
     pub is_l_value: bool,
@@ -354,12 +355,30 @@ impl Display for FunctionCallOptions {
 
         f.write_fmt(format_args!("{}", self.expression))?;
 
+        f.write_char('{')?;
+
         for i in 0..option_count {
             if i > 0 {
                 f.write_str(", ")?;
             }
 
             f.write_fmt(format_args!("{}: {}", self.names[i], self.options[i]))?;
+        }
+
+        f.write_char('}')?;
+
+        if let Some(arguments) = self.arguments.as_ref() {
+            f.write_char('(')?;
+
+            for (i, argument) in arguments.iter().enumerate() {
+                if i > 0 {
+                    f.write_str(", ")?;
+                }
+    
+                f.write_fmt(format_args!("{}", argument))?;
+            }
+    
+            f.write_char(')')?;    
         }
 
         Ok(())

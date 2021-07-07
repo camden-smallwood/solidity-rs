@@ -125,6 +125,25 @@ impl AstVisitor for IneffectualStatementsVisitor {
                     );
                 }
                 
+                solidity::ast::Expression::FunctionCallOptions(function_call_options) => {
+                    if function_call_options.arguments.is_none() {
+                        println!(
+                            "\t{} {} {} contains an ineffectual function call expression statement: {}",
+                            format!("{:?}", function_definition.visibility),
+                            
+                            if function_definition.name.is_empty() {
+                                format!("{}", context.contract_definition.name)
+                            } else {
+                                format!("{}.{}", context.contract_definition.name, function_definition.name)
+                            },
+
+                            function_definition.kind,
+
+                            function_call_options
+                        );
+                    }
+                }
+
                 _ => {}
             }
         }
