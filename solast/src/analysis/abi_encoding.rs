@@ -1,9 +1,36 @@
-use super::{AstVisitor, FunctionCallContext};
+use super::{AstVisitor, FunctionCallContext, VariableDeclarationContext};
 use solidity::ast::*;
+use std::collections::HashMap;
 
-pub struct AbiEncodingVisitor;
+pub struct AbiEncodingVisitor {
+    declaration_type_names: HashMap<NodeID, TypeName>
+}
+
+impl Default for AbiEncodingVisitor {
+    fn default() -> Self {
+        Self {
+            declaration_type_names: HashMap::new(),
+        }
+    }
+}
 
 impl AstVisitor for AbiEncodingVisitor {
+    fn visit_variable_declaration<'a, 'b>(&mut self, context: &mut VariableDeclarationContext<'a, 'b>) -> std::io::Result<()> {
+        //
+        // Store the type of any variable declarations
+        //
+
+        if let Some(type_name) = context.variable_declaration.type_name.as_ref() {
+            if self.declaration_type_names.contains_key(&context.variable_declaration.id) {
+                return Ok(())
+            }
+
+            self.declaration_type_names.insert(context.variable_declaration.id, type_name.clone());
+        }
+
+        Ok(())
+    }
+
     fn visit_function_call<'a, 'b>(&mut self, context: &mut FunctionCallContext<'a, 'b>) -> std::io::Result<()> {
         //
         // Only check for calls to abi.encodePacked(...)
@@ -30,9 +57,59 @@ impl AstVisitor for AbiEncodingVisitor {
         }
 
         //
-        // TODO: determine if any parameters are variably-sized arrays
-        // if so, print a message warning about potential hash collisions
+        // Determine if any parameters are variably-sized arrays
         //
+
+        let mut any_arguments_variably_sized = false;
+
+        for expression in context.function_call.arguments.iter() {
+            if any_arguments_variably_sized {
+                break;
+            }
+
+            for referenced_declaration in expression.referenced_declarations() {
+                if let Some(TypeName::ArrayTypeName(ArrayTypeName { length: None, .. })) = self.declaration_type_names.get(&referenced_declaration) {
+                    any_arguments_variably_sized = true;
+                    break;
+                }
+            }
+        }
+
+        //
+        // If so, print a message warning about potential hash collisions
+        //
+
+        if any_arguments_variably_sized {
+            match context.definition_node {
+                ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                    "\tThe {} in the `{}` {} contains the potential for hash collisions: `{}`",
+    
+                    if let FunctionKind::Constructor = function_definition.kind {
+                        format!("{}", "constructor")
+                    } else {
+                        format!("`{}` {}", function_definition.name, function_definition.kind)
+                    },
+    
+                    context.contract_definition.name,
+                    context.contract_definition.kind,
+    
+                    context.function_call
+                ),
+
+                ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                    "\tThe `{}` modifier in the `{}` {} contains the potential for hash collisions: `{}`",
+    
+                    modifier_definition.name,
+    
+                    context.contract_definition.name,
+                    context.contract_definition.kind,
+    
+                    context.function_call
+                ),
+
+                _ => {}
+            }
+        }
 
         Ok(())
     }

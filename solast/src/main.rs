@@ -40,7 +40,7 @@ const VISITOR_TYPES: &'static [(&'static str, fn() -> Box<dyn analysis::AstVisit
     ("manipulatable_balance_usage", || Box::new(analysis::ManipulatableBalanceUsageVisitor)),
     ("redundant_assignments", || Box::new(analysis::RedundantAssignmentsVisitor)),
     ("invalid_using_for_directives", || Box::new(analysis::InvalidUsingForDirectivesVisitor)),
-    ("abi_encoding", || Box::new(analysis::AbiEncodingVisitor)),
+    ("abi_encoding", || Box::new(analysis::AbiEncodingVisitor::default())),
 ];
 
 fn main() -> io::Result<()> {

@@ -1077,6 +1077,20 @@ impl AstVisitor for AstVisitorData<'_> {
             visitor.visit_function_definition(context)?;
         }
 
+        for variable_declaration in context.function_definition.parameters.parameters.iter() {
+            let mut context = VariableDeclarationContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: &mut vec![],
+                variable_declaration
+            };
+            
+            self.visit_variable_declaration(&mut context)?;
+            self.leave_variable_declaration(&mut context)?;
+        }
+
         for modifier_invocation in context.function_definition.modifiers.iter() {
             let mut modifier_context = ModifierInvocationContext {
                 source_units: context.source_units,
