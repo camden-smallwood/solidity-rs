@@ -71,11 +71,7 @@ fn type_name_size(source_units: &[SourceUnit], type_name: &TypeName) -> std::io:
                 size_in_bytes
             }
     
-            type_name => {
-                println!("WARNING: unhandled type name: {:?}", type_name);
-    
-                32 // TODO: handle this correctly...
-            }
+            _ => 32 // TODO: handle this correctly...
         }
 
         TypeName::UserDefinedTypeName(UserDefinedTypeName { referenced_declaration, .. }) => {
