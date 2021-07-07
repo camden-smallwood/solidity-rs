@@ -133,6 +133,14 @@ pub struct FunctionDefinitionContext<'a> {
     pub function_definition: &'a FunctionDefinition,
 }
 
+pub struct ModifierInvocationContext<'a> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub modifier_invocation: &'a ModifierInvocation,
+}
+
 pub struct BlockContext<'a, 'b> {
     pub source_units: &'a [SourceUnit],
     pub current_source_unit: &'a SourceUnit,
@@ -588,6 +596,9 @@ pub trait AstVisitor {
 
     fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> { Ok(()) }
     fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> { Ok(()) }
+
+    fn visit_modifier_invocation<'a>(&mut self, context: &mut ModifierInvocationContext<'a>) -> io::Result<()> { Ok(()) }
+    fn leave_modifier_invocation<'a>(&mut self, context: &mut ModifierInvocationContext<'a>) -> io::Result<()> { Ok(()) }
 
     fn visit_block<'a, 'b>(&mut self, context: &mut BlockContext<'a, 'b>) -> io::Result<()> { Ok(()) }
     fn leave_block<'a, 'b>(&mut self, context: &mut BlockContext<'a, 'b>) -> io::Result<()> { Ok(()) }
@@ -1066,6 +1077,19 @@ impl AstVisitor for AstVisitorData<'_> {
             visitor.visit_function_definition(context)?;
         }
 
+        for modifier_invocation in context.function_definition.modifiers.iter() {
+            let mut modifier_context = ModifierInvocationContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                modifier_invocation
+            };
+    
+            self.visit_modifier_invocation(&mut modifier_context)?;
+            self.visit_modifier_invocation(&mut modifier_context)?;
+        }
+
         if let Some(block) = context.function_definition.body.as_ref() {
             let mut blocks = vec![];
 
@@ -1088,6 +1112,39 @@ impl AstVisitor for AstVisitorData<'_> {
     fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.leave_function_definition(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_modifier_invocation<'a>(&mut self, context: &mut ModifierInvocationContext<'a>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_modifier_invocation(context)?;
+        }
+
+        if let Some(arguments) = context.modifier_invocation.arguments.as_ref() {
+            for expression in arguments.iter() {
+                let mut context = ExpressionContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: &mut vec![],
+                    statement: None,
+                    expression
+                };
+
+                self.visit_expression(&mut context)?;
+                self.leave_expression(&mut context)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn leave_modifier_invocation<'a>(&mut self, context: &mut ModifierInvocationContext<'a>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_modifier_invocation(context)?;
         }
 
         Ok(())

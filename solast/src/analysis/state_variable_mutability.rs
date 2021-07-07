@@ -2,8 +2,13 @@ use super::AstVisitor;
 use solidity::ast::*;
 use std::{collections::HashMap, io};
 
-pub struct ContractInfo {
-    variable_info: HashMap<NodeID, bool>,
+struct VariableInfo {
+    assigned: bool,
+    constant: bool,
+}
+
+struct ContractInfo {
+    variable_info: HashMap<NodeID, VariableInfo>,
 }
 
 pub struct StateVariableMutabilityVisitor {
@@ -27,19 +32,20 @@ impl Default for StateVariableMutabilityVisitor {
 impl AstVisitor for StateVariableMutabilityVisitor {
     fn leave_contract_definition<'a>(&mut self, context: &mut super::ContractDefinitionContext<'a>) -> io::Result<()> {
         if let Some(contract_info) = self.contract_info.get(&context.contract_definition.id) {
-            for (&id, &assigned) in contract_info.variable_info.iter() {
+            for (&id, variable_info) in contract_info.variable_info.iter() {
                 if let Some(variable_declaration) = context.contract_definition.variable_declaration(id) {
                     if let Some(solidity::ast::Mutability::Constant | solidity::ast::Mutability::Immutable) = variable_declaration.mutability.as_ref() {
                         continue;
                     }
 
-                    if !assigned {
+                    if !variable_info.assigned {
                         println!(
-                            "\tThe {} `{}.{}` {} state variable can be declared `immutable`",
+                            "\tThe {} `{}.{}` {} state variable can be declared `{}`",
                             variable_declaration.visibility,
                             context.contract_definition.name,
                             variable_declaration.name,
                             variable_declaration.type_name.as_ref().unwrap(),
+                            if variable_info.constant { "constant" } else { "immutable" }
                         );
                     }
                 }
@@ -63,7 +69,10 @@ impl AstVisitor for StateVariableMutabilityVisitor {
             };
 
             if !contract_info.variable_info.contains_key(&variable_declaration.id) {
-                contract_info.variable_info.insert(variable_declaration.id, false);
+                contract_info.variable_info.insert(variable_declaration.id, VariableInfo {
+                    assigned: false,
+                    constant: variable_declaration.value.is_some(),
+                });
             }
         }
 
@@ -91,7 +100,7 @@ impl AstVisitor for StateVariableMutabilityVisitor {
             };
 
             if contract_info.variable_info.contains_key(&id) {
-                *contract_info.variable_info.get_mut(&id).unwrap() = true;
+                contract_info.variable_info.get_mut(&id).unwrap().assigned = true;
             }
         }
 
@@ -119,7 +128,7 @@ impl AstVisitor for StateVariableMutabilityVisitor {
             };
 
             if contract_info.variable_info.contains_key(&id) {
-                *contract_info.variable_info.get_mut(&id).unwrap() = true;
+                contract_info.variable_info.get_mut(&id).unwrap().assigned = true;
             }
         }
 
@@ -149,7 +158,7 @@ impl AstVisitor for StateVariableMutabilityVisitor {
                     };
         
                     if contract_info.variable_info.contains_key(&id) {
-                        *contract_info.variable_info.get_mut(&id).unwrap() = true;
+                        contract_info.variable_info.get_mut(&id).unwrap().assigned = true;
                     }
                 }        
             }

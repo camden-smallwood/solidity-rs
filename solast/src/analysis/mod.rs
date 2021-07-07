@@ -1,3 +1,4 @@
+mod abi_encoding;
 mod abstract_contracts;
 mod assert_usage;
 mod assignment_comparisons;
@@ -37,7 +38,7 @@ mod unused_return;
 mod visitor;
 
 pub use self::{
-    abstract_contracts::*, assert_usage::*, assignment_comparisons::*,
+    abi_encoding::*, abstract_contracts::*, assert_usage::*, assignment_comparisons::*,
     check_effects_interactions::*, comparison_utilization::*, divide_before_multiply::*,
     explicit_variable_return::*, external_calls_in_loop::*, floating_solidity_version::*,
     ineffectual_statements::*, inline_assembly::*, invalid_using_for_directives::*,
