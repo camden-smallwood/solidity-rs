@@ -3068,6 +3068,18 @@ pub fn visit_source_units<'a>(visitors: Vec<Box<dyn AstVisitor + 'a>>, source_un
     };
 
     for source_unit in source_units.iter() {
+        //
+        // Skip node_modules imports
+        //
+
+        if source_unit.absolute_path.as_ref().map(String::as_str).unwrap_or("").starts_with("@") {
+            continue;
+        }
+
+        //
+        // Don't analyze the same source unit multiple times
+        //
+
         if let Some(path) = source_unit.absolute_path.as_ref() {
             if data.analyzed_paths.contains(path) {
                 continue;
@@ -3075,6 +3087,10 @@ pub fn visit_source_units<'a>(visitors: Vec<Box<dyn AstVisitor + 'a>>, source_un
 
             data.analyzed_paths.insert(path.clone());
         }
+
+        //
+        // Visit the source unit
+        //
 
         let mut context = SourceUnitContext {
             source_units,

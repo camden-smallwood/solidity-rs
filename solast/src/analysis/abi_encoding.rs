@@ -57,7 +57,7 @@ impl AstVisitor for AbiEncodingVisitor {
         }
 
         //
-        // Determine if any parameters are variably-sized arrays
+        // Determine if any parameters contain any variably-sized arrays
         //
 
         let mut any_arguments_variably_sized = false;
