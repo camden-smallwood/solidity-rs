@@ -108,26 +108,12 @@ impl AstVisitor for SafeERC20FunctionsVisitor {
 
         for referenced_declaration in context.function_call.expression.referenced_declarations() {
             for source_unit in context.source_units.iter() {
-                if let Some((called_contract_definition, called_function_definition)) =
-                    source_unit.function_and_contract_definition(referenced_declaration)
-                {
-                    if let "erc20" | "ierc20" = called_contract_definition
-                        .name
-                        .to_ascii_lowercase()
-                        .as_str()
-                    {
+                if let Some((called_contract_definition, called_function_definition)) = source_unit.function_and_contract_definition(referenced_declaration) {
+                    if let "erc20" | "ierc20" | "erc20interface" = called_contract_definition.name.to_ascii_lowercase().as_str() {
                         match called_function_definition.name.as_str() {
-                            "transfer" => {
-                                function_info.transfer = true;
-                            }
-
-                            "transferFrom" => {
-                                function_info.transfer_from = true;
-                            }
-
-                            "approve" => {
-                                function_info.approve = true;
-                            }
+                            "transfer" => function_info.transfer = true,
+                            "transferFrom" => function_info.transfer_from = true,
+                            "approve" => function_info.approve = true,
 
                             _ => {}
                         }
