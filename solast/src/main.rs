@@ -37,6 +37,7 @@ const VISITOR_TYPES: &'static [(&'static str, fn() -> Box<dyn analysis::AstVisit
     ("redundant_state_variable_access", || Box::new(analysis::RedundantStateVariableAccessVisitor)),
     ("unnecessary_comparisons", || Box::new(analysis::UnnecessaryComparisonsVisitor)),
     ("assert_usage", || Box::new(analysis::AssertUsageVisitor::default())),
+    ("selfdestruct_usage", || Box::new(analysis::SelfdestructUsageVisitor)),
     ("unrestricted_setter_functions", || Box::new(analysis::UnrestrictedSetterFunctionsVisitor)),
     ("manipulatable_balance_usage", || Box::new(analysis::ManipulatableBalanceUsageVisitor)),
     ("redundant_assignments", || Box::new(analysis::RedundantAssignmentsVisitor)),
