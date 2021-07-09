@@ -8,6 +8,7 @@ Some legacy versions of Solidity are inherently supported, but the focus is 0.8.
 - [x] `no_spdx_identifier`
 - [x] `floating_solidity_version`
 - [x] `node_modules_imports`
+- [x] `redundant_imports`
 - [x] `abstract_contracts`
 - [x] `large_literals`
 - [ ] ~~`tight_variable_packing`~~ (WIP)

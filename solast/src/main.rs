@@ -8,6 +8,7 @@ const VISITOR_TYPES: &'static [(&'static str, fn() -> Box<dyn analysis::AstVisit
     ("no_spdx_identifier", || Box::new(analysis::NoSpdxIdentifierVisitor)),
     ("floating_solidity_version", || Box::new(analysis::FloatingSolidityVersionVisitor)),
     ("node_modules_imports", || Box::new(analysis::NodeModulesImportsVisitor)),
+    ("redundant_imports", || Box::new(analysis::RedundantImportsVisitor::default())),
     ("abstract_contracts", || Box::new(analysis::AbstractContractsVisitor)),
     ("large_literals", || Box::new(analysis::LargeLiteralsVisitor::default())),
     ("tight_variable_packing", || Box::new(analysis::TightVariablePackingVisitor::default())),

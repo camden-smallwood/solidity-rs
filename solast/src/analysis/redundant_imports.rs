@@ -1,0 +1,48 @@
+use super::{AstVisitor, ImportDirectiveContext};
+use solidity::ast::*;
+use std::collections::HashMap;
+
+struct SourceUnitInfo {
+    imported_paths: HashMap<String, bool>,
+}
+
+pub struct RedundantImportsVisitor {
+    source_unit_info: HashMap<NodeID, SourceUnitInfo>,
+}
+
+impl Default for RedundantImportsVisitor {
+    fn default() -> Self {
+        Self {
+            source_unit_info: HashMap::new(),
+        }
+    }
+}
+
+impl AstVisitor for RedundantImportsVisitor {
+    fn visit_source_unit<'a>(&mut self, context: &mut super::SourceUnitContext<'a>) -> std::io::Result<()> {
+        if !self.source_unit_info.contains_key(&context.current_source_unit.id) {
+            self.source_unit_info.insert(context.current_source_unit.id, SourceUnitInfo {
+                imported_paths: HashMap::new(),
+            });
+        }
+
+        Ok(())
+    }
+    
+    fn visit_import_directive<'a>(&mut self, context: &mut ImportDirectiveContext<'a>) -> std::io::Result<()> {
+        let source_unit_info = self.source_unit_info.get_mut(&context.current_source_unit.id).unwrap();
+
+        match source_unit_info.imported_paths.get_mut(&context.import_directive.file) {
+            Some(reported) => if !*reported {
+                println!("\tRedundant import specified: {}", context.import_directive.file);
+                *reported = true;
+            }
+
+            None => {
+                source_unit_info.imported_paths.insert(context.import_directive.file.clone(), false);
+            }
+        }
+
+        Ok(())
+    }
+}
