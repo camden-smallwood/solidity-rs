@@ -58,20 +58,21 @@ impl AstVisitor for RawAddressTransferVisitor {
             _ => return Ok(())
         };
 
-        if let solidity::ast::Expression::MemberAccess(member_access) =
-            context.function_call.expression.as_ref()
-        {
-            if (member_access.referenced_declaration.is_none()
-                || member_access
-                    .referenced_declaration
-                    .map(|id| id == 0)
-                    .unwrap_or(false))
-                && member_access.member_name == "transfer"
-            {
-                *self
-                    .functions_transfer
-                    .get_mut(&definition_id)
-                    .unwrap() += 1;
+        if let solidity::ast::Expression::MemberAccess(member_access) = context.function_call.expression.as_ref() {
+            if let Some(TypeDescriptions { type_string: Some(type_string), .. }) = member_access.expression.as_ref().type_descriptions() {
+                match type_string.as_str() {
+                    "address" | "address payable" => {}
+                    _ => return Ok(())
+                }
+            }
+
+            match member_access.member_name.as_str() {
+                "transfer" | "send" => {}
+                _ => return Ok(())
+            }
+            
+            if member_access.referenced_declaration.is_none() || member_access.referenced_declaration.map(|id| id == 0).unwrap_or(false) {
+                *self.functions_transfer.get_mut(&definition_id).unwrap() += 1;
             }
         }
 
@@ -85,20 +86,21 @@ impl AstVisitor for RawAddressTransferVisitor {
             _ => return Ok(())
         };
 
-        if let solidity::ast::Expression::MemberAccess(member_access) =
-            context.function_call_options.expression.as_ref()
-        {
-            if (member_access.referenced_declaration.is_none()
-                || member_access
-                    .referenced_declaration
-                    .map(|id| id == 0)
-                    .unwrap_or(false))
-                && member_access.member_name == "transfer"
-            {
-                *self
-                    .functions_transfer
-                    .get_mut(&definition_id)
-                    .unwrap() += 1;
+        if let solidity::ast::Expression::MemberAccess(member_access) = context.function_call_options.expression.as_ref() {
+            if let Some(TypeDescriptions { type_string: Some(type_string), .. }) = member_access.expression.as_ref().type_descriptions() {
+                match type_string.as_str() {
+                    "address" | "address payable" => {}
+                    _ => return Ok(())
+                }
+            }
+
+            match member_access.member_name.as_str() {
+                "transfer" | "send" => {}
+                _ => return Ok(())
+            }
+            
+            if member_access.referenced_declaration.is_none() || member_access.referenced_declaration.map(|id| id == 0).unwrap_or(false) {
+                *self.functions_transfer.get_mut(&definition_id).unwrap() += 1;
             }
         }
 
