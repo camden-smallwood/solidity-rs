@@ -46,7 +46,7 @@ Some legacy versions of Solidity are inherently supported, but the focus is 0.8.
 
 ## Usage
 
-Currently, SolAST requires utilization of a [truffle](https://www.trufflesuite.com/) project.
+Currently, SolAST requires utilization of either a [truffle](https://www.trufflesuite.com/) project or a [brownie](https://eth-brownie.readthedocs.io/en/stable/) project.
 
 Please file an issue if you would like support for another build system.
 

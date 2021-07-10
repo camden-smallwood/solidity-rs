@@ -70,8 +70,8 @@ impl AstVisitor for UnnecessaryPragmasVisitor {
         let mut abicoder: Vec<&str> = vec![];
 
         for pragma_directive in context.current_source_unit.pragma_directives() {
-            match pragma_directive.literals.first() {
-                Some(literal) if literal == "solidity" => {
+            match pragma_directive.literals.first().map(String::as_str) {
+                Some("solidity") => {
                     if !solidity.is_empty() {
                         self.check_pragma_directives(&mut solidity, &mut abicoder);
                     }
@@ -79,7 +79,7 @@ impl AstVisitor for UnnecessaryPragmasVisitor {
                     solidity.extend(pragma_directive.literals.iter().skip(1).map(String::as_str));
                 }
 
-                Some(literal) if literal == "abicoder" => {
+                Some("abicoder") => {
                     if !abicoder.is_empty() {
                         self.check_pragma_directives(&mut solidity, &mut abicoder);
                     }
@@ -90,7 +90,7 @@ impl AstVisitor for UnnecessaryPragmasVisitor {
                 _ => {}
             }
         }
-        
+
         self.check_pragma_directives(&mut solidity, &mut abicoder);
 
         return Ok(())

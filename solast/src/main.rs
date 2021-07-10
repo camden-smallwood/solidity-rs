@@ -1,6 +1,7 @@
 use std::{collections::HashSet, env, fs::File, io, path::PathBuf};
 
 mod analysis;
+mod brownie;
 mod truffle;
 mod todo_list;
 
@@ -106,9 +107,47 @@ fn main() -> io::Result<()> {
     
     let mut source_units: Vec<solidity::ast::SourceUnit> = vec![];
 
+    let brownie_config_path = path.join("brownie-config.yaml");
     let truffle_config_path = path.join("truffle-config.js");
 
-    if truffle_config_path.is_file() {
+    if brownie_config_path.is_file() {
+        //
+        // TODO: load the brownie config and get the actual build paths
+        //
+
+        let build_paths = &[
+            path.join("build").join("contracts"),
+            path.join("build").join("interfaces"),
+        ];
+
+        for build_path in build_paths {
+            if !build_path.exists() || !build_path.is_dir() {
+                todo!("brownie project not compiled")
+            }
+
+            for path in std::fs::read_dir(build_path)? {
+                let path = path?.path();
+
+                if !path.exists() || !path.is_file() || !path.extension().map(|extension| extension == "json").unwrap_or(false) {
+                    continue;
+                }
+
+                let file: brownie::File = simd_json::from_reader(File::open(path)?)?;
+
+                if let Some(source_unit) = file.ast {
+                    if let Some(contract_name) = contract_name.as_ref().map(String::as_str) {
+                        if !source_unit.contract_definitions().iter().find(|c| c.name == contract_name).is_some() {
+                            continue;
+                        }
+                    }
+
+                    if source_units.iter().find(|existing_source_unit| existing_source_unit.absolute_path == source_unit.absolute_path).is_none() {
+                        source_units.push(source_unit);
+                    }
+                }
+            }
+        }
+    } else if truffle_config_path.is_file() {
         let build_path = path.join("build").join("contracts");
 
         if !build_path.exists() || !build_path.is_dir() {
@@ -146,11 +185,15 @@ fn main() -> io::Result<()> {
                 }
             }
         }
-
-        source_units.sort_by(|lhs, rhs| lhs.absolute_path.as_ref().map(String::as_str).unwrap_or("").cmp(rhs.absolute_path.as_ref().map(String::as_str).unwrap_or("")));
     } else {
         todo!("truffle config not found; implement support for other project types")
     }
+
+    source_units.sort_by(|lhs, rhs| {
+        let lhs = lhs.absolute_path.as_ref().map(String::as_str).unwrap_or("");
+        let rhs = rhs.absolute_path.as_ref().map(String::as_str).unwrap_or("");
+        lhs.cmp(rhs)
+    });
 
     if should_print_todo_list {
         todo_list::print(source_units.as_slice());
