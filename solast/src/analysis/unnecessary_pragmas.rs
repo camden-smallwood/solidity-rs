@@ -3,32 +3,13 @@ use std::io;
 
 pub struct UnnecessaryPragmasVisitor;
 
-impl AstVisitor for UnnecessaryPragmasVisitor {
-    fn visit_source_unit<'a>(&mut self, context: &mut SourceUnitContext<'a>) -> io::Result<()> {
-        let mut solidity: Vec<&str> = vec![];
-        let mut abicoder: Vec<&str> = vec![];
-
-        for pragma_directive in context.current_source_unit.pragma_directives() {
-            match pragma_directive.literals.first() {
-                Some(literal) if literal == "solidity" => {
-                    assert!(solidity.is_empty());
-                    solidity.extend(pragma_directive.literals.iter().skip(1).map(String::as_str));
-                }
-
-                Some(literal) if literal == "abicoder" => {
-                    assert!(abicoder.is_empty());
-                    abicoder.extend(pragma_directive.literals.iter().skip(1).map(String::as_str));
-                }
-
-                _ => {}
-            }
-        }
-
+impl UnnecessaryPragmasVisitor {
+    fn check_pragma_directives(&self, solidity: &mut Vec<&str>, abicoder: &mut Vec<&str>) {
         let mut op = None;
         let mut lower: Option<f32> = None;
         let mut upper: Option<f32> = None;
 
-        for literal in solidity {
+        for &literal in solidity.iter() {
             match literal {
                 "^" | ">" | ">=" | "<=" | "<" => op = Some(literal),
 
@@ -77,6 +58,40 @@ impl AstVisitor for UnnecessaryPragmasVisitor {
                 }
             }
         }
+
+        solidity.clear();
+        abicoder.clear();
+    }
+}
+
+impl AstVisitor for UnnecessaryPragmasVisitor {
+    fn visit_source_unit<'a>(&mut self, context: &mut SourceUnitContext<'a>) -> io::Result<()> {
+        let mut solidity: Vec<&str> = vec![];
+        let mut abicoder: Vec<&str> = vec![];
+
+        for pragma_directive in context.current_source_unit.pragma_directives() {
+            match pragma_directive.literals.first() {
+                Some(literal) if literal == "solidity" => {
+                    if !solidity.is_empty() {
+                        self.check_pragma_directives(&mut solidity, &mut abicoder);
+                    }
+
+                    solidity.extend(pragma_directive.literals.iter().skip(1).map(String::as_str));
+                }
+
+                Some(literal) if literal == "abicoder" => {
+                    if !abicoder.is_empty() {
+                        self.check_pragma_directives(&mut solidity, &mut abicoder);
+                    }
+
+                    abicoder.extend(pragma_directive.literals.iter().skip(1).map(String::as_str));
+                }
+
+                _ => {}
+            }
+        }
+        
+        self.check_pragma_directives(&mut solidity, &mut abicoder);
 
         return Ok(())
     }
