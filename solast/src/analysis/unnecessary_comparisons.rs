@@ -6,32 +6,28 @@ use std::{io, str::FromStr};
 pub struct UnnecessaryComparisonsVisitor;
 
 impl UnnecessaryComparisonsVisitor {
-    fn handle_left_expression_comparison<'a, 'b>(&mut self, context: &mut BinaryOperationContext<'a, 'b>) -> io::Result<()> {
+    fn is_right_literal_redundant<'a, 'b>(&mut self, context: &mut BinaryOperationContext<'a, 'b>) -> bool {
         let type_name = match context.binary_operation.left_expression.type_descriptions() {
             Some(TypeDescriptions { type_string: Some(type_string), .. }) => type_string.as_str(),
-            _ => return Ok(())
+            _ => return false
         };
 
-        if !type_name.starts_with("uint") {
-            return Ok(()) // TODO: handle int
-        }
-
-        let value = match context.binary_operation.right_expression.as_ref() {
+        let literal_value = match context.binary_operation.right_expression.as_ref() {
             Expression::Literal(
                 Literal { hex_value: Some(value), .. }
             ) => match U512::from_str(value) {
                 Ok(value) => value,
-                Err(_) => return Ok(())
+                Err(_) => return false
             }
 
             Expression::Literal(
                 Literal { value: Some(value), .. }
             ) => match U512::from_dec_str(value) {
                 Ok(value) => value,
-                Err(_) => return Ok(())
+                Err(_) => return false
             }
 
-            _ => return Ok(())
+            _ => return false
         };
         
         let mut contains_redundant_comparison = false;
@@ -42,26 +38,17 @@ impl UnnecessaryComparisonsVisitor {
                     "" => 256,
                     string => match string.parse() {
                         Ok(type_bits) => type_bits,
-                        Err(_) => return Ok(())
+                        Err(_) => return false
                     }
                 };
 
                 let type_max = (U512::one() << type_bits) - U512::one();
 
-                match context.binary_operation.operator.as_str() {
-                    ">=" if value.is_zero() => {
-                        contains_redundant_comparison = true;
-                    }
-
-                    "<" if value >= type_max => {
-                        contains_redundant_comparison = true;
-                    }
-
-                    "<=" if value > type_max => {
-                        contains_redundant_comparison = true;
-                    }
-
-                    _ => {}
+                contains_redundant_comparison = match context.binary_operation.operator.as_str() {
+                    ">=" => literal_value.is_zero(),
+                    "<=" => literal_value > type_max,
+                    ">" | "<" => literal_value >= type_max,
+                    _ => false
                 }
             }
 
@@ -71,8 +58,24 @@ impl UnnecessaryComparisonsVisitor {
 
             _ => {}
         }
-        
-        if contains_redundant_comparison {
+
+        contains_redundant_comparison
+    }
+
+    fn is_left_literal_redundant<'a, 'b>(&mut self, _context: &mut BinaryOperationContext<'a, 'b>) -> bool {
+        // TODO
+        false
+    }
+}
+
+impl AstVisitor for UnnecessaryComparisonsVisitor {
+    fn visit_binary_operation<'a, 'b>(&mut self, context: &mut BinaryOperationContext<'a, 'b>) -> io::Result<()> {
+        if match (context.binary_operation.left_expression.as_ref(), context.binary_operation.right_expression.as_ref()) {
+            (Expression::Literal(_), Expression::Literal(_)) => true,
+            (_, Expression::Literal(_)) => self.is_right_literal_redundant(context),
+            (Expression::Literal(_), _) => self.is_left_literal_redundant(context),
+            _ => false
+        } {
             match context.definition_node {
                 ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
                     "\tThe {} {} in the `{}` {} contains a redundant comparison: {}",
@@ -107,21 +110,5 @@ impl UnnecessaryComparisonsVisitor {
         }
 
         Ok(())
-    }
-
-    fn handle_right_expression_comparison<'a, 'b>(&mut self, _context: &mut BinaryOperationContext<'a, 'b>) -> io::Result<()> {
-        // TODO
-        Ok(())
-    }
-}
-
-impl AstVisitor for UnnecessaryComparisonsVisitor {
-    fn visit_binary_operation<'a, 'b>(&mut self, context: &mut BinaryOperationContext<'a, 'b>) -> io::Result<()> {
-        match (context.binary_operation.left_expression.as_ref(), context.binary_operation.right_expression.as_ref()) {
-            (Expression::Literal(_), Expression::Literal(_)) => Ok(()),
-            (_, Expression::Literal(_)) => self.handle_left_expression_comparison(context),
-            (Expression::Literal(_), _) => self.handle_right_expression_comparison(context),
-            _ => Ok(())
-        }
     }
 }
