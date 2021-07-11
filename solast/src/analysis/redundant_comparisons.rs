@@ -3,9 +3,9 @@ use primitive_types::U512;
 use solidity::ast::*;
 use std::{io, str::FromStr};
 
-pub struct UnnecessaryComparisonsVisitor;
+pub struct RedundantComparisonsVisitor;
 
-impl UnnecessaryComparisonsVisitor {
+impl RedundantComparisonsVisitor {
     fn is_right_literal_redundant<'a, 'b>(&mut self, context: &mut BinaryOperationContext<'a, 'b>) -> bool {
         let type_name = match context.binary_operation.left_expression.type_descriptions() {
             Some(TypeDescriptions { type_string: Some(type_string), .. }) => type_string.as_str(),
@@ -68,7 +68,7 @@ impl UnnecessaryComparisonsVisitor {
     }
 }
 
-impl AstVisitor for UnnecessaryComparisonsVisitor {
+impl AstVisitor for RedundantComparisonsVisitor {
     fn visit_binary_operation<'a, 'b>(&mut self, context: &mut BinaryOperationContext<'a, 'b>) -> io::Result<()> {
         if match (context.binary_operation.left_expression.as_ref(), context.binary_operation.right_expression.as_ref()) {
             (Expression::Literal(_), Expression::Literal(_)) => true,
