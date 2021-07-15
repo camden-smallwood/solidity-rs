@@ -15,6 +15,27 @@ impl AstVisitor for InvalidUsingForDirectivesVisitor {
         };
 
         //
+        // Attempt to retrieve the contract definition associated with the used library
+        //
+
+        let using_contract_definition = {
+            let mut using_contract_definition = None;
+    
+            for source_unit in context.source_units.iter() {
+                if let Some(contract_definition) = source_unit.contract_definition(using_contract_id) {
+                    using_contract_definition = Some(contract_definition);
+                    break;
+                }
+            }
+    
+            if using_contract_definition.is_none() {
+                return Ok(())
+            }
+            
+            using_contract_definition.unwrap()
+        };
+
+        //
         // Get the type name of the requested type to use the library for
         //
 
@@ -39,54 +60,48 @@ impl AstVisitor for InvalidUsingForDirectivesVisitor {
         }
 
         //
-        // Attempt to retrieve the contract definition associated with the used library
-        //
-
-        let mut using_contract_definition = None;
-
-        for source_unit in context.source_units.iter() {
-            if let Some(contract_definition) = source_unit.contract_definition(using_contract_id) {
-                using_contract_definition = Some(contract_definition);
-                break;
-            }
-        }
-
-        if using_contract_definition.is_none() {
-            return Ok(())
-        }
-
-        let using_contract_definition = using_contract_definition.unwrap();
-
-        //
-        // Determine if the library contains a usable function for the requested type
+        // Determine if the library contains any functions usable with the requested type
         //
 
         let mut usable_function_found = false;
 
         for function_definition in using_contract_definition.function_definitions() {
+            //
+            // Get the type name of the function's first parameter (if any)
+            //
+
             let parameter = match function_definition.parameters.parameters.first() {
                 Some(parameter) => parameter,
                 None => continue
             };
 
-            let type_name = match parameter.type_name.as_ref() {
+            let parameter_type_name = match parameter.type_name.as_ref() {
                 Some(type_name) => type_name,
                 None => continue
             };
 
-            if type_name == for_type_name {
+            //
+            // Check to see if the parameter type matches the requested type
+            //
+
+            if parameter_type_name == for_type_name {
                 usable_function_found = true;
                 break;
             }
 
-            if let TypeName::UserDefinedTypeName(UserDefinedTypeName { referenced_declaration, .. }) = type_name {
-                if let Some(for_contract_definition) = for_contract_definition {
-                    if let Some(linearized_base_contracts) = for_contract_definition.linearized_base_contracts.as_ref() {
-                        if linearized_base_contracts.contains(referenced_declaration) {
-                            usable_function_found = true;
-                            break;
-                        }
-                    }
+            //
+            // Check to see if the requested type inherits from the parameter type
+            //
+
+            let parameter_type_id = match parameter_type_name {
+                TypeName::UserDefinedTypeName(UserDefinedTypeName { referenced_declaration, .. }) => referenced_declaration,
+                _ => continue
+            };
+
+            if let Some(Some(linearized_base_contracts)) = for_contract_definition.map(|x| x.linearized_base_contracts.as_ref()) {
+                if linearized_base_contracts.contains(parameter_type_id) {
+                    usable_function_found = true;
+                    break;
                 }
             }
         }
