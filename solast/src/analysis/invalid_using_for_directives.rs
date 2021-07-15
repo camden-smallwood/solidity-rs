@@ -67,22 +67,13 @@ impl AstVisitor for InvalidUsingForDirectivesVisitor {
 
         for function_definition in using_contract_definition.function_definitions() {
             //
-            // Get the type name of the function's first parameter (if any)
-            //
-
-            let parameter = match function_definition.parameters.parameters.first() {
-                Some(parameter) => parameter,
-                None => continue
-            };
-
-            let parameter_type_name = match parameter.type_name.as_ref() {
-                Some(type_name) => type_name,
-                None => continue
-            };
-
-            //
             // Check to see if the parameter type matches the requested type
             //
+
+            let parameter_type_name = match function_definition.parameters.parameters.first().map(|p| p.type_name.as_ref()) {
+                Some(Some(type_name)) => type_name,
+                _ => continue
+            };
 
             if parameter_type_name == for_type_name {
                 usable_function_found = true;
