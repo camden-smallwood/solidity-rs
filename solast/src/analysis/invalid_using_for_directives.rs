@@ -1,4 +1,5 @@
 use super::{AstVisitor, UsingForDirectiveContext};
+use solidity::ast::*;
 
 pub struct InvalidUsingForDirectivesVisitor;
 
@@ -21,6 +22,21 @@ impl AstVisitor for InvalidUsingForDirectivesVisitor {
             Some(type_name) => type_name,
             None => return Ok(())
         };
+
+        //
+        // Get the contract definition of the requested type to use the library for (if any)
+        //
+
+        let mut for_contract_definition = None;
+
+        if let &TypeName::UserDefinedTypeName(UserDefinedTypeName { referenced_declaration, .. }) = for_type_name {
+            for source_unit in context.source_units.iter() {
+                if let Some(contract_definition) = source_unit.contract_definition(referenced_declaration) {
+                    for_contract_definition = Some(contract_definition);
+                    break;
+                }
+            }
+        }
 
         //
         // Attempt to retrieve the contract definition associated with the used library
@@ -48,11 +64,28 @@ impl AstVisitor for InvalidUsingForDirectivesVisitor {
         let mut usable_function_found = false;
 
         for function_definition in using_contract_definition.function_definitions() {
-            if let Some(parameter) = function_definition.parameters.parameters.first() {
-                if let Some(type_name) = parameter.type_name.as_ref() {
-                    if type_name == for_type_name {
-                        usable_function_found = true;
-                        break;
+            let parameter = match function_definition.parameters.parameters.first() {
+                Some(parameter) => parameter,
+                None => continue
+            };
+
+            let type_name = match parameter.type_name.as_ref() {
+                Some(type_name) => type_name,
+                None => continue
+            };
+
+            if type_name == for_type_name {
+                usable_function_found = true;
+                break;
+            }
+
+            if let TypeName::UserDefinedTypeName(UserDefinedTypeName { referenced_declaration, .. }) = type_name {
+                if let Some(for_contract_definition) = for_contract_definition {
+                    if let Some(linearized_base_contracts) = for_contract_definition.linearized_base_contracts.as_ref() {
+                        if linearized_base_contracts.contains(referenced_declaration) {
+                            usable_function_found = true;
+                            break;
+                        }
                     }
                 }
             }

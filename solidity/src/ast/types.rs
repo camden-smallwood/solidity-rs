@@ -12,11 +12,11 @@ pub struct TypeDescriptions {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum TypeName {
-    ElementaryTypeName(ElementaryTypeName),
-    UserDefinedTypeName(UserDefinedTypeName),
     FunctionTypeName(FunctionTypeName),
     ArrayTypeName(ArrayTypeName),
     Mapping(Mapping),
+    UserDefinedTypeName(UserDefinedTypeName),
+    ElementaryTypeName(ElementaryTypeName),
     String(String),
 }
 
@@ -37,8 +37,8 @@ impl Display for TypeName {
 #[serde(rename_all = "camelCase")]
 pub struct ElementaryTypeName {
     pub state_mutability: Option<StateMutability>,
-    pub type_descriptions: TypeDescriptions,
     pub name: String,
+    pub type_descriptions: TypeDescriptions,
 }
 
 impl PartialEq for ElementaryTypeName {
@@ -67,6 +67,7 @@ impl Display for ElementaryTypeName {
 pub struct UserDefinedTypeName {
     pub path_node: Option<IdentifierPath>,
     pub referenced_declaration: NodeID,
+    pub name: String,
     pub type_descriptions: TypeDescriptions,
 }
 
@@ -81,7 +82,7 @@ impl Display for UserDefinedTypeName {
         if let Some(path_node) = self.path_node.as_ref() {
             f.write_fmt(format_args!("{}", path_node))
         } else {
-            panic!("ERROR: unhandled UserDefinedTypeName composition: {:?}", self)
+            f.write_fmt(format_args!("{}", self.name))
         }
     }
 }
