@@ -18,7 +18,9 @@ impl AstVisitor for LargeLiteralsVisitor {
     fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
         if self.functions.contains(&context.function_definition.id) {
             println!(
-                "\t{} {} {} contains large literals, which may be difficult to read",
+                "\tL{}: {} {} {} contains large literals, which may be difficult to read",
+
+                context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
 
                 format!("{:?}", context.function_definition.visibility),
 

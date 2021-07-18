@@ -15,7 +15,10 @@ impl AstVisitor for IneffectualStatementsVisitor {
             match expression {
                 solidity::ast::Expression::Literal(literal) => {
                     println!(
-                        "\t{} {} {} contains an ineffectual literal statement: {}",
+                        "\tL{}: {} {} {} contains an ineffectual literal statement: {}",
+
+                        context.current_source_unit.source_line(literal.src.as_str()).unwrap(),
+
                         format!("{:?}", function_definition.visibility),
                         if function_definition.name.is_empty() {
                             format!("{}", context.contract_definition.name)
@@ -29,7 +32,10 @@ impl AstVisitor for IneffectualStatementsVisitor {
                 
                 solidity::ast::Expression::Identifier(identifier) => {
                     println!(
-                        "\t{} {} {} contains an ineffectual identifier statement: {}",
+                        "\tL{}: {} {} {} contains an ineffectual identifier statement: {}",
+
+                        context.current_source_unit.source_line(identifier.src.as_str()).unwrap(),
+
                         format!("{:?}", function_definition.visibility),
                         if function_definition.name.is_empty() {
                             format!("{}", context.contract_definition.name)
@@ -43,7 +49,10 @@ impl AstVisitor for IneffectualStatementsVisitor {
 
                 solidity::ast::Expression::IndexAccess(index_access) => {
                     println!(
-                        "\t{} {} {} contains an ineffectual index access statement: {}",
+                        "\tL{}: {} {} {} contains an ineffectual index access statement: {}",
+
+                        context.current_source_unit.source_line(index_access.src.as_str()).unwrap(),
+
                         format!("{:?}", function_definition.visibility),
                         if function_definition.name.is_empty() {
                             format!("{}", context.contract_definition.name)
@@ -71,7 +80,10 @@ impl AstVisitor for IneffectualStatementsVisitor {
 
                 solidity::ast::Expression::MemberAccess(member_access) => {
                     println!(
-                        "\t{} {} {} contains an ineffectual member access statement: {}",
+                        "\tL{}: {} {} {} contains an ineffectual member access statement: {}",
+
+                        context.current_source_unit.source_line(member_access.src.as_str()).unwrap(),
+
                         format!("{:?}", function_definition.visibility),
                         if function_definition.name.is_empty() {
                             format!("{}", context.contract_definition.name)
@@ -85,7 +97,10 @@ impl AstVisitor for IneffectualStatementsVisitor {
 
                 solidity::ast::Expression::BinaryOperation(binary_operation) => {
                     println!(
-                        "\t{} {} {} contains an ineffectual binary operation statement: {}",
+                        "\tL{}: {} {} {} contains an ineffectual binary operation statement: {}",
+
+                        context.current_source_unit.source_line(binary_operation.src.as_str()).unwrap(),
+
                         format!("{:?}", function_definition.visibility),
                         if function_definition.name.is_empty() {
                             format!("{}", context.contract_definition.name)
@@ -99,7 +114,10 @@ impl AstVisitor for IneffectualStatementsVisitor {
 
                 solidity::ast::Expression::Conditional(conditional) => {
                     println!(
-                        "\t{} {} {} contains an ineffectual conditional statement: {}",
+                        "\tL{}: {} {} {} contains an ineffectual conditional statement: {}",
+
+                        context.current_source_unit.source_line(conditional.src.as_str()).unwrap(),
+
                         format!("{:?}", function_definition.visibility),
                         if function_definition.name.is_empty() {
                             format!("{}", context.contract_definition.name)
@@ -113,7 +131,10 @@ impl AstVisitor for IneffectualStatementsVisitor {
 
                 solidity::ast::Expression::TupleExpression(tuple_expression) => {
                     println!(
-                        "\t{} {} {} contains an ineffectual tuple expression statement: {}",
+                        "\tL{}: {} {} {} contains an ineffectual tuple expression statement: {}",
+
+                        context.current_source_unit.source_line(tuple_expression.src.as_str()).unwrap(),
+
                         format!("{:?}", function_definition.visibility),
                         if function_definition.name.is_empty() {
                             format!("{}", context.contract_definition.name)
@@ -128,7 +149,10 @@ impl AstVisitor for IneffectualStatementsVisitor {
                 solidity::ast::Expression::FunctionCallOptions(function_call_options) => {
                     if function_call_options.arguments.is_none() {
                         println!(
-                            "\t{} {} {} contains an ineffectual function call expression statement: {}",
+                            "\tL{}: {} {} {} contains an ineffectual function call expression statement: {}",
+
+                            context.current_source_unit.source_line(function_call_options.src.as_str()).unwrap(),
+
                             format!("{:?}", function_definition.visibility),
                             
                             if function_definition.name.is_empty() {

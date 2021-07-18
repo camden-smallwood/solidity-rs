@@ -78,7 +78,9 @@ impl AstVisitor for RedundantComparisonsVisitor {
         } {
             match context.definition_node {
                 ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                    "\tThe {} {} in the `{}` {} contains a redundant comparison: {}",
+                    "\tL{}: The {} {} in the `{}` {} contains a redundant comparison: `{}`",
+
+                    context.current_source_unit.source_line(context.binary_operation.src.as_str()).unwrap(),
 
                     function_definition.visibility,
 
@@ -95,7 +97,9 @@ impl AstVisitor for RedundantComparisonsVisitor {
                 ),
 
                 ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                    "\tThe {} modifier in the `{}` {} contains a redundant comparison: {}",
+                    "\tL{}: The {} modifier in the `{}` {} contains a redundant comparison: `{}`",
+
+                    context.current_source_unit.source_line(context.binary_operation.src.as_str()).unwrap(),
 
                     modifier_definition.name,
 

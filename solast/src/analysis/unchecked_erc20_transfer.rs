@@ -59,7 +59,9 @@ impl AstVisitor for UncheckedERC20TransferVisitor {
 
         if function_info.occurance_count > 0 {
             println!(
-                "\t{} {} {} makes {} without checking the {}, which can revert {} zero",
+                "\tL{}: {} {} {} makes {} without checking the {}, which can revert {} zero",
+
+                context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
 
                 format!("{:?}", context.function_definition.visibility),
 

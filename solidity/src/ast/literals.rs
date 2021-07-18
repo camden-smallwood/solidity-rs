@@ -1,3 +1,4 @@
+use super::NodeID;
 use crate::ast::TypeDescriptions;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
@@ -25,6 +26,8 @@ pub struct Literal {
     pub is_pure: bool,
     pub l_value_requested: bool,
     pub type_descriptions: TypeDescriptions,
+    pub src: String,
+    pub id: NodeID,
 }
 
 impl Display for Literal {

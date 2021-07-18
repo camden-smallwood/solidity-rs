@@ -18,7 +18,9 @@ impl AstVisitor for RequireWithoutMessageVisitor {
     fn leave_modifier_definition<'a>(&mut self, context: &mut ModifierDefinitionContext<'a>) -> io::Result<()> {
         if let Some(&requirement_count) = self.requirement_counts.get(&context.modifier_definition.id) {
             println!(
-                "\t{} {} modifier has {} without {}",
+                "\tL{}: {} {} modifier has {} without {}",
+
+                context.current_source_unit.source_line(context.modifier_definition.src.as_str()).unwrap(),
 
                 format!("{:?}", context.modifier_definition.visibility),
 
@@ -48,7 +50,9 @@ impl AstVisitor for RequireWithoutMessageVisitor {
     fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
         if let Some(&requirement_count) = self.requirement_counts.get(&context.function_definition.id) {
             println!(
-                "\t{} {} {} has {} without {}",
+                "\tL{}: {} {} {} has {} without {}",
+
+                context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
 
                 format!("{:?}", context.function_definition.visibility),
 

@@ -67,7 +67,7 @@ impl Display for ElementaryTypeName {
 pub struct UserDefinedTypeName {
     pub path_node: Option<IdentifierPath>,
     pub referenced_declaration: NodeID,
-    pub name: String,
+    pub name: Option<String>,
     pub type_descriptions: TypeDescriptions,
 }
 
@@ -82,7 +82,7 @@ impl Display for UserDefinedTypeName {
         if let Some(path_node) = self.path_node.as_ref() {
             f.write_fmt(format_args!("{}", path_node))
         } else {
-            f.write_fmt(format_args!("{}", self.name))
+            f.write_fmt(format_args!("{}", self.name.as_ref().map(String::as_str).unwrap_or("")))
         }
     }
 }

@@ -134,7 +134,7 @@ fn main() -> io::Result<()> {
 
                 let file: brownie::File = simd_json::from_reader(File::open(path)?)?;
 
-                if let Some(source_unit) = file.ast {
+                if let Some(mut source_unit) = file.ast {
                     if let Some(contract_name) = contract_name.as_ref().map(String::as_str) {
                         if !source_unit.contract_definitions().iter().find(|c| c.name == contract_name).is_some() {
                             continue;
@@ -142,6 +142,7 @@ fn main() -> io::Result<()> {
                     }
 
                     if source_units.iter().find(|existing_source_unit| existing_source_unit.absolute_path == source_unit.absolute_path).is_none() {
+                        source_unit.source = file.source.clone();
                         source_units.push(source_unit);
                     }
                 }
@@ -169,7 +170,7 @@ fn main() -> io::Result<()> {
 
             let file: truffle::File = simd_json::from_reader(File::open(path)?)?;
 
-            if let Some(source_unit) = file.ast {
+            if let Some(mut source_unit) = file.ast {
                 if source_unit.absolute_path.as_ref().map(String::as_str).unwrap_or("").ends_with(migrations_path.as_str()) {
                     continue;
                 }
@@ -181,6 +182,7 @@ fn main() -> io::Result<()> {
                 }
 
                 if source_units.iter().find(|existing_source_unit| existing_source_unit.absolute_path == source_unit.absolute_path).is_none() {
+                    source_unit.source = file.source.clone();
                     source_units.push(source_unit);
                 }
             }

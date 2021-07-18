@@ -1,6 +1,6 @@
 use super::AstVisitor;
 use solidity::ast::*;
-use std::{collections::HashMap, io};
+use std::{collections::{HashMap, HashSet}, io};
 
 struct VariableInfo {
     assigned: bool,
@@ -9,6 +9,7 @@ struct VariableInfo {
 
 struct ContractInfo {
     variable_info: HashMap<NodeID, VariableInfo>,
+    variable_aliases: HashMap<NodeID, HashSet<NodeID>>,
 }
 
 pub struct StateVariableMutabilityVisitor {
@@ -30,6 +31,17 @@ impl Default for StateVariableMutabilityVisitor {
 //
 
 impl AstVisitor for StateVariableMutabilityVisitor {
+    fn visit_contract_definition<'a>(&mut self, context: &mut super::ContractDefinitionContext<'a>) -> io::Result<()> {
+        if !self.contract_info.contains_key(&context.contract_definition.id) {
+            self.contract_info.insert(context.contract_definition.id, ContractInfo {
+                variable_info: HashMap::new(),
+                variable_aliases: HashMap::new(),
+            });
+        }
+
+        Ok(())
+    }
+
     fn leave_contract_definition<'a>(&mut self, context: &mut super::ContractDefinitionContext<'a>) -> io::Result<()> {
         if let Some(contract_info) = self.contract_info.get(&context.contract_definition.id) {
             for (&id, variable_info) in contract_info.variable_info.iter() {
@@ -40,7 +52,10 @@ impl AstVisitor for StateVariableMutabilityVisitor {
 
                     if !variable_info.assigned {
                         println!(
-                            "\tThe {} `{}.{}` {} state variable can be declared `{}`",
+                            "\tL{}: The {} `{}.{}` {} state variable can be declared `{}`",
+
+                            context.current_source_unit.source_line(variable_declaration.src.as_str()).unwrap(),
+
                             variable_declaration.visibility,
                             context.contract_definition.name,
                             variable_declaration.name,
@@ -56,24 +71,40 @@ impl AstVisitor for StateVariableMutabilityVisitor {
     }
 
     fn visit_variable_declaration<'a, 'b>(&mut self, context: &mut super::VariableDeclarationContext<'a, 'b>) -> io::Result<()> {
-        if let ContractDefinitionNode::VariableDeclaration(variable_declaration) = context.definition_node {
-            if !self.contract_info.contains_key(&context.contract_definition.id) {
-                self.contract_info.insert(context.contract_definition.id, ContractInfo {
-                    variable_info: HashMap::new(),
-                });
+        let contract_info = match self.contract_info.get_mut(&context.contract_definition.id) {
+            Some(contract_info) => contract_info,
+            None => return Ok(())
+        };
+
+        match context.definition_node {
+            ContractDefinitionNode::VariableDeclaration(_) => {
+                if !contract_info.variable_info.contains_key(&context.variable_declaration.id) {
+                    contract_info.variable_info.insert(context.variable_declaration.id, VariableInfo {
+                        assigned: false,
+                        constant: context.variable_declaration.value.is_some(),
+                    });
+                }
+
+                if !contract_info.variable_aliases.contains_key(&context.variable_declaration.id) {
+                    contract_info.variable_aliases.insert(context.variable_declaration.id, HashSet::new());
+                }
             }
 
-            let contract_info = match self.contract_info.get_mut(&context.contract_definition.id) {
-                Some(contract_info) => contract_info,
-                None => return Ok(())
-            };
-
-            if !contract_info.variable_info.contains_key(&variable_declaration.id) {
-                contract_info.variable_info.insert(variable_declaration.id, VariableInfo {
-                    assigned: false,
-                    constant: variable_declaration.value.is_some(),
-                });
+            ContractDefinitionNode::FunctionDefinition(_) | ContractDefinitionNode::ModifierDefinition(_) => {
+                if let StorageLocation::Storage = context.variable_declaration.storage_location {
+                    if let Some(value) = context.variable_declaration.value.as_ref() {
+                        for id in value.referenced_declarations() {
+                            if let Some(variable_aliases) = contract_info.variable_aliases.get_mut(&id) {
+                                if !variable_aliases.contains(&context.variable_declaration.id) {
+                                    variable_aliases.insert(context.variable_declaration.id);
+                                }
+                            }
+                        }
+                    }
+                }
             }
+
+            _ => {}
         }
 
         Ok(())
@@ -86,7 +117,22 @@ impl AstVisitor for StateVariableMutabilityVisitor {
         }) = context.definition_node {
             return Ok(())
         }
-        
+
+        let contract_info = match self.contract_info.get_mut(&context.contract_definition.id) {
+            Some(contract_info) => contract_info,
+            None => return Ok(())
+        };
+
+        if let Expression::MemberAccess(member_access) = context.assignment.left_hand_side.as_ref() {
+            let referenced_declarations = member_access.expression.referenced_declarations();
+    
+            if let Some(&referenced_declaration) = referenced_declarations.first() {
+                if let Some((id, _)) = contract_info.variable_aliases.iter_mut().find(|(_, aliases)| aliases.contains(&referenced_declaration)) {
+                    contract_info.variable_info.get_mut(&id).unwrap().assigned = true;
+                }
+            }
+        }
+
         let ids = context.contract_definition.get_assigned_state_variables(
             context.source_units,
             context.definition_node,
@@ -94,11 +140,6 @@ impl AstVisitor for StateVariableMutabilityVisitor {
         );
 
         for id in ids {
-            let contract_info = match self.contract_info.get_mut(&context.contract_definition.id) {
-                Some(contract_info) => contract_info,
-                None => continue,
-            };
-
             if contract_info.variable_info.contains_key(&id) {
                 contract_info.variable_info.get_mut(&id).unwrap().assigned = true;
             }

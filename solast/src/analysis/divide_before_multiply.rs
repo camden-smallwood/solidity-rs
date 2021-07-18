@@ -20,8 +20,10 @@ impl AstVisitor for DivideBeforeMultiplyVisitor {
             if left_operation.contains_operation("/") {
                 match context.definition_node {
                     ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                        "\tThe {} {} in the `{}` {} performs a multiplication on the result of a division",
+                        "\tL{}: The {} {} in the `{}` {} performs a multiplication on the result of a division",
     
+                        context.current_source_unit.source_line(context.binary_operation.src.as_str()).unwrap(),
+
                         function_definition.visibility,
     
                         if let FunctionKind::Constructor = function_definition.kind {
@@ -35,7 +37,10 @@ impl AstVisitor for DivideBeforeMultiplyVisitor {
                     ),
     
                     ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                        "\tThe `{}` modifier in the `{}` {} performs a multiplication on the result of a division",
+                        "\tL{}: The `{}` modifier in the `{}` {} performs a multiplication on the result of a division",
+
+                        context.current_source_unit.source_line(context.binary_operation.src.as_str()).unwrap(),
+
                         modifier_definition.name,
     
                         context.contract_definition.name,

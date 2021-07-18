@@ -350,6 +350,8 @@ pub struct FunctionCallOptions {
     pub is_pure: bool,
     pub l_value_requested: bool,
     pub type_descriptions: TypeDescriptions,
+    pub src: String,
+    pub id: NodeID,
 }
 
 impl FunctionCallOptions {

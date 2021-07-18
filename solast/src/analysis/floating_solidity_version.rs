@@ -27,7 +27,10 @@ impl AstVisitor for FloatingSolidityVersionVisitor {
 
                 if floating {
                     println!(
-                        "\tFloating solidity version: {}; Consider locking before deployment",
+                        "\tL{}: Floating solidity version: {}; Consider locking before deployment",
+                        
+                        context.current_source_unit.source_line(context.pragma_directive.src.as_str()).unwrap(),
+
                         pragma_string
                     );
                 }

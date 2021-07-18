@@ -11,6 +11,8 @@ pub struct InlineAssembly {
     pub evm_version: Option<String>,
     pub external_references: Vec<ExternalReference>,
     pub operations: Option<String>,
+    pub src: String,
+    pub id: NodeID,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]

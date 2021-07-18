@@ -33,7 +33,9 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
 
         if self.makes_external_call && self.makes_post_external_call_assignment {
             println!(
-                "\t{} {} {} ignores the Check-Effects-Interactions pattern",
+                "\tL{}: {} {} {} ignores the Check-Effects-Interactions pattern",
+
+                context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
 
                 format!("{:?}", context.function_definition.visibility),
 

@@ -27,7 +27,9 @@ impl AstVisitor for RawAddressTransferVisitor {
         if let Some(&transfer_count) = self.functions_transfer.get(&context.function_definition.id) {
             if transfer_count > 0 {
                 println!(
-                    "\t{} {} {} performs {}",
+                    "\tL{}: {} {} {} performs {}",
+
+                    context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
 
                     format!("{:?}", context.function_definition.visibility),
 

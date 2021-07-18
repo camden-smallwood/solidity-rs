@@ -174,6 +174,8 @@ pub struct IfStatement {
     pub condition: Expression,
     pub true_body: BlockOrStatement,
     pub false_body: Option<BlockOrStatement>,
+    pub src: String,
+    pub id: NodeID,
 }
 
 impl Display for IfStatement {
@@ -195,6 +197,7 @@ pub struct ForStatement {
     pub condition: Option<Expression>,
     pub loop_expression: Option<Box<Statement>>,
     pub body: BlockOrStatement,
+    pub src: String,
     pub id: NodeID,
 }
 
@@ -227,6 +230,7 @@ impl Display for ForStatement {
 pub struct WhileStatement {
     pub condition: Expression,
     pub body: BlockOrStatement,
+    pub src: String,
     pub id: NodeID,
 }
 
@@ -312,6 +316,8 @@ impl Display for Block {
 pub struct Return {
     pub function_return_parameters: NodeID,
     pub expression: Option<Expression>,
+    pub src: String,
+    pub id: NodeID,
 }
 
 impl Display for Return {

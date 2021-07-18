@@ -45,7 +45,9 @@ impl AstVisitor for UnrestrictedSetterFunctionsVisitor {
         }
 
         println!(
-            "\t{} {} {} ({}) is an unprotected setter function",
+            "\tL{}: {} {} {} ({}) is an unprotected setter function",
+
+            context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
 
             format!("{:?}", context.function_definition.visibility),
 

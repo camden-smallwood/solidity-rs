@@ -34,7 +34,11 @@ impl AstVisitor for RedundantImportsVisitor {
 
         match source_unit_info.imported_paths.get_mut(&context.import_directive.file) {
             Some(reported) => if !*reported {
-                println!("\tRedundant import specified: {}", context.import_directive.file);
+                println!(
+                    "\tL{}: Redundant import specified: `{}`",
+                    context.current_source_unit.source_line(context.import_directive.src.as_str()).unwrap(),
+                    context.import_directive.file
+                );
                 *reported = true;
             }
 

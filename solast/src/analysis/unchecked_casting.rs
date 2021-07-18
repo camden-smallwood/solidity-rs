@@ -36,7 +36,9 @@ impl AstVisitor for UncheckedCastingVisitor {
                 if type_descriptions == argument_type_descriptions {
                     match context.definition_node {
                         ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                            "\tThe {} {} in the `{}` {} contains a redundant cast: `{}`",
+                            "\tL{}: The {} {} in the `{}` {} contains a redundant cast: `{}`",
+
+                            context.current_source_unit.source_line(context.function_call.src.as_str()).unwrap(),
 
                             function_definition.visibility,
 
@@ -53,7 +55,9 @@ impl AstVisitor for UncheckedCastingVisitor {
                         ),
 
                         ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                            "\tThe `{}` modifier in the `{}` {} contains a redundant cast: `{}`",
+                            "\tL{}: The `{}` modifier in the `{}` {} contains a redundant cast: `{}`",
+
+                            context.current_source_unit.source_line(context.function_call.src.as_str()).unwrap(),
 
                             modifier_definition.name,
 

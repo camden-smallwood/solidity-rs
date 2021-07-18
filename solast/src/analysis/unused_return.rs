@@ -4,23 +4,24 @@ pub struct UnusedReturnVisitor;
 
 impl super::AstVisitor for UnusedReturnVisitor {
     fn visit_statement<'a, 'b>(&mut self, context: &mut super::StatementContext<'a, 'b>) -> std::io::Result<()> {
-        let referenced_declaration = match context.statement {
+        let (referenced_declaration, src) = match context.statement {
             Statement::ExpressionStatement(ExpressionStatement {
                 expression: Expression::FunctionCall(FunctionCall {
                     arguments,
                     expression,
+                    src,
                     ..
                 })
             }) if !arguments.is_empty() => match expression.root_expression() {
                 Some(&Expression::Identifier(Identifier {
                     referenced_declaration,
                     ..
-                })) => referenced_declaration,
+                })) => (referenced_declaration, src),
 
                 Some(&Expression::MemberAccess(MemberAccess {
                     referenced_declaration: Some(referenced_delcaration),
                     ..
-                })) => referenced_delcaration,
+                })) => (referenced_delcaration, src),
 
                 _ => return Ok(())
             }
@@ -36,7 +37,9 @@ impl super::AstVisitor for UnusedReturnVisitor {
                 
                 match context.definition_node {
                     ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                        "\tThe {} `{}` {} makes a call to the {} `{}` {}, ignoring the returned {}",
+                        "\tL{}: The {} `{}` {} makes a call to the {} `{}` {}, ignoring the returned {}",
+                        
+                        context.current_source_unit.source_line(src).unwrap(),
 
                         function_definition.visibility,
 
@@ -66,7 +69,9 @@ impl super::AstVisitor for UnusedReturnVisitor {
                     ),
 
                     ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                        "\tThe {} `{}` modifier makes a call to the {} `{}` {}, ignoring the returned {}",
+                        "\tL{}: The {} `{}` modifier makes a call to the {} `{}` {}, ignoring the returned {}",
+
+                        context.current_source_unit.source_line(src).unwrap(),
 
                         format!("{:?}", modifier_definition.visibility).to_lowercase(),
 

@@ -39,7 +39,10 @@ impl AstVisitor for UnusedStateVariablesVisitor {
 
                     if !referenced {
                         println!(
-                            "\tThe {} `{}.{}` {} state variable is never referenced",
+                            "\tL{}: The {} `{}.{}` {} state variable is never referenced",
+
+                            context.current_source_unit.source_line(variable_declaration.src.as_str()).unwrap(),
+
                             variable_declaration.visibility,
                             context.contract_definition.name,
                             variable_declaration.name,

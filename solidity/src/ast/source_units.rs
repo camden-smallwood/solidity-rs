@@ -49,11 +49,47 @@ pub struct SourceUnit {
     pub nodes: Vec<SourceUnitNode>,
     pub exported_symbols: Option<HashMap<String, Vec<NodeID>>>,
     pub absolute_path: Option<String>,
-    pub src: String,
     pub id: NodeID,
+
+    #[serde(skip_serializing)]
+    pub source: Option<String>,
 }
 
 impl SourceUnit {
+    pub fn source_line(&self, src: &str) -> Option<usize> {
+        let source = match self.source.as_ref() {
+            Some(source) => source.as_str(),
+            None => return None
+        };
+
+        let mut tokens = src.split(':');
+        let mut values: Vec<Option<usize>> = vec![];
+
+        while let Some(token) = tokens.next() {
+            values.push(if token.is_empty() {
+                None
+            } else {
+                Some(match token.parse() {
+                    Ok(value) => value,
+                    Err(error) => {
+                        println!("ERROR: {}: {}", error, token);
+                        return None
+                    }
+                })
+            });
+        }
+        
+        Some(
+            source[..match values.first() {
+                Some(&Some(value)) => value,
+                _ => return None
+            }]
+            .chars()
+            .filter(|&c| c == '\n')
+            .count() + 1
+        )
+    }
+
     pub fn pragma_directives(&self) -> Vec<&PragmaDirective> {
         let mut result = vec![];
 

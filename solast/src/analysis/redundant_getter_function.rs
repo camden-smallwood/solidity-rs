@@ -52,7 +52,8 @@ impl AstVisitor for RedundantGetterFunctionVisitor {
         }
 
         println!(
-            "\t{} {}.{} {} is a redundant getter function for the {} {}.{} state variable",
+            "\tL{}: {} {}.{} {} is a redundant getter function for the {} {}.{} state variable",
+            context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
             format!("{:?}", context.function_definition.visibility),
             context.contract_definition.name,
             context.function_definition.name,

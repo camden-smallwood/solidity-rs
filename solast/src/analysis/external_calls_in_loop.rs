@@ -27,7 +27,9 @@ impl AstVisitor for ExternalCallsInLoopVisitor {
     fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
         if self.makes_external_call {
             println!(
-                "\t{} {} {} makes an external call inside a loop",
+                "\tL{}: {} {} {} makes an external call inside a loop",
+
+                context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
 
                 format!("{:?}", context.function_definition.visibility),
 

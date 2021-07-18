@@ -41,7 +41,9 @@ impl AstVisitor for SafeERC20FunctionsVisitor {
 
         if function_info.transfer {
             println!(
-                "\t{} {} {} uses ERC20.transfer instead of SafeERC20.safeTransfer",
+                "\tL{}: {} {} {} uses `ERC20.transfer` instead of `SafeERC20.safeTransfer`",
+
+                context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
 
                 format!("{:?}", context.function_definition.visibility),
 
@@ -57,7 +59,9 @@ impl AstVisitor for SafeERC20FunctionsVisitor {
 
         if function_info.transfer_from {
             println!(
-                "\t{} {} {} uses ERC20.transferFrom instead of SafeERC20.safeTransferFrom",
+                "\tL{}: {} {} {} uses `ERC20.transferFrom` instead of `SafeERC20.safeTransferFrom`",
+
+                context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
 
                 format!("{:?}", context.function_definition.visibility),
 
@@ -73,7 +77,9 @@ impl AstVisitor for SafeERC20FunctionsVisitor {
 
         if function_info.approve {
             println!(
-                "\t{} {} {} uses ERC20.approve instead of SafeERC20.safeApprove",
+                "\tL{}: {} {} {} uses `ERC20.approve` instead of `SafeERC20.safeApprove`",
+
+                context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
 
                 format!("{:?}", context.function_definition.visibility),
 

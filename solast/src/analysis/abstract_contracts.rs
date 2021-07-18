@@ -27,7 +27,10 @@ impl AstVisitor for AbstractContractsVisitor {
 
         if let None | Some(false) = context.contract_definition.is_abstract {
             println!(
-                "\tThe constructor of the `{}` contract is marked {} instead of marking `{}` as abstract",
+                "\tL{}: The constructor of the `{}` contract is marked {} instead of marking `{}` as abstract",
+
+                context.current_source_unit.source_line(context.contract_definition.src.as_str()).unwrap(),
+
                 context.contract_definition.name,
                 context.function_definition.visibility,
                 context.contract_definition.name,

@@ -26,7 +26,10 @@ impl AstVisitor for InlineAssemblyVisitor {
             self.reported_functions.insert(function_definition.id);
 
             println!(
-                "\t{} {} {} contains inline assembly usage",
+                "\tL{}: {} {} {} contains inline assembly usage",
+
+                context.current_source_unit.source_line(context.inline_assembly.src.as_str()).unwrap(),
+
                 format!("{:?}", function_definition.visibility),
                 if let FunctionKind::Constructor = function_definition.kind {
                     format!("{}", context.contract_definition.name)
@@ -69,7 +72,10 @@ impl AstVisitor for InlineAssemblyVisitor {
                     value.parse()
                 } {
                     println!(
-                        "\t{} {} {} contains inline assembly which loads the free memory pointer",
+                        "\tL{}: {} {} {} contains inline assembly which loads the free memory pointer",
+
+                        context.current_source_unit.source_line(context.inline_assembly.src.as_str()).unwrap(),
+
                         format!("{:?}", function_definition.visibility),
                         if function_definition.kind == FunctionKind::Constructor {
                             format!("{}", context.contract_definition.name)
@@ -121,7 +127,10 @@ impl AstVisitor for InlineAssemblyVisitor {
                     value.parse()
                 } {
                     println!(
-                        "\t{} {} {} contains inline assembly which copies arbitrary function arguments",
+                        "\tL{}: {} {} {} contains inline assembly which copies arbitrary function arguments",
+
+                        context.current_source_unit.source_line(context.inline_assembly.src.as_str()).unwrap(),
+                        
                         format!("{:?}", function_definition.visibility),
                         if function_definition.kind == FunctionKind::Constructor {
                             format!("{}", context.contract_definition.name)

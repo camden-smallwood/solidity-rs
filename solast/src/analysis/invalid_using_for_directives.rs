@@ -103,7 +103,9 @@ impl AstVisitor for InvalidUsingForDirectivesVisitor {
 
         if !usable_function_found {
             println!(
-                "\tThe `{}` {} contains an invalid using-for directive: `{}`",
+                "\tL{}: The `{}` {} contains an invalid using-for directive: `{}`",
+
+                context.current_source_unit.source_line(context.using_for_directive.src.as_str()).unwrap(),
 
                 context.contract_definition.name,
                 context.contract_definition.kind,

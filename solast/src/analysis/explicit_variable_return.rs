@@ -52,8 +52,10 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                 match context.definition_node {
                                     solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
                                         println!(
-                                            "\tThe {} `{}` {} returns the local `{}` variable explicitly",
-                                            
+                                            "\tL{}: The {} `{}` {} returns the local `{}` variable explicitly",
+                    
+                                            context.current_source_unit.source_line(return_statement.src.as_str()).unwrap(),
+
                                             function_definition.visibility,
 
                                             if function_definition.name.is_empty() {
@@ -73,7 +75,9 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
 
                                     solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
                                         println!(
-                                            "\tThe {} `{}` modifier returns the local `{}` variable explicitly",
+                                            "\tL{}: The {} `{}` modifier returns the local `{}` variable explicitly",
+
+                                            context.current_source_unit.source_line(return_statement.src.as_str()).unwrap(),
 
                                             format!("{:?}", modifier_definition.visibility).to_lowercase(),
 
@@ -127,8 +131,10 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                 match context.definition_node {
                                     solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
                                         println!(
-                                            "\tThe {} `{}` {} returns the local {} variables explicitly",
+                                            "\tL{}: The {} `{}` {} returns the local {} variables explicitly",
                                             
+                                            context.current_source_unit.source_line(return_statement.src.as_str()).unwrap(),
+
                                             function_definition.visibility,
 
                                             if function_definition.name.is_empty() {
@@ -148,7 +154,9 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
 
                                     solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
                                         println!(
-                                            "\tThe {} `{}` modifier returns the local {} variables explicitly",
+                                            "\tL{}: The {} `{}` modifier returns the local {} variables explicitly",
+
+                                            context.current_source_unit.source_line(return_statement.src.as_str()).unwrap(),
 
                                             format!("{:?}", modifier_definition.visibility),
 

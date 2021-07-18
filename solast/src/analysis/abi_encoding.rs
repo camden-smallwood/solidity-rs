@@ -82,7 +82,9 @@ impl AstVisitor for AbiEncodingVisitor {
         if any_arguments_variably_sized {
             match context.definition_node {
                 ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                    "\tThe {} {} in the `{}` {} contains the potential for hash collisions: `{}`",
+                    "\tL{}: The {} {} in the `{}` {} contains the potential for hash collisions: `{}`",
+
+                    context.current_source_unit.source_line(context.function_call.src.as_str()).unwrap(),
 
                     function_definition.visibility,
     
@@ -99,8 +101,10 @@ impl AstVisitor for AbiEncodingVisitor {
                 ),
 
                 ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                    "\tThe `{}` modifier in the `{}` {} contains the potential for hash collisions: `{}`",
+                    "\tL{}: The `{}` modifier in the `{}` {} contains the potential for hash collisions: `{}`",
     
+                    context.current_source_unit.source_line(context.function_call.src.as_str()).unwrap(),
+
                     modifier_definition.name,
     
                     context.contract_definition.name,

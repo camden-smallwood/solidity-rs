@@ -8,6 +8,7 @@ impl AstVisitor for SelfdestructUsageVisitor {
         if let Statement::ExpressionStatement(ExpressionStatement {
             expression: Expression::FunctionCall(FunctionCall {
                 expression,
+                src,
                 ..
             })
         }) = context.statement {
@@ -15,8 +16,10 @@ impl AstVisitor for SelfdestructUsageVisitor {
                 if name == "selfdestruct" {
                     match context.definition_node {
                         ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                            "\tThe {} {} in the `{}` {} contains `selfdestruct` usage",
+                            "\tL{}: The {} {} in the `{}` {} contains `selfdestruct` usage",
             
+                            context.current_source_unit.source_line(src.as_str()).unwrap(),
+
                             function_definition.visibility,
             
                             if let FunctionKind::Constructor = function_definition.kind {
@@ -30,8 +33,10 @@ impl AstVisitor for SelfdestructUsageVisitor {
                         ),
             
                         ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                            "\tThe {} `{}` modifier in the `{}` {} contains `selfdestruct` usage",
+                            "\tL{}: The {} `{}` modifier in the `{}` {} contains `selfdestruct` usage",
             
+                            context.current_source_unit.source_line(src.as_str()).unwrap(),
+
                             modifier_definition.visibility,
                             modifier_definition.name,
             

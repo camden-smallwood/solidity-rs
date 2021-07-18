@@ -58,7 +58,9 @@ impl AstVisitor for MissingReturnVisitor {
 
         if assigned.iter().all(|assigned| !assigned) {
             println!(
-                "\t{} {} {} is missing an explicit return statement",
+                "\tL{}: {} {} {} is missing an explicit return statement",
+
+                context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
 
                 format!("{:?}", context.function_definition.visibility),
 

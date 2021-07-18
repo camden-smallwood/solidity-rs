@@ -14,7 +14,9 @@ impl AstVisitor for AssignmentComparisonsVisitor {
         if context.function_call.arguments.first().unwrap().contains_operation("=") {
             match context.definition_node {
                 ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                    "\tThe {} {} in the `{}` {} contains a call to `{}` that performs an assignment",
+                    "\tL{}: The {} {} in the `{}` {} contains a call to `{}` that performs an assignment: `{}`",
+
+                    context.current_source_unit.source_line(context.function_call.src.as_str()).unwrap(),
 
                     function_definition.visibility,
 
@@ -27,17 +29,24 @@ impl AstVisitor for AssignmentComparisonsVisitor {
                     context.contract_definition.name,
                     context.contract_definition.kind,
 
-                    called_function_name
+                    called_function_name,
+
+                    context.function_call
                 ),
 
                 ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                    "\tThe `{}` modifier in the `{}` {} contains a call to `{}` that performs an assignment",
+                    "\tL{}: The `{}` modifier in the `{}` {} contains a call to `{}` that performs an assignment: `{}`",
+
+                    context.current_source_unit.source_line(context.function_call.src.as_str()).unwrap(),
+
                     modifier_definition.name,
 
                     context.contract_definition.name,
                     context.contract_definition.kind,
 
-                    called_function_name
+                    called_function_name,
+
+                    context.function_call
                 ),
 
                 _ => ()
@@ -51,7 +60,9 @@ impl AstVisitor for AssignmentComparisonsVisitor {
         if context.if_statement.condition.contains_operation("=") {
             match context.definition_node {
                 ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                    "\tThe {} {} in the `{}` {} contains an if statement with a condition that performs an assignment",
+                    "\tL{}: The {} {} in the `{}` {} contains an if statement with a condition that performs an assignment: `{}`",
+                    
+                    context.current_source_unit.source_line(context.if_statement.src.as_str()).unwrap(),
 
                     function_definition.visibility,
 
@@ -62,15 +73,22 @@ impl AstVisitor for AssignmentComparisonsVisitor {
                     },
 
                     context.contract_definition.name,
-                    context.contract_definition.kind
+                    context.contract_definition.kind,
+
+                    context.if_statement
                 ),
 
                 ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                    "\tThe `{}` modifier in the `{}` {} contains an if statement with a condition that performs an assignment",
+                    "\tL{}: The `{}` modifier in the `{}` {} contains an if statement with a condition that performs an assignment: `{}`",
+                    
+                    context.current_source_unit.source_line(context.if_statement.src.as_str()).unwrap(),
+
                     modifier_definition.name,
 
                     context.contract_definition.name,
-                    context.contract_definition.kind
+                    context.contract_definition.kind,
+
+                    context.if_statement
                 ),
 
                 _ => ()
@@ -85,8 +103,10 @@ impl AstVisitor for AssignmentComparisonsVisitor {
             if condition.contains_operation("=") {
                 match context.definition_node {
                     ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                        "\tThe {} {} in the `{}` {} contains a for statement with a condition that performs an assignment",
+                        "\tL{}: The {} {} in the `{}` {} contains a for statement with a condition that performs an assignment: `{}`",
     
+                        context.current_source_unit.source_line(context.for_statement.src.as_str()).unwrap(),
+
                         function_definition.visibility,
     
                         if let FunctionKind::Constructor = function_definition.kind {
@@ -96,15 +116,22 @@ impl AstVisitor for AssignmentComparisonsVisitor {
                         },
     
                         context.contract_definition.name,
-                        context.contract_definition.kind
+                        context.contract_definition.kind,
+
+                        context.for_statement
                     ),
     
                     ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                        "\tThe `{}` modifier in the `{}` {} contains a for statement with a condition that performs an assignment",
+                        "\tL{}: The `{}` modifier in the `{}` {} contains a for statement with a condition that performs an assignment: `{}`",
+                        
+                        context.current_source_unit.source_line(context.for_statement.src.as_str()).unwrap(),
+
                         modifier_definition.name,
     
                         context.contract_definition.name,
-                        context.contract_definition.kind
+                        context.contract_definition.kind,
+
+                        context.for_statement
                     ),
     
                     _ => ()
@@ -119,7 +146,9 @@ impl AstVisitor for AssignmentComparisonsVisitor {
         if context.while_statement.condition.contains_operation("=") {
             match context.definition_node {
                 ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                    "\tThe {} {} in the `{}` {} contains a while statement with a condition that performs an assignment",
+                    "\tL{}: The {} {} in the `{}` {} contains a while statement with a condition that performs an assignment: `{}`",
+                    
+                    context.current_source_unit.source_line(context.while_statement.src.as_str()).unwrap(),
 
                     function_definition.visibility,
 
@@ -130,15 +159,22 @@ impl AstVisitor for AssignmentComparisonsVisitor {
                     },
 
                     context.contract_definition.name,
-                    context.contract_definition.kind
+                    context.contract_definition.kind,
+
+                    context.while_statement
                 ),
 
                 ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                    "\tThe `{}` modifier in the `{}` {} contains a while statement with a condition that performs an assignment",
+                    "\tL{}: The `{}` modifier in the `{}` {} contains a while statement with a condition that performs an assignment: `{}`",
+
+                    context.current_source_unit.source_line(context.while_statement.src.as_str()).unwrap(),
+
                     modifier_definition.name,
 
                     context.contract_definition.name,
-                    context.contract_definition.kind
+                    context.contract_definition.kind,
+
+                    context.while_statement
                 ),
 
                 _ => ()
@@ -152,7 +188,9 @@ impl AstVisitor for AssignmentComparisonsVisitor {
         if context.conditional.condition.contains_operation("=") {
             match context.definition_node {
                 ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                    "\tThe {} {} in the `{}` {} contains a conditional expression with a condition that performs an assignment",
+                    "\tL{}: The {} {} in the `{}` {} contains a conditional expression with a condition that performs an assignment: `{}`",
+
+                    context.current_source_unit.source_line(context.conditional.src.as_str()).unwrap(),
 
                     function_definition.visibility,
 
@@ -163,15 +201,22 @@ impl AstVisitor for AssignmentComparisonsVisitor {
                     },
 
                     context.contract_definition.name,
-                    context.contract_definition.kind
+                    context.contract_definition.kind,
+
+                    context.conditional
                 ),
 
                 ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                    "\tThe `{}` modifier in the `{}` {} contains a conditional expression with a condition that performs an assignment",
+                    "\tL{}: The `{}` modifier in the `{}` {} contains a conditional expression with a condition that performs an assignment: `{}`",
+
+                    context.current_source_unit.source_line(context.conditional.src.as_str()).unwrap(),
+
                     modifier_definition.name,
 
                     context.contract_definition.name,
-                    context.contract_definition.kind
+                    context.contract_definition.kind,
+
+                    context.conditional
                 ),
 
                 _ => ()
