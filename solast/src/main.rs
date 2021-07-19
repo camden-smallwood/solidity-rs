@@ -64,7 +64,7 @@ fn main() -> io::Result<()> {
 
         if arg.starts_with("--") {
             match &arg.as_str()[2..] {
-                "todo-list" => {
+                "todo-list" | "todo_list" => {
                     should_print_todo_list = true;
                 }
 

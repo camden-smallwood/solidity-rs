@@ -1,7 +1,7 @@
 # SolAST
 Solidity 0.8.X AST parsing and analysis in Rust.
 
-Some legacy versions of Solidity are inherently supported, but the focus is 0.8.X and forward.
+Some legacy versions of Solidity are inherently supported (0.5.X-0.7.X), but the focus is primarily on Solidity 0.8.X and above.
 
 ## Analyzers
 
@@ -47,7 +47,7 @@ Some legacy versions of Solidity are inherently supported, but the focus is 0.8.
 ## Usage
 
 ```
-cargo run --release -- [--analyzer_name] [--analyzer_name] [--contract=<contract_name>] <project_directory>
+cargo run --release -- [--todo_list] [--contract=<contract_name>] [--analyzer_name1] [--analyzer_nameN] <project_directory>
 ```
 
 Currently, SolAST requires utilization of either a [truffle](https://www.trufflesuite.com/) project or a [brownie](https://eth-brownie.readthedocs.io/en/stable/) project.
