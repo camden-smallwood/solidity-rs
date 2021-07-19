@@ -1,3 +1,4 @@
+use solidity::ast::*;
 use std::{collections::HashSet, env, fs::File, io, path::PathBuf};
 
 mod analysis;
@@ -5,7 +6,7 @@ mod brownie;
 mod truffle;
 mod todo_list;
 
-const VISITOR_TYPES: &'static [(&'static str, fn() -> Box<dyn solidity::ast::AstVisitor>)] = &[
+const VISITOR_TYPES: &'static [(&'static str, fn() -> Box<dyn AstVisitor>)] = &[
     ("no_spdx_identifier", || Box::new(analysis::NoSpdxIdentifierVisitor)),
     ("floating_solidity_version", || Box::new(analysis::FloatingSolidityVersionVisitor)),
     ("node_modules_imports", || Box::new(analysis::NodeModulesImportsVisitor)),
@@ -105,7 +106,7 @@ fn main() -> io::Result<()> {
         return Err(io::Error::new(io::ErrorKind::NotFound, path.to_string_lossy()))
     }
     
-    let mut source_units: Vec<solidity::ast::SourceUnit> = vec![];
+    let mut source_units: Vec<SourceUnit> = vec![];
 
     let brownie_config_path = path.join("brownie-config.yaml");
     let truffle_config_path = path.join("truffle-config.js");
@@ -201,7 +202,7 @@ fn main() -> io::Result<()> {
         todo_list::print(source_units.as_slice());
     }
 
-    let mut visitors: Vec<Box<dyn solidity::ast::AstVisitor>> = vec![
+    let mut visitors: Vec<Box<dyn AstVisitor>> = vec![
         Box::new(analysis::SourceUnitVisitor::default()),
     ];
 
@@ -211,7 +212,7 @@ fn main() -> io::Result<()> {
         }
     }
 
-    let mut data = solidity::ast::AstVisitorData {
+    let mut data = AstVisitorData {
         analyzed_paths: HashSet::new(),
         visitors
     };
@@ -241,12 +242,11 @@ fn main() -> io::Result<()> {
         // Visit the source unit
         //
 
-        let mut context = solidity::ast::SourceUnitContext {
+        let mut context = SourceUnitContext {
             source_units: source_units.as_slice(),
             current_source_unit: source_unit
         };
 
-        use solidity::ast::AstVisitor;
         data.visit_source_unit(&mut context)?;
         data.leave_source_unit(&mut context)?;
     }

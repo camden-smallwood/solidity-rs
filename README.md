@@ -46,6 +46,10 @@ Some legacy versions of Solidity are inherently supported, but the focus is 0.8.
 
 ## Usage
 
+```
+cargo run --release -- [--analyzer_name] [--analyzer_name] [--contract=<contract_name>] <project_directory>
+```
+
 Currently, SolAST requires utilization of either a [truffle](https://www.trufflesuite.com/) project or a [brownie](https://eth-brownie.readthedocs.io/en/stable/) project.
 
 Please file an issue if you would like support for another build system.
