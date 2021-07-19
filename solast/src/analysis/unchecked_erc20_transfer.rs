@@ -1,9 +1,5 @@
-use super::{AstVisitor, BlockContext, FunctionDefinitionContext};
 use solidity::ast::*;
-use std::{
-    collections::{HashMap, HashSet},
-    io,
-};
+use std::{collections::{HashMap, HashSet}, io};
 
 struct BlockInfo {
     verified_declarations: HashSet<NodeID>,
@@ -96,7 +92,7 @@ impl AstVisitor for UncheckedERC20TransferVisitor {
         Ok(())
     }
 
-    fn visit_if_statement<'a, 'b>(&mut self, context: &mut super::IfStatementContext<'a, 'b>) -> io::Result<()> {
+    fn visit_if_statement<'a, 'b>(&mut self, context: &mut IfStatementContext<'a, 'b>) -> io::Result<()> {
         let block = match &context.if_statement.true_body {
             solidity::ast::BlockOrStatement::Block(block) => block,
             solidity::ast::BlockOrStatement::Statement(_) => return Ok(()),
@@ -163,7 +159,7 @@ impl AstVisitor for UncheckedERC20TransferVisitor {
         Ok(())
     }
 
-    fn visit_function_call<'a, 'b>(&mut self, context: &mut super::FunctionCallContext<'a, 'b>) -> io::Result<()> {
+    fn visit_function_call<'a, 'b>(&mut self, context: &mut FunctionCallContext<'a, 'b>) -> io::Result<()> {
         let definition_id = match context.definition_node {
             solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
             solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,

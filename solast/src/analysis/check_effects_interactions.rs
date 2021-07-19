@@ -1,4 +1,3 @@
-use super::{AstVisitor, FunctionDefinitionContext, IdentifierContext, StatementContext};
 use solidity::ast::*;
 use std::{collections::HashMap, io};
 
@@ -138,7 +137,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
         Ok(())
     }
 
-    fn visit_member_access<'a, 'b>(&mut self, context: &mut super::MemberAccessContext<'a, 'b>) -> io::Result<()> {
+    fn visit_member_access<'a, 'b>(&mut self, context: &mut MemberAccessContext<'a, 'b>) -> io::Result<()> {
         if self.makes_external_call {
             return Ok(())
         }
@@ -157,7 +156,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
         Ok(())
     }
 
-    fn visit_assignment<'a, 'b>(&mut self, context: &mut super::AssignmentContext<'a, 'b>) -> io::Result<()> {
+    fn visit_assignment<'a, 'b>(&mut self, context: &mut AssignmentContext<'a, 'b>) -> io::Result<()> {
         let function_definition = match context.definition_node {
             ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition,
             _ => return Ok(())

@@ -1,4 +1,3 @@
-use super::{AstVisitor, ImportDirectiveContext};
 use solidity::ast::*;
 use std::collections::HashMap;
 
@@ -19,7 +18,7 @@ impl Default for RedundantImportsVisitor {
 }
 
 impl AstVisitor for RedundantImportsVisitor {
-    fn visit_source_unit<'a>(&mut self, context: &mut super::SourceUnitContext<'a>) -> std::io::Result<()> {
+    fn visit_source_unit<'a>(&mut self, context: &mut SourceUnitContext<'a>) -> std::io::Result<()> {
         if !self.source_unit_info.contains_key(&context.current_source_unit.id) {
             self.source_unit_info.insert(context.current_source_unit.id, SourceUnitInfo {
                 imported_paths: HashMap::new(),

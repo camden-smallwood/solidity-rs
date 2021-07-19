@@ -1,6 +1,5 @@
-use solidity::ast::{ContractDefinitionNode, ExpressionStatement, Statement};
+use solidity::ast::*;
 use std::io;
-use super::{AstVisitor, StatementContext};
 
 pub struct IneffectualStatementsVisitor;
 

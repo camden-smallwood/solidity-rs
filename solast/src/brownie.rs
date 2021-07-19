@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use solidity::ast::SourceUnit;
+use solidity::ast::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]

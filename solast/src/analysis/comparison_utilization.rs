@@ -1,10 +1,10 @@
-use super::AstVisitor;
+use solidity::ast::*;
 use std::io;
 
 pub struct ComparisonUtilizationVisitor;
 
 impl AstVisitor for ComparisonUtilizationVisitor {
-    fn visit_if_statement<'a, 'b>(&mut self, _context: &mut super::IfStatementContext<'a, 'b>) -> io::Result<()> {
+    fn visit_if_statement<'a, 'b>(&mut self, _context: &mut IfStatementContext<'a, 'b>) -> io::Result<()> {
         //
         // TODO:
         //

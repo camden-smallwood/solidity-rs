@@ -1,4 +1,4 @@
-use crate::ast::{Block, Documentation, Expression, ModifierInvocation, NodeID, OverrideSpecifier, StateMutability, VariableDeclaration, Visibility};
+use crate::ast::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
@@ -145,4 +145,12 @@ impl Display for FunctionDefinition {
             None => f.write_str(";"),
         }
     }
+}
+
+pub struct FunctionDefinitionContext<'a> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub function_definition: &'a FunctionDefinition,
 }

@@ -1,4 +1,4 @@
-use super::AstVisitor;
+use solidity::ast::*;
 
 pub struct RedundantStateVariableAccessVisitor;
 

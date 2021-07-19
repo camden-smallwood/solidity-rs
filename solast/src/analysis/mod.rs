@@ -37,7 +37,6 @@ mod unpaid_payable_functions;
 mod unreferenced_state_variables;
 mod unrestricted_setter_functions;
 mod unused_return;
-mod visitor;
 
 pub use self::{
     abi_encoding::*, abstract_contracts::*, assert_usage::*, assignment_comparisons::*,
@@ -52,5 +51,5 @@ pub use self::{
     state_variable_shadowing::*, storage_array_loop::*, tight_variable_packing::*,
     unchecked_casting::*, unchecked_erc20_transfer::*, unnecessary_pragmas::*,
     unpaid_payable_functions::*, unreferenced_state_variables::*, unrestricted_setter_functions::*,
-    unused_return::*, visitor::*,
+    unused_return::*,
 };

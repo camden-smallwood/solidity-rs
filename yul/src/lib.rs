@@ -4,18 +4,6 @@ use std::collections::HashMap;
 pub type NodeID = i64;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct InlineAssembly {
-    #[serde(rename = "AST")]
-    pub ast: Option<YulBlock>,
-    pub evm_version: Option<String>,
-    pub external_references: Vec<ExternalReference>,
-    pub operations: Option<String>,
-    pub src: String,
-    pub id: NodeID,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum ExternalReference {
     Untagged(ExternalReferenceData),

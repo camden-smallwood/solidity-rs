@@ -1,4 +1,3 @@
-use crate::analysis::AstVisitor;
 use solidity::ast::*;
 use std::io;
 
@@ -83,7 +82,7 @@ impl UnpaidPayableFunctionsVisitor {
 }
 
 impl AstVisitor for UnpaidPayableFunctionsVisitor {
-    fn visit_function_call<'a, 'b>(&mut self, context: &mut super::FunctionCallContext<'a, 'b>) -> io::Result<()> {
+    fn visit_function_call<'a, 'b>(&mut self, context: &mut FunctionCallContext<'a, 'b>) -> io::Result<()> {
         match context.function_call.expression.as_ref() {
             solidity::ast::Expression::Identifier(identifier) => {
                 for source_unit in context.source_units.iter() {

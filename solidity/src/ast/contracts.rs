@@ -142,6 +142,13 @@ impl Display for UsingForDirective {
     }
 }
 
+pub struct UsingForDirectiveContext<'a> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub using_for_directive: &'a UsingForDirective,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ContractDefinition {
@@ -461,4 +468,10 @@ impl Display for ContractDefinition {
 
         Ok(())
     }
+}
+
+pub struct ContractDefinitionContext<'a> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
 }

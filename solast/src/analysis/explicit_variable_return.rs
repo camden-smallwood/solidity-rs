@@ -1,5 +1,4 @@
-use super::{AstVisitor, StatementContext};
-use solidity::ast::NodeID;
+use solidity::ast::*;
 use std::{collections::HashSet, io};
 
 pub struct ExplicitVariableReturnVisitor{

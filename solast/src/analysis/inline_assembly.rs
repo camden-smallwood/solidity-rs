@@ -1,5 +1,4 @@
-use super::AstVisitor;
-use solidity::ast::{ContractDefinitionNode, FunctionKind, NodeID,};
+use solidity::ast::*;
 use std::{collections::HashSet, io};
 use yul::{YulExpression, YulFunctionCall, YulIdentifier, YulLiteral};
 
@@ -16,7 +15,7 @@ impl Default for InlineAssemblyVisitor {
 }
 
 impl AstVisitor for InlineAssemblyVisitor {
-    fn visit_inline_assembly<'a, 'b>(&mut self, context: &mut super::InlineAssemblyContext<'a, 'b>) -> io::Result<()> {
+    fn visit_inline_assembly<'a, 'b>(&mut self, context: &mut InlineAssemblyContext<'a, 'b>) -> io::Result<()> {
         let function_definition = match context.definition_node {
             ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition,
             _ => return Ok(()),
@@ -43,7 +42,7 @@ impl AstVisitor for InlineAssemblyVisitor {
         Ok(())
     }
 
-    fn visit_yul_function_call<'a, 'b, 'c>(&mut self, context: &mut super::YulFunctionCallContext<'a, 'b, 'c>) -> io::Result<()> {
+    fn visit_yul_function_call<'a, 'b, 'c>(&mut self, context: &mut YulFunctionCallContext<'a, 'b, 'c>) -> io::Result<()> {
         let function_definition = match context.definition_node {
             ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition,
             _ => return Ok(()),

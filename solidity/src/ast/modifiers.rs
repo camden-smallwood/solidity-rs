@@ -1,4 +1,4 @@
-use crate::ast::{Block, Documentation, Expression, IdentifierPath, NodeID, OverrideSpecifier, ParameterList, Visibility};
+use crate::ast::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
@@ -43,6 +43,14 @@ impl Display for ModifierDefinition {
     }
 }
 
+pub struct ModifierDefinitionContext<'a> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub modifier_definition: &'a ModifierDefinition,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[serde(rename_all = "camelCase")]
 pub enum ModifierInvocationKind {
@@ -80,4 +88,12 @@ impl Display for ModifierInvocation {
 
         Ok(())
     }
+}
+
+pub struct ModifierInvocationContext<'a> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub modifier_invocation: &'a ModifierInvocation,
 }

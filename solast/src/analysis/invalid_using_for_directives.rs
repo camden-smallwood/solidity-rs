@@ -1,4 +1,3 @@
-use super::{AstVisitor, UsingForDirectiveContext};
 use solidity::ast::*;
 
 pub struct InvalidUsingForDirectivesVisitor;

@@ -1,4 +1,4 @@
-use super::{AstVisitor, PragmaDirectiveContext};
+use solidity::ast::*;
 use std::io;
 
 pub struct FloatingSolidityVersionVisitor;

@@ -1,5 +1,4 @@
-use super::{AssignmentContext, AstVisitor, FunctionDefinitionContext};
-use solidity::ast::{BlockOrStatement, ContractDefinitionNode, NodeID};
+use solidity::ast::*;
 use std::{collections::{HashMap, HashSet}, io};
 
 struct FunctionInfo {
@@ -97,7 +96,7 @@ impl AstVisitor for MissingReturnVisitor {
         Ok(())
     }
 
-    fn visit_yul_assignment<'a, 'b, 'c>(&mut self, context: &mut super::YulAssignmentContext<'a, 'b, 'c>) -> io::Result<()> {
+    fn visit_yul_assignment<'a, 'b, 'c>(&mut self, context: &mut YulAssignmentContext<'a, 'b, 'c>) -> io::Result<()> {
         let function_definition = match context.definition_node {
             ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition,
             _ => return Ok(())

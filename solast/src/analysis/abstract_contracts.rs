@@ -1,5 +1,4 @@
-use super::{AstVisitor, FunctionDefinitionContext};
-use solidity::ast::{FunctionKind, Visibility};
+use solidity::ast::*;
 
 pub struct AbstractContractsVisitor;
 

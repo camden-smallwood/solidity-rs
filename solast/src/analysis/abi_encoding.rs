@@ -1,4 +1,3 @@
-use super::{AstVisitor, FunctionCallContext, VariableDeclarationContext};
 use solidity::ast::*;
 use std::collections::HashMap;
 

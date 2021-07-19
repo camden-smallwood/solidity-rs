@@ -1,4 +1,3 @@
-use super::{AstVisitor, FunctionDefinitionContext};
 use solidity::ast::*;
 use std::{collections::HashMap, io};
 
@@ -96,7 +95,7 @@ impl AstVisitor for SafeERC20FunctionsVisitor {
         Ok(())
     }
 
-    fn visit_function_call<'a, 'b>(&mut self, context: &mut super::FunctionCallContext<'a, 'b>) -> io::Result<()> {
+    fn visit_function_call<'a, 'b>(&mut self, context: &mut FunctionCallContext<'a, 'b>) -> io::Result<()> {
         let definition_id = match context.definition_node {
             solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
             solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,

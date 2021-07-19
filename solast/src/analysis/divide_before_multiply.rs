@@ -1,6 +1,5 @@
-use std::io;
-use super::{AstVisitor, BinaryOperationContext};
 use solidity::ast::*;
+use std::io;
 
 pub struct DivideBeforeMultiplyVisitor;
 

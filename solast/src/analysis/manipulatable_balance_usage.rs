@@ -1,4 +1,3 @@
-use super::{AstVisitor, FunctionCallContext, MemberAccessContext};
 use solidity::ast::*;
 use std::io;
 

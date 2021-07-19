@@ -1,9 +1,5 @@
-use super::{AstVisitor, ForStatementContext, FunctionDefinitionContext, VariableDeclarationContext};
 use solidity::ast::*;
-use std::{
-    collections::{HashMap, HashSet},
-    io,
-};
+use std::{collections::{HashMap, HashSet}, io};
 
 struct FunctionInfo {
     loops_over_storage_array: bool,
@@ -27,9 +23,7 @@ impl StorageArrayLoopVisitor {
     fn expression_contains_storage_array_length(&self, expression: &solidity::ast::Expression) -> bool {
         match expression {
             solidity::ast::Expression::BinaryOperation(binary_operation) => {
-                if self.expression_contains_storage_array_length(
-                    binary_operation.left_expression.as_ref(),
-                ) {
+                if self.expression_contains_storage_array_length(binary_operation.left_expression.as_ref()) {
                     return true;
                 }
 
@@ -39,9 +33,7 @@ impl StorageArrayLoopVisitor {
             }
 
             solidity::ast::Expression::Conditional(conditional) => {
-                if self
-                    .expression_contains_storage_array_length(conditional.true_expression.as_ref())
-                {
+                if self.expression_contains_storage_array_length(conditional.true_expression.as_ref()) {
                     return true;
                 }
 
@@ -166,7 +158,7 @@ impl AstVisitor for StorageArrayLoopVisitor {
         Ok(())
     }
 
-    fn visit_while_statement<'a, 'b>(&mut self, context: &mut super::WhileStatementContext<'a, 'b>) -> io::Result<()> {
+    fn visit_while_statement<'a, 'b>(&mut self, context: &mut WhileStatementContext<'a, 'b>) -> io::Result<()> {
         let definition_id = match context.definition_node {
             solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
             solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,

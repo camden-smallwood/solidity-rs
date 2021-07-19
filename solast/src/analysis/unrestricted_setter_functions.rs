@@ -1,9 +1,5 @@
-use super::{AstVisitor, FunctionDefinitionContext};
+use solidity::ast::*;
 use std::io;
-
-use solidity::ast::{
-    Expression, ExpressionStatement, FunctionKind, StateMutability, Statement, Visibility
-};
 
 pub struct UnrestrictedSetterFunctionsVisitor;
 

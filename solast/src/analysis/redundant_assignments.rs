@@ -1,4 +1,3 @@
-use super::AstVisitor;
 use solidity::ast::*;
 
 pub struct RedundantAssignmentsVisitor;
@@ -9,7 +8,7 @@ pub struct RedundantAssignmentsVisitor;
 //
 
 impl AstVisitor for RedundantAssignmentsVisitor {
-    fn visit_assignment<'a, 'b>(&mut self, context: &mut super::AssignmentContext<'a, 'b>) -> std::io::Result<()> {
+    fn visit_assignment<'a, 'b>(&mut self, context: &mut AssignmentContext<'a, 'b>) -> std::io::Result<()> {
         if let Expression::TupleExpression(tuple_expression) = context.assignment.left_hand_side.as_ref() {
             let mut tuple_component_ids: Vec<Vec<NodeID>> = vec![];
 

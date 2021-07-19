@@ -1,10 +1,9 @@
-use super::AstVisitor;
 use solidity::ast::*;
 
 pub struct SelfdestructUsageVisitor;
 
 impl AstVisitor for SelfdestructUsageVisitor {
-    fn visit_statement<'a, 'b>(&mut self, context: &mut super::StatementContext<'a, 'b>) -> std::io::Result<()> {
+    fn visit_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> std::io::Result<()> {
         if let Statement::ExpressionStatement(ExpressionStatement {
             expression: Expression::FunctionCall(FunctionCall {
                 expression,

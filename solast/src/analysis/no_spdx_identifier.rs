@@ -1,4 +1,4 @@
-use super::{AstVisitor, SourceUnitContext};
+use solidity::ast::*;
 use std::io;
 
 pub struct NoSpdxIdentifierVisitor;

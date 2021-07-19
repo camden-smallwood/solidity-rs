@@ -2,8 +2,8 @@ use solidity::ast::*;
 
 pub struct UnusedReturnVisitor;
 
-impl super::AstVisitor for UnusedReturnVisitor {
-    fn visit_statement<'a, 'b>(&mut self, context: &mut super::StatementContext<'a, 'b>) -> std::io::Result<()> {
+impl AstVisitor for UnusedReturnVisitor {
+    fn visit_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> std::io::Result<()> {
         let (referenced_declaration, src) = match context.statement {
             Statement::ExpressionStatement(ExpressionStatement {
                 expression: Expression::FunctionCall(FunctionCall {

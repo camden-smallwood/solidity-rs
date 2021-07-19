@@ -1,4 +1,3 @@
-use super::{AstVisitor, BinaryOperationContext};
 use primitive_types::U512;
 use solidity::ast::*;
 use std::{io, str::FromStr};

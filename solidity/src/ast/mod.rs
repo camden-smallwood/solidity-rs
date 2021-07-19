@@ -13,11 +13,12 @@ mod statements;
 mod structures;
 mod types;
 mod variables;
+mod visitor;
 
 pub use self::{
     contracts::*, documentation::*, enumerations::*, errors::*, events::*, expressions::*,
     functions::*, identifiers::*, literals::*, modifiers::*, source_units::*, statements::*,
-    structures::*, types::*, variables::*,
+    structures::*, types::*, variables::*, visitor::*,
 };
 
 use serde::{Deserialize, Serialize};

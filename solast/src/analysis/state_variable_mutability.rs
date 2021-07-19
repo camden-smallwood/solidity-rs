@@ -1,4 +1,3 @@
-use super::AstVisitor;
 use solidity::ast::*;
 use std::{collections::{HashMap, HashSet}, io};
 
@@ -31,7 +30,7 @@ impl Default for StateVariableMutabilityVisitor {
 //
 
 impl AstVisitor for StateVariableMutabilityVisitor {
-    fn visit_contract_definition<'a>(&mut self, context: &mut super::ContractDefinitionContext<'a>) -> io::Result<()> {
+    fn visit_contract_definition<'a>(&mut self, context: &mut ContractDefinitionContext<'a>) -> io::Result<()> {
         if !self.contract_info.contains_key(&context.contract_definition.id) {
             self.contract_info.insert(context.contract_definition.id, ContractInfo {
                 variable_info: HashMap::new(),
@@ -42,7 +41,7 @@ impl AstVisitor for StateVariableMutabilityVisitor {
         Ok(())
     }
 
-    fn leave_contract_definition<'a>(&mut self, context: &mut super::ContractDefinitionContext<'a>) -> io::Result<()> {
+    fn leave_contract_definition<'a>(&mut self, context: &mut ContractDefinitionContext<'a>) -> io::Result<()> {
         if let Some(contract_info) = self.contract_info.get(&context.contract_definition.id) {
             for (&id, variable_info) in contract_info.variable_info.iter() {
                 if let Some(variable_declaration) = context.contract_definition.variable_declaration(id) {
@@ -70,7 +69,7 @@ impl AstVisitor for StateVariableMutabilityVisitor {
         Ok(())
     }
 
-    fn visit_variable_declaration<'a, 'b>(&mut self, context: &mut super::VariableDeclarationContext<'a, 'b>) -> io::Result<()> {
+    fn visit_variable_declaration<'a, 'b>(&mut self, context: &mut VariableDeclarationContext<'a, 'b>) -> io::Result<()> {
         let contract_info = match self.contract_info.get_mut(&context.contract_definition.id) {
             Some(contract_info) => contract_info,
             None => return Ok(())
@@ -110,7 +109,7 @@ impl AstVisitor for StateVariableMutabilityVisitor {
         Ok(())
     }
 
-    fn visit_assignment<'a, 'b>(&mut self, context: &mut super::AssignmentContext<'a, 'b>) -> io::Result<()> {
+    fn visit_assignment<'a, 'b>(&mut self, context: &mut AssignmentContext<'a, 'b>) -> io::Result<()> {
         if let ContractDefinitionNode::FunctionDefinition(FunctionDefinition {
             kind: FunctionKind::Constructor,
             ..
@@ -148,7 +147,7 @@ impl AstVisitor for StateVariableMutabilityVisitor {
         Ok(())
     }
 
-    fn visit_unary_operation<'a, 'b>(&mut self, context: &mut super::UnaryOperationContext<'a, 'b>) -> io::Result<()> {
+    fn visit_unary_operation<'a, 'b>(&mut self, context: &mut UnaryOperationContext<'a, 'b>) -> io::Result<()> {
         if let ContractDefinitionNode::FunctionDefinition(FunctionDefinition {
             kind: FunctionKind::Constructor,
             ..
@@ -176,7 +175,7 @@ impl AstVisitor for StateVariableMutabilityVisitor {
         Ok(())
     }
 
-    fn visit_function_call<'a, 'b>(&mut self, context: &mut super::FunctionCallContext<'a, 'b>) -> io::Result<()> {
+    fn visit_function_call<'a, 'b>(&mut self, context: &mut FunctionCallContext<'a, 'b>) -> io::Result<()> {
         if let Expression::MemberAccess(member_access) = context.function_call.expression.as_ref() {
             if member_access.referenced_declaration.is_none() && (member_access.member_name == "push" || member_access.member_name == "pop") {
                 if let ContractDefinitionNode::FunctionDefinition(FunctionDefinition {

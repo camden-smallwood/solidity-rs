@@ -5,7 +5,7 @@ mod brownie;
 mod truffle;
 mod todo_list;
 
-const VISITOR_TYPES: &'static [(&'static str, fn() -> Box<dyn analysis::AstVisitor>)] = &[
+const VISITOR_TYPES: &'static [(&'static str, fn() -> Box<dyn solidity::ast::AstVisitor>)] = &[
     ("no_spdx_identifier", || Box::new(analysis::NoSpdxIdentifierVisitor)),
     ("floating_solidity_version", || Box::new(analysis::FloatingSolidityVersionVisitor)),
     ("node_modules_imports", || Box::new(analysis::NodeModulesImportsVisitor)),
@@ -201,7 +201,7 @@ fn main() -> io::Result<()> {
         todo_list::print(source_units.as_slice());
     }
 
-    let mut visitors: Vec<Box<dyn analysis::AstVisitor>> = vec![
+    let mut visitors: Vec<Box<dyn solidity::ast::AstVisitor>> = vec![
         Box::new(analysis::SourceUnitVisitor::default()),
     ];
 
@@ -211,5 +211,45 @@ fn main() -> io::Result<()> {
         }
     }
 
-    analysis::visit_source_units(visitors, source_units.as_slice())
+    let mut data = solidity::ast::AstVisitorData {
+        analyzed_paths: HashSet::new(),
+        visitors
+    };
+
+    for source_unit in source_units.iter() {
+        //
+        // Skip node_modules imports
+        //
+
+        if source_unit.absolute_path.as_ref().map(String::as_str).unwrap_or("").starts_with("@") {
+            continue;
+        }
+
+        //
+        // Don't analyze the same source unit multiple times
+        //
+
+        if let Some(path) = source_unit.absolute_path.as_ref() {
+            if data.analyzed_paths.contains(path) {
+                continue;
+            }
+
+            data.analyzed_paths.insert(path.clone());
+        }
+
+        //
+        // Visit the source unit
+        //
+
+        let mut context = solidity::ast::SourceUnitContext {
+            source_units: source_units.as_slice(),
+            current_source_unit: source_unit
+        };
+
+        use solidity::ast::AstVisitor;
+        data.visit_source_unit(&mut context)?;
+        data.leave_source_unit(&mut context)?;
+    }
+
+    Ok(())
 }

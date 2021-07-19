@@ -1,4 +1,4 @@
-use solidity::ast::SourceUnit;
+use solidity::ast::*;
 
 pub fn print(source_units: &[SourceUnit]) {
     for source_unit in source_units.iter() {

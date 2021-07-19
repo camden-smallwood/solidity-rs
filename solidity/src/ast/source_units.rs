@@ -1,6 +1,6 @@
+use super::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::ast::{ContractDefinition, ContractDefinitionNode, EnumDefinition, Expression, FunctionDefinition, NodeID, StructDefinition};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -8,6 +8,12 @@ pub struct PragmaDirective {
     pub literals: Vec<String>,
     pub src: String,
     pub id: NodeID,
+}
+
+pub struct PragmaDirectiveContext<'a> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub pragma_directive: &'a PragmaDirective,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -30,6 +36,12 @@ pub struct ImportDirective {
     pub symbol_aliases: Vec<SymbolAlias>,
     pub src: String,
     pub id: NodeID,
+}
+
+pub struct ImportDirectiveContext<'a> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub import_directive: &'a ImportDirective,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -59,7 +71,7 @@ impl SourceUnit {
     pub fn source_line(&self, src: &str) -> Option<usize> {
         let source = match self.source.as_ref() {
             Some(source) => source.as_str(),
-            None => return None
+            None => return None,
         };
 
         let mut tokens = src.split(':');
@@ -73,20 +85,21 @@ impl SourceUnit {
                     Ok(value) => value,
                     Err(error) => {
                         println!("ERROR: {}: {}", error, token);
-                        return None
+                        return None;
                     }
                 })
             });
         }
-        
+
         Some(
             source[..match values.first() {
                 Some(&Some(value)) => value,
-                _ => return None
+                _ => return None,
             }]
-            .chars()
-            .filter(|&c| c == '\n')
-            .count() + 1
+                .chars()
+                .filter(|&c| c == '\n')
+                .count()
+                + 1,
         )
     }
 
@@ -204,16 +217,18 @@ impl SourceUnit {
         for node in self.nodes.iter() {
             if let SourceUnitNode::ContractDefinition(contract_definition) = node {
                 for node in contract_definition.nodes.iter() {
-                    if id == match node {
-                        ContractDefinitionNode::UsingForDirective(node) => node.id,
-                        ContractDefinitionNode::StructDefinition(node) => node.id,
-                        ContractDefinitionNode::EnumDefinition(node) => node.id,
-                        ContractDefinitionNode::VariableDeclaration(node) => node.id,
-                        ContractDefinitionNode::EventDefinition(node) => node.id,
-                        ContractDefinitionNode::FunctionDefinition(node) => node.id,
-                        ContractDefinitionNode::ModifierDefinition(node) => node.id,
-                        ContractDefinitionNode::ErrorDefinition(node) => node.id,
-                    } {
+                    if id
+                        == match node {
+                            ContractDefinitionNode::UsingForDirective(node) => node.id,
+                            ContractDefinitionNode::StructDefinition(node) => node.id,
+                            ContractDefinitionNode::EnumDefinition(node) => node.id,
+                            ContractDefinitionNode::VariableDeclaration(node) => node.id,
+                            ContractDefinitionNode::EventDefinition(node) => node.id,
+                            ContractDefinitionNode::FunctionDefinition(node) => node.id,
+                            ContractDefinitionNode::ModifierDefinition(node) => node.id,
+                            ContractDefinitionNode::ErrorDefinition(node) => node.id,
+                        }
+                    {
                         return Some((contract_definition, node));
                     }
                 }
@@ -221,5 +236,69 @@ impl SourceUnit {
         }
 
         None
+    }
+}
+
+pub struct SourceUnitContext<'a> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+}
+
+impl<'a> SourceUnitContext<'a> {
+    pub fn create_pragma_directive_context(
+        &self,
+        pragma_directive: &'a PragmaDirective,
+    ) -> PragmaDirectiveContext<'a> {
+        PragmaDirectiveContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            pragma_directive,
+        }
+    }
+
+    pub fn create_import_directive_context(
+        &self,
+        import_directive: &'a ImportDirective,
+    ) -> ImportDirectiveContext<'a> {
+        ImportDirectiveContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            import_directive,
+        }
+    }
+
+    pub fn create_contract_definition_context(
+        &self,
+        contract_definition: &'a ContractDefinition,
+    ) -> ContractDefinitionContext<'a> {
+        ContractDefinitionContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition,
+        }
+    }
+
+    pub fn create_struct_definition_context(
+        &self,
+        struct_definition: &'a StructDefinition,
+    ) -> StructDefinitionContext<'a> {
+        StructDefinitionContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition: None,
+            struct_definition,
+        }
+    }
+
+    pub fn create_enum_definition_context(
+        &self,
+        enum_definition: &'a EnumDefinition,
+    ) -> EnumDefinitionContext<'a> {
+        EnumDefinitionContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition: None,
+            enum_definition,
+        }
     }
 }

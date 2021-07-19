@@ -1,8 +1,5 @@
+use solidity::ast::*;
 use std::collections::HashMap;
-
-use solidity::ast::{ArrayTypeName, ContractKind, ElementaryTypeName, Literal, NodeID, SourceUnit, TypeName, UserDefinedTypeName};
-
-use super::AstVisitor;
 
 #[derive(Debug)]
 struct StorageSlot {
@@ -130,7 +127,7 @@ fn type_name_size(source_units: &[SourceUnit], type_name: &TypeName) -> std::io:
 }
 
 impl AstVisitor for TightVariablePackingVisitor {
-    fn visit_struct_definition<'a>(&mut self, context: &mut super::StructDefinitionContext<'a>) -> std::io::Result<()> {
+    fn visit_struct_definition<'a>(&mut self, context: &mut StructDefinitionContext<'a>) -> std::io::Result<()> {
         if self.storage_slots.contains_key(&context.struct_definition.id) {
             return Ok(())
         }
@@ -186,7 +183,7 @@ impl AstVisitor for TightVariablePackingVisitor {
         Ok(())
     }
 
-    fn visit_contract_definition<'a>(&mut self, context: &mut super::ContractDefinitionContext<'a>) -> std::io::Result<()> {
+    fn visit_contract_definition<'a>(&mut self, context: &mut ContractDefinitionContext<'a>) -> std::io::Result<()> {
         if let ContractKind::Interface | ContractKind::Library = context.contract_definition.kind {
             return Ok(())
         }

@@ -1,5 +1,4 @@
-use super::NodeID;
-use crate::ast::TypeDescriptions;
+use crate::ast::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
@@ -52,4 +51,14 @@ impl Display for Literal {
         
         Ok(())
     }
+}
+
+pub struct LiteralContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: Option<&'a Statement>,
+    pub literal: &'a Literal,
 }

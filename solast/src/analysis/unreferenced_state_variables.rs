@@ -1,4 +1,3 @@
-use super::{AstVisitor, VariableDeclarationContext};
 use solidity::ast::*;
 use std::{collections::HashMap, io};
 
@@ -19,7 +18,7 @@ impl Default for UnusedStateVariablesVisitor {
 }
 
 impl AstVisitor for UnusedStateVariablesVisitor {
-    fn visit_contract_definition<'a>(&mut self, context: &mut super::ContractDefinitionContext<'a>) -> io::Result<()> {
+    fn visit_contract_definition<'a>(&mut self, context: &mut ContractDefinitionContext<'a>) -> io::Result<()> {
         if !self.contract_info.contains_key(&context.contract_definition.id) {
             self.contract_info.insert(context.contract_definition.id, ContractInfo {
                 variable_info: HashMap::new(),
@@ -29,7 +28,7 @@ impl AstVisitor for UnusedStateVariablesVisitor {
         Ok(())
     }
     
-    fn leave_contract_definition<'a>(&mut self, context: &mut super::ContractDefinitionContext<'a>) -> io::Result<()> {
+    fn leave_contract_definition<'a>(&mut self, context: &mut ContractDefinitionContext<'a>) -> io::Result<()> {
         if let Some(contract_info) = self.contract_info.get(&context.contract_definition.id) {
             for (&id, &referenced) in contract_info.variable_info.iter() {
                 if let Some(variable_declaration) = context.contract_definition.variable_declaration(id) {
@@ -68,7 +67,7 @@ impl AstVisitor for UnusedStateVariablesVisitor {
         Ok(())
     }
 
-    fn visit_identifier<'a, 'b>(&mut self, context: &mut super::IdentifierContext<'a, 'b>) -> io::Result<()> {
+    fn visit_identifier<'a, 'b>(&mut self, context: &mut IdentifierContext<'a, 'b>) -> io::Result<()> {
         match context.definition_node {
             ContractDefinitionNode::FunctionDefinition(function_definition) if function_definition.kind != FunctionKind::Constructor => {}
             ContractDefinitionNode::ModifierDefinition(_) => {}
@@ -84,7 +83,7 @@ impl AstVisitor for UnusedStateVariablesVisitor {
         Ok(())
     }
 
-    fn visit_member_access<'a, 'b>(&mut self, context: &mut super::MemberAccessContext<'a, 'b>) -> io::Result<()> {
+    fn visit_member_access<'a, 'b>(&mut self, context: &mut MemberAccessContext<'a, 'b>) -> io::Result<()> {
         match context.definition_node {
             ContractDefinitionNode::FunctionDefinition(function_definition) if function_definition.kind != FunctionKind::Constructor => {}
             ContractDefinitionNode::ModifierDefinition(_) => {}

@@ -1,11 +1,10 @@
-use super::AstVisitor;
 use solidity::ast::*;
 use std::io;
 
 pub struct AssignmentComparisonsVisitor;
 
 impl AstVisitor for AssignmentComparisonsVisitor {
-    fn visit_function_call<'a, 'b>(&mut self, context: &mut super::FunctionCallContext<'a, 'b>) -> io::Result<()> {
+    fn visit_function_call<'a, 'b>(&mut self, context: &mut FunctionCallContext<'a, 'b>) -> io::Result<()> {
         let called_function_name = match context.function_call.expression.as_ref() {
             Expression::Identifier(Identifier { name, .. }) if name == "require" || name == "assert" => name,
             _ => return Ok(())
@@ -56,7 +55,7 @@ impl AstVisitor for AssignmentComparisonsVisitor {
         Ok(())
     }
 
-    fn visit_if_statement<'a, 'b>(&mut self, context: &mut super::IfStatementContext<'a, 'b>) -> io::Result<()> {
+    fn visit_if_statement<'a, 'b>(&mut self, context: &mut IfStatementContext<'a, 'b>) -> io::Result<()> {
         if context.if_statement.condition.contains_operation("=") {
             match context.definition_node {
                 ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
@@ -98,7 +97,7 @@ impl AstVisitor for AssignmentComparisonsVisitor {
         Ok(())
     }
 
-    fn visit_for_statement<'a, 'b>(&mut self, context: &mut super::ForStatementContext<'a, 'b>) -> io::Result<()> {
+    fn visit_for_statement<'a, 'b>(&mut self, context: &mut ForStatementContext<'a, 'b>) -> io::Result<()> {
         if let Some(condition) = context.for_statement.condition.as_ref() {
             if condition.contains_operation("=") {
                 match context.definition_node {
@@ -142,7 +141,7 @@ impl AstVisitor for AssignmentComparisonsVisitor {
         Ok(())
     }
 
-    fn visit_while_statement<'a, 'b>(&mut self, context: &mut super::WhileStatementContext<'a, 'b>) -> io::Result<()> {
+    fn visit_while_statement<'a, 'b>(&mut self, context: &mut WhileStatementContext<'a, 'b>) -> io::Result<()> {
         if context.while_statement.condition.contains_operation("=") {
             match context.definition_node {
                 ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
@@ -184,7 +183,7 @@ impl AstVisitor for AssignmentComparisonsVisitor {
         Ok(())
     }
 
-    fn visit_conditional<'a, 'b>(&mut self, context: &mut super::ConditionalContext<'a, 'b>) -> io::Result<()> {
+    fn visit_conditional<'a, 'b>(&mut self, context: &mut ConditionalContext<'a, 'b>) -> io::Result<()> {
         if context.conditional.condition.contains_operation("=") {
             match context.definition_node {
                 ContractDefinitionNode::FunctionDefinition(function_definition) => println!(

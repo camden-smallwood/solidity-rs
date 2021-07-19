@@ -1,4 +1,3 @@
-use super::{AstVisitor, FunctionDefinitionContext};
 use solidity::ast::*;
 use std::io;
 
@@ -46,13 +45,13 @@ impl AstVisitor for ExternalCallsInLoopVisitor {
         Ok(())
     }
 
-    fn visit_for_statement<'a, 'b>(&mut self, context: &mut super::ForStatementContext<'a, 'b>) -> io::Result<()> {
+    fn visit_for_statement<'a, 'b>(&mut self, context: &mut ForStatementContext<'a, 'b>) -> io::Result<()> {
         self.loop_ids.push(context.for_statement.id);
 
         Ok(())
     }
 
-    fn leave_for_statement<'a, 'b>(&mut self, context: &mut super::ForStatementContext<'a, 'b>) -> io::Result<()> {
+    fn leave_for_statement<'a, 'b>(&mut self, context: &mut ForStatementContext<'a, 'b>) -> io::Result<()> {
         match self.loop_ids.pop() {
             Some(loop_id) => {
                 if loop_id != context.for_statement.id {
@@ -71,13 +70,13 @@ impl AstVisitor for ExternalCallsInLoopVisitor {
         Ok(())
     }
 
-    fn visit_while_statement<'a, 'b>(&mut self, context: &mut super::WhileStatementContext<'a, 'b>) -> io::Result<()> {
+    fn visit_while_statement<'a, 'b>(&mut self, context: &mut WhileStatementContext<'a, 'b>) -> io::Result<()> {
         self.loop_ids.push(context.while_statement.id);
 
         Ok(())
     }
 
-    fn leave_while_statement<'a, 'b>(&mut self, context: &mut super::WhileStatementContext<'a, 'b>) -> io::Result<()> {
+    fn leave_while_statement<'a, 'b>(&mut self, context: &mut WhileStatementContext<'a, 'b>) -> io::Result<()> {
         match self.loop_ids.pop() {
             Some(loop_id) => {
                 if loop_id != context.while_statement.id {
@@ -96,7 +95,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor {
         Ok(())
     }
 
-    fn visit_identifier<'a, 'b>(&mut self, context: &mut super::IdentifierContext<'a, 'b>) -> io::Result<()> {
+    fn visit_identifier<'a, 'b>(&mut self, context: &mut IdentifierContext<'a, 'b>) -> io::Result<()> {
         match context.definition_node {
             solidity::ast::ContractDefinitionNode::FunctionDefinition(_) => {}
             _ => return Ok(())
@@ -122,7 +121,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor {
         Ok(())
     }
 
-    fn visit_member_access<'a, 'b>(&mut self, context: &mut super::MemberAccessContext<'a, 'b>) -> io::Result<()> {
+    fn visit_member_access<'a, 'b>(&mut self, context: &mut MemberAccessContext<'a, 'b>) -> io::Result<()> {
         match context.definition_node {
             solidity::ast::ContractDefinitionNode::FunctionDefinition(_) => {}
             _ => return Ok(())

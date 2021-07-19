@@ -1,4 +1,4 @@
-use crate::ast::{Documentation, Expression, NodeID, OverrideSpecifier, TypeDescriptions, TypeName};
+use crate::ast::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
@@ -116,4 +116,13 @@ impl Display for VariableDeclaration {
 
         Ok(())
     }
+}
+
+pub struct VariableDeclarationContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub variable_declaration: &'a VariableDeclaration,
 }

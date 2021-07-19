@@ -1,4 +1,4 @@
-use crate::ast::{Documentation, NodeID, ParameterList};
+use crate::ast::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
@@ -17,4 +17,11 @@ impl Display for ErrorDefinition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("error {}{}", self.name, self.parameters))
     }
+}
+
+pub struct ErrorDefinitionContext<'a> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub error_definition: &'a ErrorDefinition,
 }

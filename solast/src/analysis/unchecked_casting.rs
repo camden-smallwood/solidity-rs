@@ -1,11 +1,10 @@
-use super::AstVisitor;
 use solidity::ast::*;
 use std::io;
 
 pub struct UncheckedCastingVisitor;
 
 impl AstVisitor for UncheckedCastingVisitor {
-    fn visit_function_call<'a, 'b>(&mut self, context: &mut super::FunctionCallContext<'a, 'b>) -> io::Result<()> {
+    fn visit_function_call<'a, 'b>(&mut self, context: &mut FunctionCallContext<'a, 'b>) -> io::Result<()> {
         if context.function_call.kind != FunctionCallKind::TypeConversion {
             return Ok(())
         }
