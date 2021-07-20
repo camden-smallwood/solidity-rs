@@ -49,6 +49,10 @@ impl AstVisitor for StateVariableMutabilityVisitor {
                         continue;
                     }
 
+                    if variable_declaration.constant {
+                        continue;
+                    }
+                    
                     if !variable_info.assigned {
                         println!(
                             "\tL{}: The {} `{}.{}` {} state variable can be declared `{}`",
