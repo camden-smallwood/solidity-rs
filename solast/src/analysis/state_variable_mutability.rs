@@ -52,6 +52,16 @@ impl AstVisitor for StateVariableMutabilityVisitor {
                     if variable_declaration.constant {
                         continue;
                     }
+
+                    if let Some(TypeName::ElementaryTypeName(ElementaryTypeName {
+                        name: type_name,
+                        ..
+                    })) = variable_declaration.type_name.as_ref() {
+                        match type_name.as_str() {
+                            "bytes" | "string" => continue,
+                            _ => ()
+                        }
+                    }
                     
                     if !variable_info.assigned {
                         println!(
