@@ -18,17 +18,17 @@ impl Default for ExplicitVariableReturnVisitor {
 impl AstVisitor for ExplicitVariableReturnVisitor {
     fn visit_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> {
         let definition_id = match context.definition_node {
-            solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
+            ContractDefinitionNode::FunctionDefinition(function_definition) => {
                 function_definition.id
             }
-            solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
+            ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
                 modifier_definition.id
             }
             _ => return Ok(()),
         };
 
         match context.statement {
-            solidity::ast::Statement::VariableDeclarationStatement(variable_declaration_statement) => {
+            Statement::VariableDeclarationStatement(variable_declaration_statement) => {
                 for declaration in variable_declaration_statement.declarations.iter() {
                     if let Some(declaration) = declaration {
                         if !self.variable_declarations.contains(&declaration.id) {
@@ -38,9 +38,9 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                 }
             }
 
-            solidity::ast::Statement::Return(return_statement) => {
+            Statement::Return(return_statement) => {
                 match return_statement.expression.as_ref() {
-                    Some(solidity::ast::Expression::Identifier(identifier)) => {
+                    Some(Expression::Identifier(identifier)) => {
                         if self
                             .variable_declarations
                             .contains(&identifier.referenced_declaration)
@@ -49,7 +49,7 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                 self.reported_functions.insert(definition_id);
 
                                 match context.definition_node {
-                                    solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
+                                    ContractDefinitionNode::FunctionDefinition(function_definition) => {
                                         println!(
                                             "\tL{}: The {} `{}` {} returns the local `{}` variable explicitly",
                     
@@ -72,7 +72,7 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                         );
                                     }
 
-                                    solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
+                                    ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
                                         println!(
                                             "\tL{}: The {} `{}` modifier returns the local `{}` variable explicitly",
 
@@ -99,13 +99,13 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                         }
                     }
 
-                    Some(solidity::ast::Expression::TupleExpression(tuple_expression)) => {
+                    Some(Expression::TupleExpression(tuple_expression)) => {
                         let mut all_local_variables = true;
                         let mut local_variable_names = vec![];
 
                         for component in tuple_expression.components.iter() {
                             if let Some(component) = component {
-                                if let solidity::ast::Expression::Identifier(identifier) = component {
+                                if let Expression::Identifier(identifier) = component {
                                     if self
                                         .variable_declarations
                                         .contains(&identifier.referenced_declaration)
@@ -128,7 +128,7 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                 self.reported_functions.insert(definition_id);
 
                                 match context.definition_node {
-                                    solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => {
+                                    ContractDefinitionNode::FunctionDefinition(function_definition) => {
                                         println!(
                                             "\tL{}: The {} `{}` {} returns the local {} variables explicitly",
                                             
@@ -151,7 +151,7 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                         );
                                     }
 
-                                    solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
+                                    ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
                                         println!(
                                             "\tL{}: The {} `{}` modifier returns the local {} variables explicitly",
 

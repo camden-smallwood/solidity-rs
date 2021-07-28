@@ -23,7 +23,7 @@ const VISITOR_TYPES: &'static [(&'static str, fn() -> Box<dyn AstVisitor>)] = &[
     ("external_calls_in_loop", || Box::new(analysis::ExternalCallsInLoopVisitor::default())),
     ("check_effects_interactions", || Box::new(analysis::CheckEffectsInteractionsVisitor::default())),
     ("raw_address_transfer", || Box::new(analysis::RawAddressTransferVisitor::default())),
-    ("safe_erc20_functions", || Box::new(analysis::SafeERC20FunctionsVisitor::default())),
+    ("safe_erc20_functions", || Box::new(analysis::SafeERC20FunctionsVisitor)),
     ("unchecked_erc20_transfer", || Box::new(analysis::UncheckedERC20TransferVisitor::default())),
     ("unpaid_payable_functions", || Box::new(analysis::UnpaidPayableFunctionsVisitor)),
     ("divide_before_multiply", || Box::new(analysis::DivideBeforeMultiplyVisitor)),
@@ -56,14 +56,9 @@ fn main() -> io::Result<()> {
     let mut visitor_names: HashSet<String> = HashSet::new();
     let mut contract_name: Option<String> = None;
 
-    loop {
-        let arg = match args.next() {
-            Some(arg) => arg,
-            None => break
-        };
-
-        if arg.starts_with("--") {
-            match &arg.as_str()[2..] {
+    while let Some(arg) = args.next() {
+        match arg {
+            arg if arg.starts_with("--") => match &arg.as_str()[2..] {
                 "todo-list" | "todo_list" => {
                     should_print_todo_list = true;
                 }
@@ -86,20 +81,20 @@ fn main() -> io::Result<()> {
                     return Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Invalid argument: {}", arg)));
                 }
             }
-        } else {
-            if path.is_some() {
-                return Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Multiple paths specified: {} {}", path.unwrap().to_string_lossy(), arg)));
-            }
 
-            path = Some(PathBuf::from(arg));
+            _ => {
+                if path.is_some() {
+                    return Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Multiple paths specified: {} {}", path.unwrap().to_string_lossy(), arg)));
+                }
+
+                path = Some(PathBuf::from(arg));
+            }
         }
     }
 
     let path = match path {
         Some(path) => path,
-        None => {
-            return Err(io::Error::new(io::ErrorKind::InvalidInput, "Path not supplied"));
-        }
+        None => return Err(io::Error::new(io::ErrorKind::InvalidInput, "Path not supplied"))
     };
 
     if !path.exists() {
@@ -129,7 +124,7 @@ fn main() -> io::Result<()> {
             for path in std::fs::read_dir(build_path)? {
                 let path = path?.path();
 
-                if !path.exists() || !path.is_file() || !path.extension().map(|extension| extension == "json").unwrap_or(false) {
+                if !path.is_file() || !path.extension().map(|extension| extension == "json").unwrap_or(false) {
                     continue;
                 }
 
@@ -165,7 +160,7 @@ fn main() -> io::Result<()> {
         for path in std::fs::read_dir(build_path)? {
             let path = path?.path();
 
-            if !path.exists() || !path.is_file() || !path.extension().map(|extension| extension == "json").unwrap_or(false) {
+            if !path.is_file() || !path.extension().map(|extension| extension == "json").unwrap_or(false) {
                 continue;
             }
 

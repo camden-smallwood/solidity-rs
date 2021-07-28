@@ -97,7 +97,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor {
 
     fn visit_identifier<'a, 'b>(&mut self, context: &mut IdentifierContext<'a, 'b>) -> io::Result<()> {
         match context.definition_node {
-            solidity::ast::ContractDefinitionNode::FunctionDefinition(_) => {}
+            ContractDefinitionNode::FunctionDefinition(_) => {}
             _ => return Ok(())
         }
 
@@ -112,7 +112,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor {
                     None => continue,
                 };
 
-            if let solidity::ast::Visibility::External = function_definition.visibility {
+            if let Visibility::External = function_definition.visibility {
                 self.makes_external_call = true;
                 break;
             }
@@ -123,7 +123,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor {
 
     fn visit_member_access<'a, 'b>(&mut self, context: &mut MemberAccessContext<'a, 'b>) -> io::Result<()> {
         match context.definition_node {
-            solidity::ast::ContractDefinitionNode::FunctionDefinition(_) => {}
+            ContractDefinitionNode::FunctionDefinition(_) => {}
             _ => return Ok(())
         }
 
@@ -136,7 +136,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor {
                 if let Some(function_definition) =
                     source_unit.function_definition(referenced_declaration)
                 {
-                    if let solidity::ast::Visibility::External = function_definition.visibility {
+                    if let Visibility::External = function_definition.visibility {
                         self.makes_external_call = true;
                         break;
                     }

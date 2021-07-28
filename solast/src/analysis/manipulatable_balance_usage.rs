@@ -1,146 +1,166 @@
 use solidity::ast::*;
 use std::io;
 
-pub struct ManipulatableBalanceUsageVisitor;
-
 //
 // TODO:
 // * determine if balance can actually be manipulated
 // * determine if manipulating balance has consequences
 //
 
+pub struct ManipulatableBalanceUsageVisitor;
+
+impl ManipulatableBalanceUsageVisitor {
+    fn print_message(
+        &mut self,
+        contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
+        source_line: usize,
+        expression: &dyn std::fmt::Display
+    ) {
+        match definition_node {
+            ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                "\tL{}: The {} {} in the `{}` {} contains manipulatable balance usage: `{}`",
+
+                source_line,
+
+                function_definition.visibility,
+
+                if let FunctionKind::Constructor = function_definition.kind {
+                    format!("{}", "constructor")
+                } else {
+                    format!("`{}` {}", function_definition.name, function_definition.kind)
+                },
+
+                contract_definition.name,
+                contract_definition.kind,
+
+                expression
+            ),
+
+            ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                "\tL{}: The `{}` modifier in the `{}` {} contains manipulatable balance usage: `{}`",
+
+                source_line,
+
+                modifier_definition.name,
+
+                contract_definition.name,
+                contract_definition.kind,
+
+                expression
+            ),
+
+            _ => {}
+        }
+    }
+}
+
 impl AstVisitor for ManipulatableBalanceUsageVisitor {
     fn visit_member_access<'a, 'b>(&mut self, context: &mut MemberAccessContext<'a, 'b>) -> io::Result<()> {
-        if context.member_access.member_name == "balance" {
-            if let Expression::FunctionCall(FunctionCall {
+        if context.member_access.member_name != "balance" {
+            return Ok(())
+        }
+        
+        let (expression, arguments) = match context.member_access.expression.as_ref() {
+            Expression::FunctionCall(FunctionCall {
                 expression,
                 arguments,
                 ..
-            }) = context.member_access.expression.as_ref() {
-                if let Expression::ElementaryTypeNameExpression(ElementaryTypeNameExpression {
-                    type_name: TypeName::ElementaryTypeName(ElementaryTypeName { name, .. }),
+            }) => (expression, arguments),
+
+            _ => return Ok(())
+        };
+    
+        match expression.as_ref() {
+            Expression::ElementaryTypeNameExpression(ElementaryTypeNameExpression {
+                type_name: TypeName::ElementaryTypeName(ElementaryTypeName {
+                    name: type_name,
                     ..
-                }) = expression.as_ref() {
-                    if name == "address" && arguments.len() == 1 {
-                        if let Expression::Identifier(Identifier {
-                            name,
-                            ..
-                        }) = arguments.first().unwrap() {
-                            if name == "this" {
-                                match context.definition_node {
-                                    ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                                        "\tL{}: The {} {} in the `{}` {} contains manipulatable balance usage: `{}`",
+                }),
+                ..
+            }) if type_name == "address" => {}
 
-                                        context.current_source_unit.source_line(context.member_access.src.as_str()).unwrap(),
-
-                                        function_definition.visibility,
-
-                                        if let FunctionKind::Constructor = function_definition.kind {
-                                            format!("{}", "constructor")
-                                        } else {
-                                            format!("`{}` {}", function_definition.name, function_definition.kind)
-                                        },
-
-                                        context.contract_definition.name,
-                                        context.contract_definition.kind,
-
-                                        context.member_access
-                                    ),
-
-                                    ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                                        "\tL{}: The `{}` modifier in the `{}` {} contains manipulatable balance usage: `{}`",
-
-                                        context.current_source_unit.source_line(context.member_access.src.as_str()).unwrap(),
-
-                                        modifier_definition.name,
-
-                                        context.contract_definition.name,
-                                        context.contract_definition.kind,
-
-                                        context.member_access
-                                    ),
-
-                                    _ => ()
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            _ => return Ok(())
         }
+    
+        if arguments.len() != 1 {
+            return Ok(())
+        }
+
+        match arguments.first().unwrap() {
+            Expression::Identifier(Identifier {
+                name,
+                ..
+            }) if name == "this" => {}
+
+            _ => return Ok(())
+        }
+
+        self.print_message(
+            context.contract_definition,
+            context.definition_node,
+            context.current_source_unit.source_line(context.member_access.src.as_str()).unwrap(),
+            context.member_access
+        );
 
         Ok(())
     }
 
     fn visit_function_call<'a, 'b>(&mut self, context: &mut FunctionCallContext<'a, 'b>) -> io::Result<()> {
-        if context.function_call.arguments.len() != 1 {
-            return Ok(())
-        }
-
         match context.function_call.expression.as_ref() {
             Expression::MemberAccess(MemberAccess {
                 member_name,
                 ..
-            }) if member_name == "balanceOf" => match context.function_call.arguments.first().unwrap() {
-                Expression::FunctionCall(FunctionCall {
-                    expression,
-                    arguments,
-                    ..
-                }) => match expression.as_ref() {
-                    Expression::ElementaryTypeNameExpression(ElementaryTypeNameExpression {
-                        type_name: TypeName::ElementaryTypeName(ElementaryTypeName { name, .. }),
-                        ..
-                    }) if name == "address" && arguments.len() == 1 => match arguments.first().unwrap() {
-                        Expression::Identifier(Identifier {
-                            name,
-                            ..
-                        }) if name == "this" => match context.definition_node {
-                            ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                                "\tL{}: The {} {} in the `{}` {} contains manipulatable balance usage: `{}`",
-
-                                context.current_source_unit.source_line(context.function_call.src.as_str()).unwrap(),
-
-                                function_definition.visibility,
-
-                                if let FunctionKind::Constructor = function_definition.kind {
-                                    format!("{}", "constructor")
-                                } else {
-                                    format!("`{}` {}", function_definition.name, function_definition.kind)
-                                },
-
-                                context.contract_definition.name,
-                                context.contract_definition.kind,
-
-                                context.function_call
-                            ),
-
-                            ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                                "\tL{}: The `{}` modifier in the `{}` {} contains manipulatable balance usage: `{}`",
-
-                                context.current_source_unit.source_line(context.function_call.src.as_str()).unwrap(),
-
-                                modifier_definition.name,
-
-                                context.contract_definition.name,
-                                context.contract_definition.kind,
-
-                                context.function_call
-                            ),
-
-                            _ => return Ok(())
-                        }
-
-                        _ => return Ok(())
-                    }
-    
-                    _ => return Ok(())
-                }
-    
-                _ => return Ok(())
-            }
+            }) if member_name == "balanceOf" => {}
 
             _ => return Ok(())
         }
+
+        if context.function_call.arguments.len() != 1 {
+            return Ok(())
+        }
+
+        let (expression, arguments) = match context.function_call.arguments.first().unwrap() {
+            Expression::FunctionCall(FunctionCall {
+                expression,
+                arguments,
+                ..
+            }) => (expression, arguments),
+
+            _ => return Ok(())
+        };
+        
+        match expression.as_ref() {
+            Expression::ElementaryTypeNameExpression(ElementaryTypeNameExpression {
+                type_name: TypeName::ElementaryTypeName(ElementaryTypeName {
+                    name: type_name,
+                    ..
+                }),
+                ..
+            }) if type_name == "address" => {}
+
+            _ => return Ok(())
+        }
+    
+        if arguments.len() != 1 {
+            return Ok(())
+        }
+
+        match arguments.first().unwrap() {
+            Expression::Identifier(Identifier {
+                name,
+                ..
+            }) if name == "this" => {}
+
+            _ => return Ok(())
+        }
+
+        self.print_message(
+            context.contract_definition,
+            context.definition_node,
+            context.current_source_unit.source_line(context.function_call.src.as_str()).unwrap(),
+            context.function_call
+        );
 
         Ok(())
     }
