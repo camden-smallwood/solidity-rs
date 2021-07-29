@@ -28,7 +28,7 @@ impl AstVisitor for ExternalCallsInLoopVisitor {
             println!(
                 "\tL{}: {} {} {} makes an external call inside a loop",
 
-                context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
+                context.current_source_unit.source_line(context.function_definition.src.as_str())?,
 
                 format!("{:?}", context.function_definition.visibility),
 

@@ -51,12 +51,15 @@ impl AstVisitor for RedundantGetterFunctionVisitor {
         }
 
         println!(
-            "\tL{}: {} {}.{} {} is a redundant getter function for the {} {}.{} state variable",
-            context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
-            format!("{:?}", context.function_definition.visibility),
+            "\tL{}: The {} {}.{} {} is a redundant getter function for the {} {}.{} state variable",
+
+            context.current_source_unit.source_line(context.function_definition.src.as_str())?,
+
+            context.function_definition.visibility,
             context.contract_definition.name,
             context.function_definition.name,
             context.function_definition.kind,
+            
             variable_declaration.visibility,
             context.contract_definition.name,
             variable_declaration.name,

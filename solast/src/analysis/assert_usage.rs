@@ -57,7 +57,7 @@ impl AstVisitor for AssertUsageVisitor {
             ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
                 "\tL{}: The {} {} in the `{}` {} contains `assert` usage",
 
-                context.current_source_unit.source_line(context.function_call.src.as_str()).unwrap(),
+                context.current_source_unit.source_line(context.function_call.src.as_str())?,
 
                 function_definition.visibility,
 
@@ -74,7 +74,7 @@ impl AstVisitor for AssertUsageVisitor {
             ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
                 "\tL{}: The {} `{}` modifier in the `{}` {} contains `assert` usage",
 
-                context.current_source_unit.source_line(context.function_call.src.as_str()).unwrap(),
+                context.current_source_unit.source_line(context.function_call.src.as_str())?,
 
                 modifier_definition.visibility,
                 modifier_definition.name,

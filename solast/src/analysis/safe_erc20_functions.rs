@@ -75,7 +75,7 @@ impl AstVisitor for SafeERC20FunctionsVisitor {
                     "transfer" => self.print_message(
                         context.contract_definition,
                         context.definition_node,
-                        context.current_source_unit.source_line(context.function_call.src.as_str()).unwrap(),
+                        context.current_source_unit.source_line(context.function_call.src.as_str())?,
                         "transfer",
                         "safeTransfer"
                     ),
@@ -83,7 +83,7 @@ impl AstVisitor for SafeERC20FunctionsVisitor {
                     "transferFrom" => self.print_message(
                         context.contract_definition,
                         context.definition_node,
-                        context.current_source_unit.source_line(context.function_call.src.as_str()).unwrap(),
+                        context.current_source_unit.source_line(context.function_call.src.as_str())?,
                         "transferFrom",
                         "safeTransferFrom"
                     ),
@@ -91,7 +91,7 @@ impl AstVisitor for SafeERC20FunctionsVisitor {
                     "approve" => self.print_message(
                         context.contract_definition,
                         context.definition_node,
-                        context.current_source_unit.source_line(context.function_call.src.as_str()).unwrap(),
+                        context.current_source_unit.source_line(context.function_call.src.as_str())?,
                         "approve",
                         "safeApprove"
                     ),

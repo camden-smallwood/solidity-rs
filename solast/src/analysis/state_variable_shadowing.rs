@@ -31,7 +31,7 @@ impl AstVisitor for StateVariableShadowingVisitor {
                             println!(
                                 "\tL{}: {} {} {} has a {} {} parameter '{}' which shadows the {} {} {} state variable",
 
-                                context.current_source_unit.source_line(variable_declaration.src.as_str()).unwrap(),
+                                context.current_source_unit.source_line(variable_declaration.src.as_str())?,
 
                                 format!("{:?}", context.function_definition.visibility),
 

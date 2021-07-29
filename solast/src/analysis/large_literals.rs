@@ -1,53 +1,64 @@
 use solidity::ast::*;
-use std::{collections::HashSet, io};
+use std::io;
 
-pub struct LargeLiteralsVisitor {
-    functions: HashSet<NodeID>,
-}
+pub struct LargeLiteralsVisitor;
 
-impl Default for LargeLiteralsVisitor {
-    fn default() -> Self {
-        Self {
-            functions: HashSet::new(),
+impl LargeLiteralsVisitor {
+    fn print_message(
+        &mut self,
+        contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
+        source_line: usize,
+        literal: &Literal
+    ) {
+        match definition_node {
+            ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                "\tL{}: The {} {} in the `{}` {} contains a large literal, which may be difficult to read: `{}`",
+    
+                source_line,
+    
+                function_definition.visibility,
+
+                if let FunctionKind::Constructor = function_definition.kind {
+                    format!("{}", "constructor")
+                } else {
+                    format!("`{}` {}", function_definition.name, function_definition.kind)
+                },
+    
+                contract_definition.name,
+                contract_definition.kind,
+    
+                literal
+            ),
+
+            ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                "\tL{}: The `{}` modifier in the `{}` {} contains a large literal, which may be difficult to read: `{}`",
+
+                source_line,
+
+                modifier_definition.name,
+
+                contract_definition.name,
+                contract_definition.kind,
+    
+                literal
+            ),
+
+            _ => {}
         }
     }
 }
 
 impl AstVisitor for LargeLiteralsVisitor {
-    fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
-        if self.functions.contains(&context.function_definition.id) {
-            println!(
-                "\tL{}: {} {} {} contains large literals, which may be difficult to read",
-
-                context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
-
-                format!("{:?}", context.function_definition.visibility),
-
-                if context.function_definition.name.is_empty() {
-                    format!("{}", context.contract_definition.name)
-                } else {
-                    format!("{}.{}", context.contract_definition.name, context.function_definition.name)
-                },
-                
-                context.function_definition.kind
-            );
-        }
-
-        Ok(())
-    }
-
     fn visit_literal<'a, 'b>(&mut self, context: &mut LiteralContext<'a, 'b>) -> io::Result<()> {
-        let definition_id = match context.definition_node {
-            solidity::ast::ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition.id,
-            solidity::ast::ContractDefinitionNode::ModifierDefinition(modifier_definition) => modifier_definition.id,
-            _ => return Ok(())
-        };
-
         if let Some(value) = context.literal.value.as_ref() {
             if value.chars().all(char::is_numeric) && (|n| (n > 6) && ((n % 3) != 0))(value.len()) {
-                if !self.functions.contains(&definition_id) {
-                    self.functions.insert(definition_id);
-                }
+                self.print_message(
+                    context.contract_definition,
+                    context.definition_node,
+                    context.current_source_unit.source_line(context.literal.src.as_str())?,
+                    context.literal
+                );
             }
         }
 

@@ -5,6 +5,50 @@ use std::{io, str::FromStr};
 pub struct RedundantComparisonsVisitor;
 
 impl RedundantComparisonsVisitor {
+    fn print_message(
+        &mut self,
+        contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
+        source_line: usize,
+        binary_operation: &BinaryOperation
+    ) {
+        match definition_node {
+            ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                "\tL{}: The {} {} in the `{}` {} contains a redundant comparison: `{}`",
+    
+                source_line,
+    
+                function_definition.visibility,
+
+                if let FunctionKind::Constructor = function_definition.kind {
+                    format!("{}", "constructor")
+                } else {
+                    format!("`{}` {}", function_definition.name, function_definition.kind)
+                },
+    
+                contract_definition.name,
+                contract_definition.kind,
+    
+                binary_operation
+            ),
+
+            ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                "\tL{}: The `{}` modifier in the `{}` {} contains a redundant comparison: `{}`",
+
+                source_line,
+
+                modifier_definition.name,
+
+                contract_definition.name,
+                contract_definition.kind,
+    
+                binary_operation
+            ),
+
+            _ => {}
+        }
+    }
+
     fn is_right_literal_redundant<'a, 'b>(&mut self, context: &mut BinaryOperationContext<'a, 'b>) -> bool {
         let type_name = match context.binary_operation.left_expression.type_descriptions() {
             Some(TypeDescriptions { type_string: Some(type_string), .. }) => type_string.as_str(),
@@ -75,41 +119,12 @@ impl AstVisitor for RedundantComparisonsVisitor {
             (Expression::Literal(_), _) => self.is_left_literal_redundant(context),
             _ => false
         } {
-            match context.definition_node {
-                ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                    "\tL{}: The {} {} in the `{}` {} contains a redundant comparison: `{}`",
-
-                    context.current_source_unit.source_line(context.binary_operation.src.as_str()).unwrap(),
-
-                    function_definition.visibility,
-
-                    if let FunctionKind::Constructor = function_definition.kind {
-                        format!("constructor")
-                    } else {
-                        format!("`{}` {}", function_definition.name, function_definition.kind)
-                    },
-
-                    context.contract_definition.name,
-                    context.contract_definition.kind,
-
-                    context.binary_operation
-                ),
-
-                ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                    "\tL{}: The {} modifier in the `{}` {} contains a redundant comparison: `{}`",
-
-                    context.current_source_unit.source_line(context.binary_operation.src.as_str()).unwrap(),
-
-                    modifier_definition.name,
-
-                    context.contract_definition.name,
-                    context.contract_definition.kind,
-
-                    context.binary_operation
-                ),
-
-                _ => ()
-            }
+            self.print_message(
+                context.contract_definition,
+                context.definition_node,
+                context.current_source_unit.source_line(context.binary_operation.src.as_str())?,
+                context.binary_operation
+            );
         }
 
         Ok(())

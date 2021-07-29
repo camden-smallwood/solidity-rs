@@ -1,6 +1,6 @@
 use super::*;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, io};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -68,10 +68,10 @@ pub struct SourceUnit {
 }
 
 impl SourceUnit {
-    pub fn source_line(&self, src: &str) -> Option<usize> {
+    pub fn source_line(&self, src: &str) -> io::Result<usize> {
         let source = match self.source.as_ref() {
             Some(source) => source.as_str(),
-            None => return None,
+            _ => return Err(io::Error::from(io::ErrorKind::NotFound))
         };
 
         let mut tokens = src.split(':');
@@ -81,25 +81,20 @@ impl SourceUnit {
             values.push(if token.is_empty() {
                 None
             } else {
-                Some(match token.parse() {
-                    Ok(value) => value,
-                    Err(error) => {
-                        println!("ERROR: {}: {}", error, token);
-                        return None;
-                    }
-                })
+                Some(token.parse().map_err(|error| {
+                    io::Error::new(io::ErrorKind::InvalidData, error)
+                })?)
             });
         }
 
-        Some(
+        Ok(
             source[..match values.first() {
                 Some(&Some(value)) => value,
-                _ => return None,
+                _ => return Err(io::Error::from(io::ErrorKind::NotFound))
             }]
-                .chars()
-                .filter(|&c| c == '\n')
-                .count()
-                + 1,
+            .chars()
+            .filter(|&c| c == '\n')
+            .count() + 1
         )
     }
 

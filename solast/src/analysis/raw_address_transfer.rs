@@ -1,50 +1,75 @@
 use solidity::ast::*;
-use std::{collections::HashMap, io};
+use std::io;
 
-pub struct RawAddressTransferVisitor {
-    functions_transfer: HashMap<NodeID, usize>,
-}
+pub struct RawAddressTransferVisitor;
 
-impl Default for RawAddressTransferVisitor {
-    fn default() -> Self {
-        Self {
-            functions_transfer: HashMap::new(),
+impl RawAddressTransferVisitor {
+    fn print_message(
+        &mut self,
+        contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
+        source_line: usize,
+        expression: &dyn std::fmt::Display
+    ) {
+        match definition_node {
+            ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                "\tL{}: The {} {} in the `{}` {} performs a raw address transfer: `{}`",
+    
+                source_line,
+    
+                function_definition.visibility,
+
+                if let FunctionKind::Constructor = function_definition.kind {
+                    format!("{}", "constructor")
+                } else {
+                    format!("`{}` {}", function_definition.name, function_definition.kind)
+                },
+    
+                contract_definition.name,
+                contract_definition.kind,
+    
+                expression
+            ),
+
+            ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                "\tL{}: The `{}` modifier in the `{}` {} performs a raw address transfer: `{}`",
+
+                source_line,
+
+                modifier_definition.name,
+
+                contract_definition.name,
+                contract_definition.kind,
+    
+                expression
+            ),
+
+            _ => {}
         }
     }
 }
 
 impl AstVisitor for RawAddressTransferVisitor {
-    fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
-        if !self.functions_transfer.contains_key(&context.function_definition.id) {
-            self.functions_transfer.insert(context.function_definition.id, 0);
-        }
+    fn visit_function_call<'a, 'b>(&mut self, context: &mut FunctionCallContext<'a, 'b>) -> io::Result<()> {
+        if let Expression::MemberAccess(member_access) = context.function_call.expression.as_ref() {
+            if let Some(TypeDescriptions { type_string: Some(type_string), .. }) = member_access.expression.as_ref().type_descriptions() {
+                match type_string.as_str() {
+                    "address" | "address payable" => {}
+                    _ => return Ok(())
+                }
+            }
 
-        Ok(())
-    }
-
-    fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
-        if let Some(&transfer_count) = self.functions_transfer.get(&context.function_definition.id) {
-            if transfer_count > 0 {
-                println!(
-                    "\tL{}: {} {} {} performs {}",
-
-                    context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
-
-                    format!("{:?}", context.function_definition.visibility),
-
-                    if context.function_definition.name.is_empty() {
-                        format!("{}", context.contract_definition.name)
-                    } else {
-                        format!("{}.{}", context.contract_definition.name, context.function_definition.name)
-                    },
-
-                    context.function_definition.kind,
-                    
-                    if transfer_count == 1 {
-                        "a raw address transfer"
-                    } else {
-                        "raw address transfers"
-                    }
+            match member_access.member_name.as_str() {
+                "transfer" | "send" => {}
+                _ => return Ok(())
+            }
+            
+            if member_access.referenced_declaration.is_none() || member_access.referenced_declaration.map(|id| id == 0).unwrap_or(false) {
+                self.print_message(
+                    context.contract_definition,
+                    context.definition_node,
+                    context.current_source_unit.source_line(context.function_call.src.as_str())?,
+                    context.function_call
                 );
             }
         }
@@ -52,42 +77,8 @@ impl AstVisitor for RawAddressTransferVisitor {
         Ok(())
     }
 
-    fn visit_function_call<'a, 'b>(&mut self, context: &mut FunctionCallContext<'a, 'b>) -> io::Result<()> {
-        let definition_id = match context.definition_node {
-            solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
-            solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,
-            _ => return Ok(())
-        };
-
-        if let solidity::ast::Expression::MemberAccess(member_access) = context.function_call.expression.as_ref() {
-            if let Some(TypeDescriptions { type_string: Some(type_string), .. }) = member_access.expression.as_ref().type_descriptions() {
-                match type_string.as_str() {
-                    "address" | "address payable" => {}
-                    _ => return Ok(())
-                }
-            }
-
-            match member_access.member_name.as_str() {
-                "transfer" | "send" => {}
-                _ => return Ok(())
-            }
-            
-            if member_access.referenced_declaration.is_none() || member_access.referenced_declaration.map(|id| id == 0).unwrap_or(false) {
-                *self.functions_transfer.get_mut(&definition_id).unwrap() += 1;
-            }
-        }
-
-        Ok(())
-    }
-
     fn visit_function_call_options<'a, 'b>(&mut self, context: &mut FunctionCallOptionsContext<'a, 'b>) -> io::Result<()> {
-        let definition_id = match context.definition_node {
-            solidity::ast::ContractDefinitionNode::FunctionDefinition(definition) => definition.id,
-            solidity::ast::ContractDefinitionNode::ModifierDefinition(definition) => definition.id,
-            _ => return Ok(())
-        };
-
-        if let solidity::ast::Expression::MemberAccess(member_access) = context.function_call_options.expression.as_ref() {
+        if let Expression::MemberAccess(member_access) = context.function_call_options.expression.as_ref() {
             if let Some(TypeDescriptions { type_string: Some(type_string), .. }) = member_access.expression.as_ref().type_descriptions() {
                 match type_string.as_str() {
                     "address" | "address payable" => {}
@@ -101,7 +92,12 @@ impl AstVisitor for RawAddressTransferVisitor {
             }
             
             if member_access.referenced_declaration.is_none() || member_access.referenced_declaration.map(|id| id == 0).unwrap_or(false) {
-                *self.functions_transfer.get_mut(&definition_id).unwrap() += 1;
+                self.print_message(
+                    context.contract_definition,
+                    context.definition_node,
+                    context.current_source_unit.source_line(context.function_call_options.src.as_str())?,
+                    context.function_call_options
+                );
             }
         }
 

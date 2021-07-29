@@ -39,7 +39,7 @@ impl AstVisitor for UnusedReturnVisitor {
                     ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
                         "\tL{}: The {} `{}` {} makes a call to the {} `{}` {}, ignoring the returned {}",
                         
-                        context.current_source_unit.source_line(src).unwrap(),
+                        context.current_source_unit.source_line(src)?,
 
                         function_definition.visibility,
 
@@ -71,7 +71,7 @@ impl AstVisitor for UnusedReturnVisitor {
                     ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
                         "\tL{}: The {} `{}` modifier makes a call to the {} `{}` {}, ignoring the returned {}",
 
-                        context.current_source_unit.source_line(src).unwrap(),
+                        context.current_source_unit.source_line(src)?,
 
                         format!("{:?}", modifier_definition.visibility).to_lowercase(),
 

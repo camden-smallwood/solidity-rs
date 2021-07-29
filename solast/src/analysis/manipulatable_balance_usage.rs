@@ -99,7 +99,7 @@ impl AstVisitor for ManipulatableBalanceUsageVisitor {
         self.print_message(
             context.contract_definition,
             context.definition_node,
-            context.current_source_unit.source_line(context.member_access.src.as_str()).unwrap(),
+            context.current_source_unit.source_line(context.member_access.src.as_str())?,
             context.member_access
         );
 
@@ -158,7 +158,7 @@ impl AstVisitor for ManipulatableBalanceUsageVisitor {
         self.print_message(
             context.contract_definition,
             context.definition_node,
-            context.current_source_unit.source_line(context.function_call.src.as_str()).unwrap(),
+            context.current_source_unit.source_line(context.function_call.src.as_str())?,
             context.function_call
         );
 

@@ -19,7 +19,7 @@ impl AstVisitor for RequireWithoutMessageVisitor {
             println!(
                 "\tL{}: {} {} modifier has {} without {}",
 
-                context.current_source_unit.source_line(context.modifier_definition.src.as_str()).unwrap(),
+                context.current_source_unit.source_line(context.modifier_definition.src.as_str())?,
 
                 format!("{:?}", context.modifier_definition.visibility),
 
@@ -51,7 +51,7 @@ impl AstVisitor for RequireWithoutMessageVisitor {
             println!(
                 "\tL{}: {} {} {} has {} without {}",
 
-                context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
+                context.current_source_unit.source_line(context.function_definition.src.as_str())?,
 
                 format!("{:?}", context.function_definition.visibility),
 

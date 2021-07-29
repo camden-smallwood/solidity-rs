@@ -34,7 +34,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
             println!(
                 "\tL{}: {} {} {} ignores the Check-Effects-Interactions pattern",
 
-                context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
+                context.current_source_unit.source_line(context.function_definition.src.as_str())?,
 
                 format!("{:?}", context.function_definition.visibility),
 

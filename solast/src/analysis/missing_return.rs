@@ -17,6 +17,32 @@ impl Default for MissingReturnVisitor {
     }
 }
 
+impl MissingReturnVisitor {
+    fn print_message(
+        &mut self,
+        contract_definition: &ContractDefinition,
+        function_definition: &FunctionDefinition,
+        source_line: usize
+    ) {
+        println!(
+            "\tL{}: The {} {} in the `{}` {} is missing an explicit return statement",
+
+            source_line,
+
+            function_definition.visibility,
+
+            if let FunctionKind::Constructor = function_definition.kind {
+                format!("{}", "constructor")
+            } else {
+                format!("`{}` {}", function_definition.name, function_definition.kind)
+            },
+
+            contract_definition.name,
+            contract_definition.kind
+        );
+    }
+}
+
 impl AstVisitor for MissingReturnVisitor {
     fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
         if context.function_definition.return_parameters.parameters.is_empty() {
@@ -56,20 +82,10 @@ impl AstVisitor for MissingReturnVisitor {
         }
 
         if assigned.iter().all(|assigned| !assigned) {
-            println!(
-                "\tL{}: {} {} {} is missing an explicit return statement",
-
-                context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
-
-                format!("{:?}", context.function_definition.visibility),
-
-                if context.function_definition.name.is_empty() {
-                    format!("{}", context.contract_definition.name)
-                } else {
-                    format!("{}.{}", context.contract_definition.name, context.function_definition.name)
-                },
-
-                context.function_definition.kind
+            self.print_message(
+                context.contract_definition,
+                context.function_definition,
+                context.current_source_unit.source_line(context.function_definition.src.as_str())?
             );
         }
 

@@ -65,7 +65,7 @@ impl AstVisitor for AssignmentComparisonsVisitor {
             self.print_message(
                 context.contract_definition,
                 context.definition_node,
-                context.current_source_unit.source_line(context.function_call.src.as_str()).unwrap(),
+                context.current_source_unit.source_line(context.function_call.src.as_str())?,
                 format!("a call to `{}`", called_function_name),
                 context.function_call
             );
@@ -79,7 +79,7 @@ impl AstVisitor for AssignmentComparisonsVisitor {
             self.print_message(
                 context.contract_definition,
                 context.definition_node,
-                context.current_source_unit.source_line(context.if_statement.src.as_str()).unwrap(),
+                context.current_source_unit.source_line(context.if_statement.src.as_str())?,
                 "an if statement".to_string(),
                 context.if_statement
             );
@@ -94,7 +94,7 @@ impl AstVisitor for AssignmentComparisonsVisitor {
                 self.print_message(
                     context.contract_definition,
                     context.definition_node,
-                    context.current_source_unit.source_line(context.for_statement.src.as_str()).unwrap(),
+                    context.current_source_unit.source_line(context.for_statement.src.as_str())?,
                     "a for statement".to_string(),
                     context.for_statement
                 );
@@ -109,7 +109,7 @@ impl AstVisitor for AssignmentComparisonsVisitor {
             self.print_message(
                 context.contract_definition,
                 context.definition_node,
-                context.current_source_unit.source_line(context.while_statement.src.as_str()).unwrap(),
+                context.current_source_unit.source_line(context.while_statement.src.as_str())?,
                 "a while statement".to_string(),
                 context.while_statement
             );
@@ -123,7 +123,7 @@ impl AstVisitor for AssignmentComparisonsVisitor {
             self.print_message(
                 context.contract_definition,
                 context.definition_node,
-                context.current_source_unit.source_line(context.conditional.src.as_str()).unwrap(),
+                context.current_source_unit.source_line(context.conditional.src.as_str())?,
                 "a conditional expression".to_string(),
                 context.conditional
             );

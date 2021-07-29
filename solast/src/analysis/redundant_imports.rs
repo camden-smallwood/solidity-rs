@@ -35,7 +35,7 @@ impl AstVisitor for RedundantImportsVisitor {
             Some(reported) => if !*reported {
                 println!(
                     "\tL{}: Redundant import specified: `{}`",
-                    context.current_source_unit.source_line(context.import_directive.src.as_str()).unwrap(),
+                    context.current_source_unit.source_line(context.import_directive.src.as_str())?,
                     context.import_directive.file
                 );
                 *reported = true;

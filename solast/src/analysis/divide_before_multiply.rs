@@ -21,7 +21,7 @@ impl AstVisitor for DivideBeforeMultiplyVisitor {
                     ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
                         "\tL{}: The {} {} in the `{}` {} performs a multiplication on the result of a division",
     
-                        context.current_source_unit.source_line(context.binary_operation.src.as_str()).unwrap(),
+                        context.current_source_unit.source_line(context.binary_operation.src.as_str())?,
 
                         function_definition.visibility,
     
@@ -38,7 +38,7 @@ impl AstVisitor for DivideBeforeMultiplyVisitor {
                     ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
                         "\tL{}: The `{}` modifier in the `{}` {} performs a multiplication on the result of a division",
 
-                        context.current_source_unit.source_line(context.binary_operation.src.as_str()).unwrap(),
+                        context.current_source_unit.source_line(context.binary_operation.src.as_str())?,
 
                         modifier_definition.name,
     

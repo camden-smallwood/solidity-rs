@@ -67,7 +67,7 @@ impl AstVisitor for StateVariableMutabilityVisitor {
                         println!(
                             "\tL{}: The {} `{}.{}` {} state variable can be declared `{}`",
 
-                            context.current_source_unit.source_line(variable_declaration.src.as_str()).unwrap(),
+                            context.current_source_unit.source_line(variable_declaration.src.as_str())?,
 
                             variable_declaration.visibility,
                             context.contract_definition.name,

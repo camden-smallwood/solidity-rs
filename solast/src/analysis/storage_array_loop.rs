@@ -104,7 +104,7 @@ impl AstVisitor for StorageArrayLoopVisitor {
                 println!(
                     "\tL{}: {} {} {} performs a loop over a storage array, querying the length over each iteration",
 
-                    context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
+                    context.current_source_unit.source_line(context.function_definition.src.as_str())?,
 
                     format!("{:?}", context.function_definition.visibility),
 

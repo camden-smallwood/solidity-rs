@@ -1,53 +1,68 @@
 use solidity::ast::*;
-use std::{collections::HashSet, io};
+use std::io;
 use yul::{YulExpression, YulFunctionCall, YulIdentifier, YulLiteral};
 
-pub struct InlineAssemblyVisitor {
-    reported_functions: HashSet<NodeID>,
-}
+pub struct InlineAssemblyVisitor;
 
-impl Default for InlineAssemblyVisitor {
-    fn default() -> Self {
-        Self {
-            reported_functions: HashSet::new(),
+impl InlineAssemblyVisitor {
+    fn print_message(
+        &mut self,
+        contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
+        source_line: usize,
+        description: &str
+    ) {
+        match definition_node {
+            ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                "\tL{}: The {} {} in the `{}` {} contains {}",
+    
+                source_line,
+    
+                function_definition.visibility,
+
+                if let FunctionKind::Constructor = function_definition.kind {
+                    format!("{}", "constructor")
+                } else {
+                    format!("`{}` {}", function_definition.name, function_definition.kind)
+                },
+    
+                contract_definition.name,
+                contract_definition.kind,
+    
+                description
+            ),
+
+            ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                "\tL{}: The `{}` modifier in the `{}` {} contains {}",
+
+                source_line,
+
+                modifier_definition.name,
+
+                contract_definition.name,
+                contract_definition.kind,
+    
+                description
+            ),
+
+            _ => {}
         }
     }
 }
 
 impl AstVisitor for InlineAssemblyVisitor {
     fn visit_inline_assembly<'a, 'b>(&mut self, context: &mut InlineAssemblyContext<'a, 'b>) -> io::Result<()> {
-        let function_definition = match context.definition_node {
-            ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition,
-            _ => return Ok(()),
-        };
-
-        if !self.reported_functions.contains(&function_definition.id) {
-            self.reported_functions.insert(function_definition.id);
-
-            println!(
-                "\tL{}: {} {} {} contains inline assembly usage",
-
-                context.current_source_unit.source_line(context.inline_assembly.src.as_str()).unwrap(),
-
-                format!("{:?}", function_definition.visibility),
-                if let FunctionKind::Constructor = function_definition.kind {
-                    format!("{}", context.contract_definition.name)
-                } else {
-                    format!("{}.{}", context.contract_definition.name, function_definition.name)
-                },
-                function_definition.kind,
-            );
-        }
+        self.print_message(
+            context.contract_definition,
+            context.definition_node,
+            context.current_source_unit.source_line(context.inline_assembly.src.as_str())?,
+            "inline assembly usage"
+        );
 
         Ok(())
     }
 
     fn visit_yul_function_call<'a, 'b, 'c>(&mut self, context: &mut YulFunctionCallContext<'a, 'b, 'c>) -> io::Result<()> {
-        let function_definition = match context.definition_node {
-            ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition,
-            _ => return Ok(()),
-        };
-
         match context.yul_function_call.function_name.name.as_str() {
             "mload" => {
                 let value = match context.yul_function_call.arguments.first() {
@@ -70,18 +85,11 @@ impl AstVisitor for InlineAssemblyVisitor {
                 } else {
                     value.parse()
                 } {
-                    println!(
-                        "\tL{}: {} {} {} contains inline assembly which loads the free memory pointer",
-
-                        context.current_source_unit.source_line(context.inline_assembly.src.as_str()).unwrap(),
-
-                        format!("{:?}", function_definition.visibility),
-                        if function_definition.kind == FunctionKind::Constructor {
-                            format!("{}", context.contract_definition.name)
-                        } else {
-                            format!("{}.{}", context.contract_definition.name, function_definition.name)
-                        },
-                        function_definition.kind
+                    self.print_message(
+                        context.contract_definition,
+                        context.definition_node,
+                        context.current_source_unit.source_line(context.inline_assembly.src.as_str())?,
+                        "inline assembly which loads the free memory pointer"
                     );
                 }
             }
@@ -125,18 +133,11 @@ impl AstVisitor for InlineAssemblyVisitor {
                 } else {
                     value.parse()
                 } {
-                    println!(
-                        "\tL{}: {} {} {} contains inline assembly which copies arbitrary function arguments",
-
-                        context.current_source_unit.source_line(context.inline_assembly.src.as_str()).unwrap(),
-                        
-                        format!("{:?}", function_definition.visibility),
-                        if function_definition.kind == FunctionKind::Constructor {
-                            format!("{}", context.contract_definition.name)
-                        } else {
-                            format!("{}.{}", context.contract_definition.name, function_definition.name)
-                        },
-                        function_definition.kind
+                    self.print_message(
+                        context.contract_definition,
+                        context.definition_node,
+                        context.current_source_unit.source_line(context.inline_assembly.src.as_str())?,
+                        "inline assembly which copies arbitrary function arguments"
                     );
                 }
             }

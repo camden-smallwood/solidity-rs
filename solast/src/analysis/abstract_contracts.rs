@@ -28,7 +28,7 @@ impl AstVisitor for AbstractContractsVisitor {
             println!(
                 "\tL{}: The constructor of the `{}` contract is marked {} instead of marking `{}` as abstract",
 
-                context.current_source_unit.source_line(context.contract_definition.src.as_str()).unwrap(),
+                context.current_source_unit.source_line(context.contract_definition.src.as_str())?,
 
                 context.contract_definition.name,
                 context.function_definition.visibility,

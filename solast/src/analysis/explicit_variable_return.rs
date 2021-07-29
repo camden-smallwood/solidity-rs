@@ -53,7 +53,7 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                         println!(
                                             "\tL{}: The {} `{}` {} returns the local `{}` variable explicitly",
                     
-                                            context.current_source_unit.source_line(return_statement.src.as_str()).unwrap(),
+                                            context.current_source_unit.source_line(return_statement.src.as_str())?,
 
                                             function_definition.visibility,
 
@@ -76,7 +76,7 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                         println!(
                                             "\tL{}: The {} `{}` modifier returns the local `{}` variable explicitly",
 
-                                            context.current_source_unit.source_line(return_statement.src.as_str()).unwrap(),
+                                            context.current_source_unit.source_line(return_statement.src.as_str())?,
 
                                             format!("{:?}", modifier_definition.visibility).to_lowercase(),
 
@@ -132,7 +132,7 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                         println!(
                                             "\tL{}: The {} `{}` {} returns the local {} variables explicitly",
                                             
-                                            context.current_source_unit.source_line(return_statement.src.as_str()).unwrap(),
+                                            context.current_source_unit.source_line(return_statement.src.as_str())?,
 
                                             function_definition.visibility,
 
@@ -155,7 +155,7 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                                         println!(
                                             "\tL{}: The {} `{}` modifier returns the local {} variables explicitly",
 
-                                            context.current_source_unit.source_line(return_statement.src.as_str()).unwrap(),
+                                            context.current_source_unit.source_line(return_statement.src.as_str())?,
 
                                             format!("{:?}", modifier_definition.visibility),
 

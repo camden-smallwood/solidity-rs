@@ -1,9 +1,30 @@
 use solidity::ast::*;
+use std::io;
 
 pub struct InvalidUsingForDirectivesVisitor;
 
+impl InvalidUsingForDirectivesVisitor {
+    fn print_message(
+        &mut self,
+        contract_definition: &ContractDefinition,
+        source_line: usize,
+        using_for_directive: &UsingForDirective
+    ) {
+        println!(
+            "\tL{}: The `{}` {} contains an invalid using-for directive: `{}`",
+
+            source_line,
+
+            contract_definition.name,
+            contract_definition.kind,
+
+            using_for_directive
+        );
+    }
+}
+
 impl AstVisitor for InvalidUsingForDirectivesVisitor {
-    fn visit_using_for_directive<'a>(&mut self, context: &mut UsingForDirectiveContext<'a>) -> std::io::Result<()> {
+    fn visit_using_for_directive<'a>(&mut self, context: &mut UsingForDirectiveContext<'a>) -> io::Result<()> {
         //
         // Get the identifier of the contract definition associated with the used library
         //
@@ -101,14 +122,9 @@ impl AstVisitor for InvalidUsingForDirectivesVisitor {
         //
 
         if !usable_function_found {
-            println!(
-                "\tL{}: The `{}` {} contains an invalid using-for directive: `{}`",
-
-                context.current_source_unit.source_line(context.using_for_directive.src.as_str()).unwrap(),
-
-                context.contract_definition.name,
-                context.contract_definition.kind,
-
+            self.print_message(
+                context.contract_definition,
+                context.current_source_unit.source_line(context.using_for_directive.src.as_str())?,
                 context.using_for_directive
             );
         }

@@ -57,7 +57,7 @@ impl AstVisitor for UncheckedERC20TransferVisitor {
             println!(
                 "\tL{}: {} {} {} makes {} without checking the {}, which can revert {} zero",
 
-                context.current_source_unit.source_line(context.function_definition.src.as_str()).unwrap(),
+                context.current_source_unit.source_line(context.function_definition.src.as_str())?,
 
                 format!("{:?}", context.function_definition.visibility),
 
