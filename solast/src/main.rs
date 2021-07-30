@@ -15,7 +15,7 @@ const VISITOR_TYPES: &'static [(&'static str, fn() -> Box<dyn AstVisitor>)] = &[
     ("large_literals", || Box::new(analysis::LargeLiteralsVisitor)),
     ("tight_variable_packing", || Box::new(analysis::TightVariablePackingVisitor::default())),
     ("redundant_getter_function", || Box::new(analysis::RedundantGetterFunctionVisitor)),
-    ("require_without_message", || Box::new(analysis::RequireWithoutMessageVisitor::default())),
+    ("require_without_message", || Box::new(analysis::RequireWithoutMessageVisitor)),
     ("state_variable_shadowing", || Box::new(analysis::StateVariableShadowingVisitor)),
     ("explicit_variable_return", || Box::new(analysis::ExplicitVariableReturnVisitor::default())),
     ("unused_return", || Box::new(analysis::UnusedReturnVisitor)),

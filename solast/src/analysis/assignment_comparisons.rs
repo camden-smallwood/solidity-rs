@@ -81,7 +81,7 @@ impl AstVisitor for AssignmentComparisonsVisitor {
                 context.definition_node,
                 context.current_source_unit.source_line(context.if_statement.src.as_str())?,
                 "an if statement".to_string(),
-                context.if_statement
+                &context.if_statement.condition
             );
         }
 
@@ -96,7 +96,7 @@ impl AstVisitor for AssignmentComparisonsVisitor {
                     context.definition_node,
                     context.current_source_unit.source_line(context.for_statement.src.as_str())?,
                     "a for statement".to_string(),
-                    context.for_statement
+                    condition
                 );
             }
         }
@@ -111,7 +111,7 @@ impl AstVisitor for AssignmentComparisonsVisitor {
                 context.definition_node,
                 context.current_source_unit.source_line(context.while_statement.src.as_str())?,
                 "a while statement".to_string(),
-                context.while_statement
+                &context.while_statement.condition
             );
         }
 
