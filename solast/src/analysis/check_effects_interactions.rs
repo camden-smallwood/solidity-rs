@@ -1,119 +1,316 @@
 use solidity::ast::*;
-use std::{collections::HashMap, io};
+use std::{collections::{HashMap, HashSet}, io};
 
-pub struct CheckEffectsInteractionsVisitor {
+struct BlockInfo {
     makes_external_call: bool,
     makes_post_external_call_assignment: bool,
-    bindings: HashMap<NodeID, Vec<NodeID>>,
+    variable_bindings: HashMap<NodeID, Vec<NodeID>>,
+    parent_blocks: Vec<NodeID>,
+}
+
+struct FunctionInfo {
+    block_info: HashMap<NodeID, BlockInfo>,
+}
+
+struct ContractInfo {
+    function_info: HashMap<NodeID, FunctionInfo>,
+}
+
+pub struct CheckEffectsInteractionsVisitor {
+    reported_functions: HashSet<NodeID>,
+    contract_info: HashMap<NodeID, ContractInfo>,
 }
 
 impl Default for CheckEffectsInteractionsVisitor {
     fn default() -> Self {
         Self {
-            makes_external_call: false,
-            makes_post_external_call_assignment: false,
-            bindings: HashMap::new(),
+            reported_functions: HashSet::new(),
+            contract_info: HashMap::new(),
+        }
+    }
+}
+
+impl CheckEffectsInteractionsVisitor {
+    fn print_message(
+        &mut self,
+        contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
+        source_line: usize,
+    ) {
+        match definition_node {
+            ContractDefinitionNode::FunctionDefinition(function_definition) => {
+                if self.reported_functions.contains(&function_definition.id) {
+                    return;
+                }
+
+                self.reported_functions.insert(function_definition.id);
+
+                println!(
+                    "\tL{}: The {} {} in the `{}` {} ignores the Check-Effects-Interactions pattern",
+
+                    source_line,
+
+                    function_definition.visibility,
+
+                    if let FunctionKind::Constructor = function_definition.kind {
+                        format!("{}", function_definition.kind)
+                    } else {
+                        format!("`{}` {}", function_definition.name, function_definition.kind)
+                    },
+
+                    contract_definition.name,
+                    contract_definition.kind
+                );
+            }
+
+            ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
+                if self.reported_functions.contains(&modifier_definition.id) {
+                    return;
+                }
+
+                self.reported_functions.insert(modifier_definition.id);
+                
+                println!(
+                    "\tL{}: The `{}` modifier in the `{}` {} ignores the Check-Effects-Interactions pattern",
+
+                    source_line,
+
+                    modifier_definition.name,
+
+                    contract_definition.name,
+                    contract_definition.kind
+                );
+            }
+
+            _ => ()
         }
     }
 }
 
 impl AstVisitor for CheckEffectsInteractionsVisitor {
-    fn visit_function_definition<'a>(&mut self, _context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
-        self.makes_external_call = false;
-        self.makes_post_external_call_assignment = false;
+    fn visit_contract_definition<'a>(&mut self, context: &mut ContractDefinitionContext<'a>) -> io::Result<()> {
+        if !self.contract_info.contains_key(&context.contract_definition.id) {
+            self.contract_info.insert(context.contract_definition.id, ContractInfo {
+                function_info: HashMap::new(),
+            });
+        }
 
         Ok(())
     }
 
-    fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
-        if let FunctionKind::Constructor = context.function_definition.kind {
+    fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
+        let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
+
+        if !contract_info.function_info.contains_key(&context.function_definition.id) {
+            contract_info.function_info.insert(context.function_definition.id, FunctionInfo {
+                block_info: HashMap::new(),
+            });
+        }
+
+        Ok(())
+    }
+
+    fn visit_modifier_definition<'a>(&mut self, context: &mut ModifierDefinitionContext<'a>) -> io::Result<()> {
+        let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
+
+        if !contract_info.function_info.contains_key(&context.modifier_definition.id) {
+            contract_info.function_info.insert(context.modifier_definition.id, FunctionInfo {
+                block_info: HashMap::new(),
+            });
+        }
+
+        Ok(())
+    }
+
+    fn visit_block<'a, 'b>(&mut self, context: &mut BlockContext<'a, 'b>) -> io::Result<()> {
+        let definition_id = match context.definition_node {
+            &ContractDefinitionNode::FunctionDefinition(FunctionDefinition { id, .. }) => id,
+            &ContractDefinitionNode::ModifierDefinition(ModifierDefinition { id, .. }) => id,
+            _ => return Ok(())
+        };
+
+        let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
+        let function_info = contract_info.function_info.get_mut(&definition_id).unwrap();
+
+        if !function_info.block_info.contains_key(&context.block.id) {
+            function_info.block_info.insert(context.block.id, BlockInfo {
+                makes_external_call: false,
+                makes_post_external_call_assignment: false,
+                variable_bindings: HashMap::new(),
+                parent_blocks: context.blocks.iter().map(|&block| block.id).collect(),
+            });
+        }
+
+        Ok(())
+    }
+
+    fn visit_variable_declaration_statement<'a, 'b>(&mut self, context: &mut VariableDeclarationStatementContext<'a, 'b>) -> io::Result<()> {
+        if context.blocks.is_empty() {
             return Ok(())
         }
+        
+        let definition_id = match context.definition_node {
+            &ContractDefinitionNode::FunctionDefinition(FunctionDefinition { id, .. }) => id,
+            &ContractDefinitionNode::ModifierDefinition(ModifierDefinition { id, .. }) => id,
+            _ => return Ok(())
+        };
 
-        if self.makes_external_call && self.makes_post_external_call_assignment {
-            println!(
-                "\tL{}: {} {} {} ignores the Check-Effects-Interactions pattern",
+        let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
+        let function_info = contract_info.function_info.get_mut(&definition_id).unwrap();
+        let block_id = &context.blocks.last().unwrap().id;
 
-                context.current_source_unit.source_line(context.function_definition.src.as_str())?,
+        //
+        // Only store bindings for storage reference variables
+        //
 
-                format!("{:?}", context.function_definition.visibility),
+        if let Some(initial_value) = context.variable_declaration_statement.initial_value.as_ref() {
+            match initial_value.root_expression() {
+                Some(&Expression::Identifier(Identifier { referenced_declaration, .. })) => {
+                    assert!(context.variable_declaration_statement.declarations.len() == 1);
 
-                if context.function_definition.name.is_empty() {
-                    format!("{}", context.contract_definition.name)
-                } else {
-                    format!("{}.{}", context.contract_definition.name, context.function_definition.name)
-                },
-                
-                context.function_definition.kind
-            );
-        }
+                    let local_variable_id = match context.variable_declaration_statement.declarations.first().unwrap() {
+                        &Some(VariableDeclaration {
+                            storage_location: StorageLocation::Storage,
+                            id,
+                            ..
+                        }) => id,
 
-        Ok(())
-    }
+                        _ => return Ok(())
+                    };
 
-    fn visit_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> {
-        if let Statement::VariableDeclarationStatement(VariableDeclarationStatement {
-            declarations,
-            initial_value: Some(expression),
-            ..
-        }) = context.statement {
-            let ids = context.contract_definition.get_assigned_state_variables(
-                context.source_units,
-                context.definition_node,
-                expression
-            );
+                    let state_variable_id = if context.contract_definition.hierarchy_contains_state_variable(context.source_units, referenced_declaration) {
+                        referenced_declaration
+                    } else {
+                        let mut state_variable_id = None;
 
-            for &id in ids.iter() {
-                if context.contract_definition.hierarchy_contains_state_variable(context.source_units, id) {
-                    let state_variable = {
-                        let mut state_variable = None;
+                        let block_info = function_info.block_info.get(block_id).unwrap();
 
-                        if let Some(contract_ids) = context.contract_definition.linearized_base_contracts.as_ref() {
-                            for &contract_id in contract_ids.iter() {
-                                for source_unit in context.source_units.iter() {
-                                    if let Some(contract_definition) = source_unit.contract_definition(contract_id) {
-                                        if let Some(variable_declaration) = contract_definition.variable_declaration(id) {
-                                            state_variable = Some(variable_declaration);
+                        for (&current_state_variable_id, local_variable_ids) in block_info.variable_bindings.iter() {
+                            if local_variable_ids.contains(&referenced_declaration) {
+                                state_variable_id = Some(current_state_variable_id);
+                                break;
+                            }
+                        }
+
+                        if state_variable_id.is_none() {
+                            for &parent_block_id in block_info.parent_blocks.iter().rev() {
+                                let parent_block_info = function_info.block_info.get(&parent_block_id).unwrap();
+
+                                for (&current_state_variable_id, local_variable_ids) in parent_block_info.variable_bindings.iter() {
+                                    if local_variable_ids.contains(&referenced_declaration) {
+                                        state_variable_id = Some(current_state_variable_id);
+                                        break;
+                                    }
+                                }
+
+                                if state_variable_id.is_some() {
+                                    break;
+                                }
+                            }
+
+                            if state_variable_id.is_none() {
+                                return Ok(())
+                            }
+                        }
+                        
+                        match state_variable_id {
+                            Some(state_variable_id) => state_variable_id,
+                            None => return Ok(())
+                        }
+                    };
+
+                    let block_info = function_info.block_info.get_mut(&block_id).unwrap();
+
+                    if !block_info.variable_bindings.contains_key(&state_variable_id) {
+                        block_info.variable_bindings.insert(state_variable_id, vec![]);
+                    }
+
+                    let variable_bindings = block_info.variable_bindings.get_mut(&state_variable_id).unwrap();
+
+                    if !variable_bindings.contains(&local_variable_id) {
+                        variable_bindings.push(local_variable_id);
+                    }
+                }
+
+                Some(Expression::TupleExpression(TupleExpression { components, .. })) => {
+                    assert!(components.len() == context.variable_declaration_statement.declarations.len());
+
+                    for (i, component) in components.iter().enumerate() {
+                        if component.is_none() {
+                            continue;
+                        }
+                        
+                        let referenced_declaration = match component.as_ref().unwrap().root_expression() {
+                            Some(&Expression::Identifier(Identifier { referenced_declaration, .. })) => referenced_declaration,
+                            _ => continue
+                        };
+                        
+                        let local_variable_id = match context.variable_declaration_statement.declarations.iter().nth(i).unwrap() {
+                            &Some(VariableDeclaration {
+                                storage_location: StorageLocation::Storage,
+                                id,
+                                ..
+                            }) => id,
+    
+                            _ => return Ok(())
+                        };
+    
+                        let state_variable_id = if context.contract_definition.hierarchy_contains_state_variable(context.source_units, referenced_declaration) {
+                            referenced_declaration
+                        } else {
+                            let mut state_variable_id = None;
+    
+                            let block_info = function_info.block_info.get(block_id).unwrap();
+    
+                            for (&current_state_variable_id, local_variable_ids) in block_info.variable_bindings.iter() {
+                                if local_variable_ids.contains(&referenced_declaration) {
+                                    state_variable_id = Some(current_state_variable_id);
+                                    break;
+                                }
+                            }
+    
+                            if state_variable_id.is_none() {
+                                for &parent_block_id in block_info.parent_blocks.iter().rev() {
+                                    let parent_block_info = function_info.block_info.get(&parent_block_id).unwrap();
+    
+                                    for (&current_state_variable_id, local_variable_ids) in parent_block_info.variable_bindings.iter() {
+                                        if local_variable_ids.contains(&referenced_declaration) {
+                                            state_variable_id = Some(current_state_variable_id);
                                             break;
                                         }
                                     }
+    
+                                    if state_variable_id.is_some() {
+                                        break;
+                                    }
+                                }
+    
+                                if state_variable_id.is_none() {
+                                    return Ok(())
                                 }
                             }
-                        } else {
-                            if let Some(variable_declaration) = context.contract_definition.variable_declaration(id) {
-                                state_variable = Some(variable_declaration);
+                            
+                            match state_variable_id {
+                                Some(state_variable_id) => state_variable_id,
+                                None => return Ok(())
                             }
-                        }
-
-                        state_variable.unwrap()
-                    };
-
-                    if declarations.len() > 1 {
-                        //
-                        // TODO: handle tuple or multiple assignments (is this actually necessary?)
-                        //
-                        
-                        println!(
-                            "\tWARNING: tuple or multiple assignments not handled: {:?} {:#?}",
-                            ids, declarations
-                        );
-                    } else {
-                        let declaration = match declarations.first().unwrap().as_ref() {
-                            Some(declaration) => declaration,
-                            None => return Ok(())
                         };
-
-                        if !self.bindings.contains_key(&state_variable.id) {
-                            self.bindings.insert(state_variable.id, vec![]);
+    
+                        let block_info = function_info.block_info.get_mut(&block_id).unwrap();
+    
+                        if !block_info.variable_bindings.contains_key(&state_variable_id) {
+                            block_info.variable_bindings.insert(state_variable_id, vec![]);
                         }
-
-                        let bindings = self.bindings.get_mut(&state_variable.id).unwrap();
-
-                        if !bindings.contains(&declaration.id) {
-                            bindings.push(declaration.id);
+    
+                        let variable_bindings = block_info.variable_bindings.get_mut(&state_variable_id).unwrap();
+    
+                        if !variable_bindings.contains(&local_variable_id) {
+                            variable_bindings.push(local_variable_id);
                         }
                     }
                 }
+
+                _ => {}
             }
         }
 
@@ -121,16 +318,39 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
     }
 
     fn visit_identifier<'a, 'b>(&mut self, context: &mut IdentifierContext<'a, 'b>) -> io::Result<()> {
-        if self.makes_external_call {
+        if context.blocks.is_empty() {
             return Ok(())
         }
 
+        let definition_id = match context.definition_node {
+            &ContractDefinitionNode::FunctionDefinition(FunctionDefinition { id, .. }) => id,
+            &ContractDefinitionNode::ModifierDefinition(ModifierDefinition { id, .. }) => id,
+            _ => return Ok(())
+        };
+
+        let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
+        let function_info = contract_info.function_info.get_mut(&definition_id).unwrap();
+        let block_info = function_info.block_info.get_mut(&context.blocks.last().unwrap().id).unwrap();
+
+        //
+        // Don't check the identifier if the current block is already marked
+        //
+
+        if block_info.makes_external_call {
+            return Ok(())
+        }
+
+        //
+        // Check if the identifier references an external function
+        //
+
         for source_unit in context.source_units.iter() {
-            if let Some(function_definition) = source_unit.function_definition(context.identifier.referenced_declaration) {
-                if let Visibility::External = function_definition.visibility {
-                    self.makes_external_call = true;
-                    return Ok(())
-                }
+            if let Some(FunctionDefinition {
+                visibility: Visibility::External,
+                ..
+            }) = source_unit.function_definition(context.identifier.referenced_declaration) {
+                block_info.makes_external_call = true;
+                break;
             }
         }
 
@@ -138,17 +358,36 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
     }
 
     fn visit_member_access<'a, 'b>(&mut self, context: &mut MemberAccessContext<'a, 'b>) -> io::Result<()> {
-        if self.makes_external_call {
+        let definition_id = match context.definition_node {
+            &ContractDefinitionNode::FunctionDefinition(FunctionDefinition { id, .. }) => id,
+            &ContractDefinitionNode::ModifierDefinition(ModifierDefinition { id, .. }) => id,
+            _ => return Ok(())
+        };
+
+        let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
+        let function_info = contract_info.function_info.get_mut(&definition_id).unwrap();
+        let block_info = function_info.block_info.get_mut(&context.blocks.last().unwrap().id).unwrap();
+
+        //
+        // Don't check the member access if the current block is already marked
+        //
+
+        if block_info.makes_external_call {
             return Ok(())
         }
 
-        if let Some(referenced_declaration) = context.member_access.referenced_declaration {
+        //
+        // Check if the member access references an external function
+        //
+
+        if let Some(id) = context.member_access.referenced_declaration {
             for source_unit in context.source_units.iter() {
-                if let Some(function_definition) = source_unit.function_definition(referenced_declaration) {
-                    if let Visibility::External = function_definition.visibility {
-                        self.makes_external_call = true;
-                        break;
-                    }
+                if let Some(FunctionDefinition {
+                    visibility: Visibility::External,
+                    ..
+                }) = source_unit.function_definition(id) {
+                    block_info.makes_external_call = true;
+                    break;
                 }
             }
         }
@@ -157,24 +396,77 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
     }
 
     fn visit_assignment<'a, 'b>(&mut self, context: &mut AssignmentContext<'a, 'b>) -> io::Result<()> {
-        let function_definition = match context.definition_node {
-            ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition,
+        let definition_id = match context.definition_node {
+            &ContractDefinitionNode::FunctionDefinition(FunctionDefinition { id, .. })
+            | &ContractDefinitionNode::ModifierDefinition(ModifierDefinition { id, .. }) => id,
             _ => return Ok(())
         };
 
-        if !self.makes_external_call {
+        let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
+        let function_info = contract_info.function_info.get_mut(&definition_id).unwrap();
+        let block_id = context.blocks.last().unwrap().id;
+        let block_info = function_info.block_info.get(&block_id).unwrap();
+
+        //
+        // Don't check the assignment if the current block is already marked
+        //
+
+        if block_info.makes_post_external_call_assignment {
             return Ok(())
         }
 
-        if self.makes_post_external_call_assignment {
-            return Ok(())
+        //
+        // Don't check for post-call assignments if the current scope doesn't make an external call
+        //
+        
+        let mut makes_external_call = block_info.makes_external_call;
+
+        if !makes_external_call {
+            for &parent_block_id in block_info.parent_blocks.iter().rev() {
+                if let Some(BlockInfo {
+                    makes_external_call: true,
+                    ..
+                }) = function_info.block_info.get(&parent_block_id) {
+                    makes_external_call = true;
+                    break;
+                }
+            }
+
+            if !makes_external_call {
+                return Ok(())
+            }
         }
 
-        // TODO: remove this ugly hack and check modifiers correctly
-        if function_definition.modifiers.iter().find(|m| m.modifier_name.name == "nonReentrant").is_some() {
-            return Ok(())
-        }
+        //
+        // Check if state variables are directly assigned to
+        //
 
+        let block_info = function_info.block_info.get_mut(&block_id).unwrap();
+        
+        for id in context.assignment.left_hand_side.referenced_declarations() {
+            if block_info.variable_bindings.contains_key(&id) {
+                block_info.makes_post_external_call_assignment = true;
+                self.print_message(
+                    context.contract_definition,
+                    context.definition_node,
+                    context.current_source_unit.source_line(context.assignment.src.as_str())?
+                );
+                return Ok(())
+            }
+
+            for (_, ids) in block_info.variable_bindings.iter() {
+                if ids.contains(&id) {
+                    block_info.makes_post_external_call_assignment = true;
+                    self.print_message(
+                        context.contract_definition,
+                        context.definition_node,
+                        context.current_source_unit.source_line(context.assignment.src.as_str())?
+                    );
+                    return Ok(())
+                }
+            }
+        }
+        
         let ids = context.contract_definition.get_assigned_state_variables(
             context.source_units,
             context.definition_node,
@@ -182,65 +474,13 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
         );
 
         if !ids.is_empty() {
-            self.makes_post_external_call_assignment = true;
-        }
-
-        // TODO: refactor this into a function, there's likely some edge cases missed
-        match context.assignment.left_hand_side.as_ref() {
-            Expression::Identifier(_) => {
-                // TODO: check if local variable is no longer bound to state variable
-            }
-
-            Expression::IndexAccess(_)
-            | Expression::IndexRangeAccess(_)
-            | Expression::MemberAccess(_) => {
-                if let Some(Expression::Identifier(Identifier {
-                    referenced_declaration,
-                    ..
-                })) = context.assignment.left_hand_side.root_expression() {
-                    for (_state_variable_id, local_variable_ids) in self.bindings.iter() {
-                        if local_variable_ids.contains(referenced_declaration) {
-                            self.makes_post_external_call_assignment = true;
-                            return Ok(())
-                        }
-                    }
-                }
-            }
-
-            Expression::TupleExpression(tuple_expression) => {
-                for component in tuple_expression.components.iter() {
-                    if let Some(component) = component {
-                        match component {
-                            Expression::Identifier(_) => {
-                                // TODO: check if local variable is no longer bound to state variable
-                            }
-
-                            Expression::IndexAccess(_)
-                            | Expression::IndexRangeAccess(_)
-                            | Expression::MemberAccess(_) => {
-                                if let Some(Expression::Identifier(Identifier {
-                                    referenced_declaration,
-                                    ..
-                                })) = component.root_expression() {
-                                    for (_state_variable_id, local_variable_ids) in self.bindings.iter() {
-                                        if local_variable_ids.contains(referenced_declaration) {
-                                            self.makes_post_external_call_assignment = true;
-                                            return Ok(())
-                                        }
-                                    }
-                                }
-                            }
-
-                            expression => println!(
-                                "\tWARNING: unhandled assignment in tuple {:#?}",
-                                expression
-                            )
-                        }
-                    }
-                }
-            }
-
-            expression => println!("\tWARNING: unhandled assignment {:#?}", expression)
+            block_info.makes_post_external_call_assignment = true;
+            self.print_message(
+                context.contract_definition,
+                context.definition_node,
+                context.current_source_unit.source_line(context.assignment.src.as_str())?
+            );
+            return Ok(())
         }
 
         Ok(())

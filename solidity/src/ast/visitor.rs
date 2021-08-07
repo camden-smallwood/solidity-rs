@@ -987,6 +987,22 @@ impl AstVisitor for AstVisitorData<'_> {
             visitor.visit_variable_declaration_statement(context)?;
         }
 
+        for variable_declaration in context.variable_declaration_statement.declarations.iter() {
+            if let Some(variable_declaration) = variable_declaration {
+                let mut context = VariableDeclarationContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    variable_declaration
+                };
+                
+                self.visit_variable_declaration(&mut context)?;
+                self.leave_variable_declaration(&mut context)?;
+            }
+        }
+
         if let Some(initial_value) = context.variable_declaration_statement.initial_value.as_ref() {
             let mut context = ExpressionContext {
                 source_units: context.source_units,
