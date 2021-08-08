@@ -424,11 +424,10 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
         //
         // Check if state variables are directly assigned to
         //
-
-        let block_info = function_info.block_info.get_mut(&block_id).unwrap();
         
         for id in context.assignment.left_hand_side.referenced_declarations() {
             if context.contract_definition.hierarchy_contains_state_variable(context.source_units, id) {
+                let block_info = function_info.block_info.get_mut(&block_id).unwrap();
                 block_info.makes_post_external_call_assignment = true;
 
                 self.print_message(
@@ -442,6 +441,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
 
             for (_, ids) in block_info.variable_bindings.iter() {
                 if ids.contains(&id) {
+                    let block_info = function_info.block_info.get_mut(&block_id).unwrap();
                     block_info.makes_post_external_call_assignment = true;
 
                     self.print_message(
@@ -453,6 +453,25 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
                     return Ok(())
                 }
             }
+
+            for &parent_block_id in block_info.parent_blocks.iter() {
+                let parent_block_info = function_info.block_info.get(&parent_block_id).unwrap();
+
+                for (_, ids) in parent_block_info.variable_bindings.iter() {
+                    if ids.contains(&id) {
+                        let block_info = function_info.block_info.get_mut(&block_id).unwrap();
+                        block_info.makes_post_external_call_assignment = true;
+    
+                        self.print_message(
+                            context.contract_definition,
+                            context.definition_node,
+                            context.current_source_unit.source_line(context.assignment.src.as_str())?
+                        );
+    
+                        return Ok(())
+                    }
+                }
+            }
         }
         
         let ids = context.contract_definition.get_assigned_state_variables(
@@ -462,7 +481,9 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
         );
 
         if !ids.is_empty() {
+            let block_info = function_info.block_info.get_mut(&block_id).unwrap();
             block_info.makes_post_external_call_assignment = true;
+            
             self.print_message(
                 context.contract_definition,
                 context.definition_node,
@@ -519,8 +540,6 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
         //
         // Check for post external call mutative function calls
         //
-
-        let block_info = function_info.block_info.get_mut(&block_id).unwrap();
         
         let expression = match context.function_call.expression.as_ref() {
             Expression::MemberAccess(MemberAccess {
@@ -535,6 +554,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
         
         for id in expression.referenced_declarations() {
             if context.contract_definition.hierarchy_contains_state_variable(context.source_units, id) {
+                let block_info = function_info.block_info.get_mut(&block_id).unwrap();
                 block_info.makes_post_external_call_assignment = true;
 
                 self.print_message(
@@ -548,6 +568,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
 
             for (_, ids) in block_info.variable_bindings.iter() {
                 if ids.contains(&id) {
+                    let block_info = function_info.block_info.get_mut(&block_id).unwrap();
                     block_info.makes_post_external_call_assignment = true;
 
                     self.print_message(
@@ -557,6 +578,25 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
                     );
 
                     return Ok(())
+                }
+            }
+
+            for &parent_block_id in block_info.parent_blocks.iter() {
+                let parent_block_info = function_info.block_info.get(&parent_block_id).unwrap();
+
+                for (_, ids) in parent_block_info.variable_bindings.iter() {
+                    if ids.contains(&id) {
+                        let block_info = function_info.block_info.get_mut(&block_id).unwrap();
+                        block_info.makes_post_external_call_assignment = true;
+    
+                        self.print_message(
+                            context.contract_definition,
+                            context.definition_node,
+                            context.current_source_unit.source_line(context.function_call.src.as_str())?
+                        );
+    
+                        return Ok(())
+                    }
                 }
             }
         }
