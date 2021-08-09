@@ -493,7 +493,104 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
 
         Ok(())
     }
+    
+    fn visit_unary_operation<'a, 'b>(&mut self, context: &mut UnaryOperationContext<'a, 'b>) -> io::Result<()> {
+        let definition_id = match context.definition_node {
+            &ContractDefinitionNode::FunctionDefinition(FunctionDefinition { id, .. })
+            | &ContractDefinitionNode::ModifierDefinition(ModifierDefinition { id, .. }) => id,
+            _ => return Ok(())
+        };
 
+        let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
+        let function_info = contract_info.function_info.get_mut(&definition_id).unwrap();
+        let block_id = context.blocks.last().unwrap().id;
+        let block_info = function_info.block_info.get(&block_id).unwrap();
+
+        //
+        // Don't check the unary operation if the current block is already marked
+        //
+
+        if block_info.makes_post_external_call_assignment {
+            return Ok(())
+        }
+
+        //
+        // Don't check the unary operation if the current scope doesn't make an external call
+        //
+        
+        let mut makes_external_call = block_info.makes_external_call;
+
+        if !makes_external_call {
+            for &parent_block_id in block_info.parent_blocks.iter().rev() {
+                if let Some(BlockInfo {
+                    makes_external_call: true,
+                    ..
+                }) = function_info.block_info.get(&parent_block_id) {
+                    makes_external_call = true;
+                    break;
+                }
+            }
+
+            if !makes_external_call {
+                return Ok(())
+            }
+        }
+
+        //
+        // Check for post external call unary operations
+        //
+        
+        for id in context.unary_operation.sub_expression.referenced_declarations() {
+            if context.contract_definition.hierarchy_contains_state_variable(context.source_units, id) {
+                let block_info = function_info.block_info.get_mut(&block_id).unwrap();
+                block_info.makes_post_external_call_assignment = true;
+
+                self.print_message(
+                    context.contract_definition,
+                    context.definition_node,
+                    context.current_source_unit.source_line(context.unary_operation.src.as_str())?
+                );
+
+                return Ok(())
+            }
+
+            for (_, ids) in block_info.variable_bindings.iter() {
+                if ids.contains(&id) {
+                    let block_info = function_info.block_info.get_mut(&block_id).unwrap();
+                    block_info.makes_post_external_call_assignment = true;
+
+                    self.print_message(
+                        context.contract_definition,
+                        context.definition_node,
+                        context.current_source_unit.source_line(context.unary_operation.src.as_str())?
+                    );
+
+                    return Ok(())
+                }
+            }
+
+            for &parent_block_id in block_info.parent_blocks.iter() {
+                let parent_block_info = function_info.block_info.get(&parent_block_id).unwrap();
+
+                for (_, ids) in parent_block_info.variable_bindings.iter() {
+                    if ids.contains(&id) {
+                        let block_info = function_info.block_info.get_mut(&block_id).unwrap();
+                        block_info.makes_post_external_call_assignment = true;
+    
+                        self.print_message(
+                            context.contract_definition,
+                            context.definition_node,
+                            context.current_source_unit.source_line(context.unary_operation.src.as_str())?
+                        );
+    
+                        return Ok(())
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
 
     fn visit_function_call<'a, 'b>(&mut self, context: &mut FunctionCallContext<'a, 'b>) -> io::Result<()> {
         let definition_id = match context.definition_node {
