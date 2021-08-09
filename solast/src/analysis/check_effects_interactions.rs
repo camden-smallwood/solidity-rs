@@ -422,36 +422,26 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
         }
 
         //
-        // Check if state variables are directly assigned to
+        // Check for post external call state variable assignments
         //
+
+        let mut makes_post_external_call_assignment = false;
         
         for id in context.assignment.left_hand_side.referenced_declarations() {
             if context.contract_definition.hierarchy_contains_state_variable(context.source_units, id) {
-                let block_info = function_info.block_info.get_mut(&block_id).unwrap();
-                block_info.makes_post_external_call_assignment = true;
-
-                self.print_message(
-                    context.contract_definition,
-                    context.definition_node,
-                    context.current_source_unit.source_line(context.assignment.src.as_str())?
-                );
-
-                return Ok(())
+                makes_post_external_call_assignment = true;
+                break;
             }
 
             for (_, ids) in block_info.variable_bindings.iter() {
                 if ids.contains(&id) {
-                    let block_info = function_info.block_info.get_mut(&block_id).unwrap();
-                    block_info.makes_post_external_call_assignment = true;
-
-                    self.print_message(
-                        context.contract_definition,
-                        context.definition_node,
-                        context.current_source_unit.source_line(context.assignment.src.as_str())?
-                    );
-
-                    return Ok(())
+                    makes_post_external_call_assignment = true;
+                    break;
                 }
+            }
+
+            if makes_post_external_call_assignment {
+                break;
             }
 
             for &parent_block_id in block_info.parent_blocks.iter() {
@@ -459,31 +449,25 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
 
                 for (_, ids) in parent_block_info.variable_bindings.iter() {
                     if ids.contains(&id) {
-                        let block_info = function_info.block_info.get_mut(&block_id).unwrap();
-                        block_info.makes_post_external_call_assignment = true;
-    
-                        self.print_message(
-                            context.contract_definition,
-                            context.definition_node,
-                            context.current_source_unit.source_line(context.assignment.src.as_str())?
-                        );
-    
-                        return Ok(())
+                        makes_post_external_call_assignment = true;
+                        break;
                     }
                 }
+
+                if makes_post_external_call_assignment {
+                    break;
+                }
+            }
+
+            if makes_post_external_call_assignment {
+                break;
             }
         }
-        
-        let ids = context.contract_definition.get_assigned_state_variables(
-            context.source_units,
-            context.definition_node,
-            context.assignment.left_hand_side.as_ref(),
-        );
 
-        if !ids.is_empty() {
+        if makes_post_external_call_assignment {
             let block_info = function_info.block_info.get_mut(&block_id).unwrap();
             block_info.makes_post_external_call_assignment = true;
-            
+
             self.print_message(
                 context.contract_definition,
                 context.definition_node,
@@ -540,33 +524,23 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
         // Check for post external call unary operations
         //
         
+        let mut makes_post_external_call_assignment = false;
+
         for id in context.unary_operation.sub_expression.referenced_declarations() {
             if context.contract_definition.hierarchy_contains_state_variable(context.source_units, id) {
-                let block_info = function_info.block_info.get_mut(&block_id).unwrap();
-                block_info.makes_post_external_call_assignment = true;
-
-                self.print_message(
-                    context.contract_definition,
-                    context.definition_node,
-                    context.current_source_unit.source_line(context.unary_operation.src.as_str())?
-                );
-
-                return Ok(())
+                makes_post_external_call_assignment = true;
+                break;
             }
 
             for (_, ids) in block_info.variable_bindings.iter() {
                 if ids.contains(&id) {
-                    let block_info = function_info.block_info.get_mut(&block_id).unwrap();
-                    block_info.makes_post_external_call_assignment = true;
-
-                    self.print_message(
-                        context.contract_definition,
-                        context.definition_node,
-                        context.current_source_unit.source_line(context.unary_operation.src.as_str())?
-                    );
-
-                    return Ok(())
+                    makes_post_external_call_assignment = true;
+                    break;
                 }
+            }
+
+            if makes_post_external_call_assignment {
+                break;
             }
 
             for &parent_block_id in block_info.parent_blocks.iter() {
@@ -574,19 +548,30 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
 
                 for (_, ids) in parent_block_info.variable_bindings.iter() {
                     if ids.contains(&id) {
-                        let block_info = function_info.block_info.get_mut(&block_id).unwrap();
-                        block_info.makes_post_external_call_assignment = true;
-    
-                        self.print_message(
-                            context.contract_definition,
-                            context.definition_node,
-                            context.current_source_unit.source_line(context.unary_operation.src.as_str())?
-                        );
-    
-                        return Ok(())
+                        makes_post_external_call_assignment = true;
+                        break;
                     }
                 }
+
+                if makes_post_external_call_assignment {
+                    break;
+                }
             }
+
+            if makes_post_external_call_assignment {
+                break;
+            }
+        }
+
+        if makes_post_external_call_assignment {
+            let block_info = function_info.block_info.get_mut(&block_id).unwrap();
+            block_info.makes_post_external_call_assignment = true;
+
+            self.print_message(
+                context.contract_definition,
+                context.definition_node,
+                context.current_source_unit.source_line(context.unary_operation.src.as_str())?
+            );
         }
 
         Ok(())
@@ -648,34 +633,24 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
 
             _ => return Ok(())
         };
+
+        let mut makes_post_external_call_assignment = false;
         
         for id in expression.referenced_declarations() {
             if context.contract_definition.hierarchy_contains_state_variable(context.source_units, id) {
-                let block_info = function_info.block_info.get_mut(&block_id).unwrap();
-                block_info.makes_post_external_call_assignment = true;
-
-                self.print_message(
-                    context.contract_definition,
-                    context.definition_node,
-                    context.current_source_unit.source_line(context.function_call.src.as_str())?
-                );
-
-                return Ok(())
+                makes_post_external_call_assignment = true;
+                break;
             }
 
             for (_, ids) in block_info.variable_bindings.iter() {
                 if ids.contains(&id) {
-                    let block_info = function_info.block_info.get_mut(&block_id).unwrap();
-                    block_info.makes_post_external_call_assignment = true;
-
-                    self.print_message(
-                        context.contract_definition,
-                        context.definition_node,
-                        context.current_source_unit.source_line(context.function_call.src.as_str())?
-                    );
-
-                    return Ok(())
+                    makes_post_external_call_assignment = true;
+                    break;
                 }
+            }
+
+            if makes_post_external_call_assignment {
+                break;
             }
 
             for &parent_block_id in block_info.parent_blocks.iter() {
@@ -683,19 +658,30 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
 
                 for (_, ids) in parent_block_info.variable_bindings.iter() {
                     if ids.contains(&id) {
-                        let block_info = function_info.block_info.get_mut(&block_id).unwrap();
-                        block_info.makes_post_external_call_assignment = true;
-    
-                        self.print_message(
-                            context.contract_definition,
-                            context.definition_node,
-                            context.current_source_unit.source_line(context.function_call.src.as_str())?
-                        );
-    
-                        return Ok(())
+                        makes_post_external_call_assignment = true;
+                        break;
                     }
                 }
+
+                if makes_post_external_call_assignment {
+                    break;
+                }
             }
+
+            if makes_post_external_call_assignment {
+                break;
+            }
+        }
+
+        if makes_post_external_call_assignment {
+            let block_info = function_info.block_info.get_mut(&block_id).unwrap();
+            block_info.makes_post_external_call_assignment = true;
+
+            self.print_message(
+                context.contract_definition,
+                context.definition_node,
+                context.current_source_unit.source_line(context.function_call.src.as_str())?
+            );
         }
 
         Ok(())
