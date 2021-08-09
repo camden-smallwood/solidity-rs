@@ -1,5 +1,5 @@
 use solidity::ast::*;
-use std::{collections::{HashMap, HashSet}, io};
+use std::{collections::HashMap, io};
 
 struct BlockInfo {
     makes_external_call: bool,
@@ -17,14 +17,12 @@ struct ContractInfo {
 }
 
 pub struct CheckEffectsInteractionsVisitor {
-    reported_functions: HashSet<NodeID>,
     contract_info: HashMap<NodeID, ContractInfo>,
 }
 
 impl Default for CheckEffectsInteractionsVisitor {
     fn default() -> Self {
         Self {
-            reported_functions: HashSet::new(),
             contract_info: HashMap::new(),
         }
     }
@@ -77,20 +75,73 @@ impl CheckEffectsInteractionsVisitor {
         }
     }
 
+    fn check_expression(
+        source_units: &[SourceUnit],
+        contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
+        function_info: &mut FunctionInfo,
+        block_id: NodeID,
+        expression: &Expression,
+        source_line: usize,
+    ) -> io::Result<()> {
+        let mut makes_post_external_call_assignment = false;
+        
+        for id in expression.referenced_declarations() {
+            if contract_definition.hierarchy_contains_state_variable(source_units, id) {
+                makes_post_external_call_assignment = true;
+                break;
+            }
+
+            let block_info = function_info.block_info.get(&block_id).unwrap();
+
+            for (_, ids) in block_info.variable_bindings.iter() {
+                if ids.contains(&id) {
+                    makes_post_external_call_assignment = true;
+                    break;
+                }
+            }
+
+            if makes_post_external_call_assignment {
+                break;
+            }
+
+            for &parent_block_id in block_info.parent_blocks.iter() {
+                let parent_block_info = function_info.block_info.get(&parent_block_id).unwrap();
+
+                for (_, ids) in parent_block_info.variable_bindings.iter() {
+                    if ids.contains(&id) {
+                        makes_post_external_call_assignment = true;
+                        break;
+                    }
+                }
+
+                if makes_post_external_call_assignment {
+                    break;
+                }
+            }
+
+            if makes_post_external_call_assignment {
+                break;
+            }
+        }
+
+        if makes_post_external_call_assignment {
+            let block_info = function_info.block_info.get_mut(&block_id).unwrap();
+            block_info.makes_post_external_call_assignment = true;
+
+            Self::print_message(contract_definition, definition_node, source_line);
+        }
+
+        Ok(())
+    }
+
     fn print_message(
-        &mut self,
         contract_definition: &ContractDefinition,
         definition_node: &ContractDefinitionNode,
         source_line: usize,
     ) {
         match definition_node {
             ContractDefinitionNode::FunctionDefinition(function_definition) => {
-                if self.reported_functions.contains(&function_definition.id) {
-                    return;
-                }
-
-                self.reported_functions.insert(function_definition.id);
-
                 println!(
                     "\tL{}: The {} {} in the `{}` {} ignores the Check-Effects-Interactions pattern",
 
@@ -110,12 +161,6 @@ impl CheckEffectsInteractionsVisitor {
             }
 
             ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
-                if self.reported_functions.contains(&modifier_definition.id) {
-                    return;
-                }
-
-                self.reported_functions.insert(modifier_definition.id);
-                
                 println!(
                     "\tL{}: The `{}` modifier in the `{}` {} ignores the Check-Effects-Interactions pattern",
 
@@ -425,57 +470,15 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
         // Check for post external call state variable assignments
         //
 
-        let mut makes_post_external_call_assignment = false;
-        
-        for id in context.assignment.left_hand_side.referenced_declarations() {
-            if context.contract_definition.hierarchy_contains_state_variable(context.source_units, id) {
-                makes_post_external_call_assignment = true;
-                break;
-            }
-
-            for (_, ids) in block_info.variable_bindings.iter() {
-                if ids.contains(&id) {
-                    makes_post_external_call_assignment = true;
-                    break;
-                }
-            }
-
-            if makes_post_external_call_assignment {
-                break;
-            }
-
-            for &parent_block_id in block_info.parent_blocks.iter() {
-                let parent_block_info = function_info.block_info.get(&parent_block_id).unwrap();
-
-                for (_, ids) in parent_block_info.variable_bindings.iter() {
-                    if ids.contains(&id) {
-                        makes_post_external_call_assignment = true;
-                        break;
-                    }
-                }
-
-                if makes_post_external_call_assignment {
-                    break;
-                }
-            }
-
-            if makes_post_external_call_assignment {
-                break;
-            }
-        }
-
-        if makes_post_external_call_assignment {
-            let block_info = function_info.block_info.get_mut(&block_id).unwrap();
-            block_info.makes_post_external_call_assignment = true;
-
-            self.print_message(
-                context.contract_definition,
-                context.definition_node,
-                context.current_source_unit.source_line(context.assignment.src.as_str())?
-            );
-        }
-
-        Ok(())
+        Self::check_expression(
+            context.source_units,
+            context.contract_definition,
+            context.definition_node,
+            function_info,
+            block_id,
+            context.assignment.left_hand_side.as_ref(),
+            context.current_source_unit.source_line(context.assignment.src.as_str())?
+        )
     }
     
     fn visit_unary_operation<'a, 'b>(&mut self, context: &mut UnaryOperationContext<'a, 'b>) -> io::Result<()> {
@@ -524,57 +527,15 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
         // Check for post external call unary operations
         //
         
-        let mut makes_post_external_call_assignment = false;
-
-        for id in context.unary_operation.sub_expression.referenced_declarations() {
-            if context.contract_definition.hierarchy_contains_state_variable(context.source_units, id) {
-                makes_post_external_call_assignment = true;
-                break;
-            }
-
-            for (_, ids) in block_info.variable_bindings.iter() {
-                if ids.contains(&id) {
-                    makes_post_external_call_assignment = true;
-                    break;
-                }
-            }
-
-            if makes_post_external_call_assignment {
-                break;
-            }
-
-            for &parent_block_id in block_info.parent_blocks.iter() {
-                let parent_block_info = function_info.block_info.get(&parent_block_id).unwrap();
-
-                for (_, ids) in parent_block_info.variable_bindings.iter() {
-                    if ids.contains(&id) {
-                        makes_post_external_call_assignment = true;
-                        break;
-                    }
-                }
-
-                if makes_post_external_call_assignment {
-                    break;
-                }
-            }
-
-            if makes_post_external_call_assignment {
-                break;
-            }
-        }
-
-        if makes_post_external_call_assignment {
-            let block_info = function_info.block_info.get_mut(&block_id).unwrap();
-            block_info.makes_post_external_call_assignment = true;
-
-            self.print_message(
-                context.contract_definition,
-                context.definition_node,
-                context.current_source_unit.source_line(context.unary_operation.src.as_str())?
-            );
-        }
-
-        Ok(())
+        Self::check_expression(
+            context.source_units,
+            context.contract_definition,
+            context.definition_node,
+            function_info,
+            block_id,
+            context.unary_operation.sub_expression.as_ref(),
+            context.current_source_unit.source_line(context.unary_operation.src.as_str())?
+        )
     }
 
     fn visit_function_call<'a, 'b>(&mut self, context: &mut FunctionCallContext<'a, 'b>) -> io::Result<()> {
@@ -634,56 +595,14 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
             _ => return Ok(())
         };
 
-        let mut makes_post_external_call_assignment = false;
-        
-        for id in expression.referenced_declarations() {
-            if context.contract_definition.hierarchy_contains_state_variable(context.source_units, id) {
-                makes_post_external_call_assignment = true;
-                break;
-            }
-
-            for (_, ids) in block_info.variable_bindings.iter() {
-                if ids.contains(&id) {
-                    makes_post_external_call_assignment = true;
-                    break;
-                }
-            }
-
-            if makes_post_external_call_assignment {
-                break;
-            }
-
-            for &parent_block_id in block_info.parent_blocks.iter() {
-                let parent_block_info = function_info.block_info.get(&parent_block_id).unwrap();
-
-                for (_, ids) in parent_block_info.variable_bindings.iter() {
-                    if ids.contains(&id) {
-                        makes_post_external_call_assignment = true;
-                        break;
-                    }
-                }
-
-                if makes_post_external_call_assignment {
-                    break;
-                }
-            }
-
-            if makes_post_external_call_assignment {
-                break;
-            }
-        }
-
-        if makes_post_external_call_assignment {
-            let block_info = function_info.block_info.get_mut(&block_id).unwrap();
-            block_info.makes_post_external_call_assignment = true;
-
-            self.print_message(
-                context.contract_definition,
-                context.definition_node,
-                context.current_source_unit.source_line(context.function_call.src.as_str())?
-            );
-        }
-
-        Ok(())
+        Self::check_expression(
+            context.source_units,
+            context.contract_definition,
+            context.definition_node,
+            function_info,
+            block_id,
+            expression,
+            context.current_source_unit.source_line(context.function_call.src.as_str())?
+        )
     }
 }
