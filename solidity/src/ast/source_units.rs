@@ -3,48 +3,6 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, io};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct PragmaDirective {
-    pub literals: Vec<String>,
-    pub src: String,
-    pub id: NodeID,
-}
-
-pub struct PragmaDirectiveContext<'a> {
-    pub source_units: &'a [SourceUnit],
-    pub current_source_unit: &'a SourceUnit,
-    pub pragma_directive: &'a PragmaDirective,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct SymbolAlias {
-    pub foreign: Expression,
-    pub local: Option<String>,
-    pub name_location: Option<String>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct ImportDirective {
-    pub file: String,
-    pub source_unit: NodeID,
-    pub scope: NodeID,
-    pub absolute_path: Option<String>,
-    pub unit_alias: String,
-    pub name_location: Option<String>,
-    pub symbol_aliases: Vec<SymbolAlias>,
-    pub src: String,
-    pub id: NodeID,
-}
-
-pub struct ImportDirectiveContext<'a> {
-    pub source_units: &'a [SourceUnit],
-    pub current_source_unit: &'a SourceUnit,
-    pub import_directive: &'a ImportDirective,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum SourceUnitNode {
     PragmaDirective(PragmaDirective),

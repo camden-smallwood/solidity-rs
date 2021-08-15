@@ -1,8 +1,4 @@
-use crate::ast::{
-    Documentation, EnumDefinition, ErrorDefinition, EventDefinition, Expression,
-    FunctionDefinition, IdentifierPath, ModifierDefinition, NodeID, SourceUnit, StructDefinition,
-    TypeName, VariableDeclaration,
-};
+use super::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
@@ -36,21 +32,13 @@ pub enum ContractDefinitionNode {
 impl Display for ContractDefinitionNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ContractDefinitionNode::UsingForDirective(using_for_directive) => {
-                using_for_directive.fmt(f)
-            }
+            ContractDefinitionNode::UsingForDirective(using_for_directive) => using_for_directive.fmt(f),
             ContractDefinitionNode::StructDefinition(struct_definition) => struct_definition.fmt(f),
             ContractDefinitionNode::EnumDefinition(enum_definition) => enum_definition.fmt(f),
-            ContractDefinitionNode::VariableDeclaration(variable_declaration) => {
-                variable_declaration.fmt(f)
-            }
+            ContractDefinitionNode::VariableDeclaration(variable_declaration) => variable_declaration.fmt(f),
             ContractDefinitionNode::EventDefinition(event_definition) => event_definition.fmt(f),
-            ContractDefinitionNode::FunctionDefinition(function_definition) => {
-                function_definition.fmt(f)
-            }
-            ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
-                modifier_definition.fmt(f)
-            }
+            ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition.fmt(f),
+            ContractDefinitionNode::ModifierDefinition(modifier_definition) => modifier_definition.fmt(f),
             ContractDefinitionNode::ErrorDefinition(error_definition) => error_definition.fmt(f),
         }
     }
@@ -88,65 +76,6 @@ impl Display for InheritanceSpecifier {
 
         Ok(())
     }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct OverrideSpecifier {
-    pub overrides: Vec<IdentifierPath>,
-    pub src: String,
-    pub id: NodeID,
-}
-
-impl Display for OverrideSpecifier {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("override")?;
-
-        if !self.overrides.is_empty() {
-            f.write_str("(")?;
-
-            for (i, identifier_path) in self.overrides.iter().enumerate() {
-                if i > 0 {
-                    f.write_str(", ")?;
-                }
-
-                f.write_fmt(format_args!("{}", identifier_path))?;
-            }
-
-            f.write_str(")")?;
-        }
-
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct UsingForDirective {
-    pub library_name: IdentifierPath,
-    pub type_name: Option<TypeName>,
-    pub src: String,
-    pub id: NodeID,
-}
-
-impl Display for UsingForDirective {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!(
-            "using {} for {}",
-            self.library_name,
-            match self.type_name.as_ref() {
-                Some(type_name) => format!("{}", type_name),
-                None => format!("_"),
-            }
-        ))
-    }
-}
-
-pub struct UsingForDirectiveContext<'a> {
-    pub source_units: &'a [SourceUnit],
-    pub current_source_unit: &'a SourceUnit,
-    pub contract_definition: &'a ContractDefinition,
-    pub using_for_directive: &'a UsingForDirective,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -474,4 +403,110 @@ pub struct ContractDefinitionContext<'a> {
     pub source_units: &'a [SourceUnit],
     pub current_source_unit: &'a SourceUnit,
     pub contract_definition: &'a ContractDefinition,
+}
+
+impl<'a> ContractDefinitionContext<'a> {
+    pub fn create_using_for_directive_context(
+        &self,
+        using_for_directive: &'a UsingForDirective
+    ) -> UsingForDirectiveContext<'a> {
+        UsingForDirectiveContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition: self.contract_definition,
+            using_for_directive
+        }
+    }
+
+    pub fn create_struct_definition_context(
+        &self,
+        struct_definition: &'a StructDefinition
+    ) -> StructDefinitionContext<'a> {
+        StructDefinitionContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition: Some(self.contract_definition),
+            struct_definition
+        }
+    }
+    
+    pub fn create_enum_definition_context(
+        &self,
+        enum_definition: &'a EnumDefinition
+    ) -> EnumDefinitionContext<'a> {
+        EnumDefinitionContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition: Some(self.contract_definition),
+            enum_definition
+        }
+    }
+    
+    pub fn create_variable_declaration_context<'b>(
+        &self,
+        definition_node: &'a ContractDefinitionNode,
+        blocks: &'b mut Vec<&'a Block>,
+        variable_declaration: &'a VariableDeclaration
+    ) -> VariableDeclarationContext<'a, 'b> {
+        VariableDeclarationContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition: self.contract_definition,
+            definition_node,
+            blocks,
+            variable_declaration
+        }
+    }
+    
+    pub fn create_event_definition_context(
+        &self,
+        event_definition: &'a EventDefinition
+    ) -> EventDefinitionContext<'a> {
+        EventDefinitionContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition: self.contract_definition,
+            event_definition
+        }
+    }
+    
+    pub fn create_function_definition_context(
+        &self,
+        definition_node: &'a ContractDefinitionNode,
+        function_definition: &'a FunctionDefinition
+    ) -> FunctionDefinitionContext<'a> {
+        FunctionDefinitionContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition: self.contract_definition,
+            definition_node,
+            function_definition
+        }
+    }
+    
+    pub fn create_modifier_definition_context(
+        &self,
+        definition_node: &'a ContractDefinitionNode,
+        modifier_definition: &'a ModifierDefinition
+    ) -> ModifierDefinitionContext<'a> {
+        ModifierDefinitionContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition: self.contract_definition,
+            definition_node,
+            modifier_definition
+        }
+    }
+    
+    pub fn create_error_definition_context(
+        &self,
+        error_definition: &'a ErrorDefinition
+    ) -> ErrorDefinitionContext<'a> {
+        ErrorDefinitionContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition: self.contract_definition,
+            error_definition
+        }
+    }
 }

@@ -471,101 +471,56 @@ impl AstVisitor for AstVisitorData<'_> {
         for definition_node in context.contract_definition.nodes.iter() {
             match definition_node {
                 ContractDefinitionNode::UsingForDirective(using_for_directive) => {
-                    let mut context = UsingForDirectiveContext {
-                        source_units: context.source_units,
-                        current_source_unit: context.current_source_unit,
-                        contract_definition: context.contract_definition,
-                        using_for_directive
-                    };
-
+                    let mut context = context.create_using_for_directive_context(using_for_directive);
                     self.visit_using_for_directive(&mut context)?;
                     self.leave_using_for_directive(&mut context)?;
                 }
 
                 ContractDefinitionNode::StructDefinition(struct_definition) => {
-                    let mut context = StructDefinitionContext {
-                        source_units: context.source_units,
-                        current_source_unit: context.current_source_unit,
-                        contract_definition: Some(context.contract_definition),
-                        struct_definition
-                    };
-
+                    let mut context = context.create_struct_definition_context(struct_definition);
                     self.visit_struct_definition(&mut context)?;
                     self.leave_struct_definition(&mut context)?;
                 }
 
                 ContractDefinitionNode::EnumDefinition(enum_definition) => {
-                    let mut context = EnumDefinitionContext {
-                        source_units: context.source_units,
-                        current_source_unit: context.current_source_unit,
-                        contract_definition: Some(context.contract_definition),
-                        enum_definition
-                    };
-
+                    let mut context = context.create_enum_definition_context(enum_definition);
                     self.visit_enum_definition(&mut context)?;
                     self.leave_enum_definition(&mut context)?;
                 }
 
                 ContractDefinitionNode::VariableDeclaration(variable_declaration) => {
-                    let mut context = VariableDeclarationContext {
-                        source_units: context.source_units,
-                        current_source_unit: context.current_source_unit,
-                        contract_definition: context.contract_definition,
+                    let mut blocks = vec![];
+
+                    let mut context = context.create_variable_declaration_context(
                         definition_node,
-                        blocks: &mut vec![],
+                        &mut blocks,
                         variable_declaration
-                    };
+                    );
                     
                     self.visit_variable_declaration(&mut context)?;
                     self.leave_variable_declaration(&mut context)?;
                 }
 
                 ContractDefinitionNode::EventDefinition(event_definition) => {
-                    let mut context = EventDefinitionContext {
-                        source_units: context.source_units,
-                        current_source_unit: context.current_source_unit,
-                        contract_definition: context.contract_definition,
-                        event_definition
-                    };
-
+                    let mut context = context.create_event_definition_context(event_definition);
                     self.visit_event_definition(&mut context)?;
                     self.leave_event_definition(&mut context)?;
                 }
 
                 ContractDefinitionNode::ErrorDefinition(error_definition) => {
-                    let mut context = ErrorDefinitionContext {
-                        source_units: context.source_units,
-                        current_source_unit: context.current_source_unit,
-                        contract_definition: context.contract_definition,
-                        error_definition
-                    };
-
+                    let mut context = context.create_error_definition_context(error_definition);
                     self.visit_error_definition(&mut context)?;
                     self.leave_error_definition(&mut context)?;
                 }
 
                 ContractDefinitionNode::FunctionDefinition(function_definition) => {
-                    let mut context = FunctionDefinitionContext {
-                        source_units: context.source_units,
-                        current_source_unit: context.current_source_unit,
-                        contract_definition: context.contract_definition,
-                        definition_node: definition_node,
-                        function_definition
-                    };
-
+                    let mut context = context.create_function_definition_context(definition_node, function_definition);
                     self.visit_function_definition(&mut context)?;
                     self.leave_function_definition(&mut context)?;
                 }
 
                 ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
-                    let mut context = ModifierDefinitionContext {
-                        source_units: context.source_units,
-                        current_source_unit: context.current_source_unit,
-                        contract_definition: context.contract_definition,
-                        definition_node: definition_node,
-                        modifier_definition
-                    };
-
+                    let mut context = context.create_modifier_definition_context(definition_node, modifier_definition);
                     self.visit_modifier_definition(&mut context)?;
                     self.leave_modifier_definition(&mut context)?;
                 }

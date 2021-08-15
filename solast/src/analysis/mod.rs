@@ -16,7 +16,6 @@ mod manipulatable_balance_usage;
 mod missing_return;
 mod no_spdx_identifier;
 mod node_modules_imports;
-mod raw_address_transfer;
 mod redundant_assignments;
 mod redundant_comparisons;
 mod redundant_getter_function;
@@ -24,6 +23,7 @@ mod redundant_imports;
 mod redundant_state_variable_access;
 mod require_without_message;
 mod safe_erc20_functions;
+mod secure_ether_transfer;
 mod selfdestruct_usage;
 mod source_unit;
 mod state_variable_mutability;
@@ -44,9 +44,9 @@ pub use self::{
     explicit_variable_return::*, external_calls_in_loop::*, floating_solidity_version::*,
     ineffectual_statements::*, inline_assembly::*, invalid_using_for_directives::*,
     large_literals::*, manipulatable_balance_usage::*, missing_return::*, no_spdx_identifier::*,
-    node_modules_imports::*, raw_address_transfer::*, redundant_assignments::*,
-    redundant_comparisons::*, redundant_getter_function::*, redundant_imports::*,
-    redundant_state_variable_access::*, require_without_message::*, safe_erc20_functions::*,
+    node_modules_imports::*, redundant_assignments::*, redundant_comparisons::*,
+    redundant_getter_function::*, redundant_imports::*, redundant_state_variable_access::*,
+    require_without_message::*, safe_erc20_functions::*, secure_ether_transfer::*,
     selfdestruct_usage::*, source_unit::*, state_variable_mutability::*,
     state_variable_shadowing::*, storage_array_loop::*, tight_variable_packing::*,
     unchecked_casting::*, unchecked_erc20_transfer::*, unnecessary_pragmas::*,

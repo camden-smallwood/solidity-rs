@@ -1,9 +1,9 @@
 use solidity::ast::*;
 use std::io;
 
-pub struct RawAddressTransferVisitor;
+pub struct SecureEtherTransferVisitor;
 
-impl RawAddressTransferVisitor {
+impl SecureEtherTransferVisitor {
     fn print_message(
         &mut self,
         contract_definition: &ContractDefinition,
@@ -13,7 +13,7 @@ impl RawAddressTransferVisitor {
     ) {
         match definition_node {
             ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                "\tL{}: The {} {} in the `{}` {} performs a raw address transfer: `{}`",
+                "\tL{}: The {} {} in the `{}` {} ignores the Secure-Ether-Transfer pattern: `{}`",
     
                 source_line,
     
@@ -32,7 +32,7 @@ impl RawAddressTransferVisitor {
             ),
 
             ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                "\tL{}: The `{}` modifier in the `{}` {} performs a raw address transfer: `{}`",
+                "\tL{}: The `{}` modifier in the `{}` {} ignores the Secure-Ether-Transfer pattern: `{}`",
 
                 source_line,
 
@@ -49,7 +49,7 @@ impl RawAddressTransferVisitor {
     }
 }
 
-impl AstVisitor for RawAddressTransferVisitor {
+impl AstVisitor for SecureEtherTransferVisitor {
     fn visit_function_call<'a, 'b>(&mut self, context: &mut FunctionCallContext<'a, 'b>) -> io::Result<()> {
         if let Expression::MemberAccess(member_access) = context.function_call.expression.as_ref() {
             if let Some(TypeDescriptions { type_string: Some(type_string), .. }) = member_access.expression.as_ref().type_descriptions() {

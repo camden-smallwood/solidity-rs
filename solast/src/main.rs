@@ -22,7 +22,7 @@ const VISITOR_TYPES: &'static [(&'static str, fn() -> Box<dyn AstVisitor>)] = &[
     ("storage_array_loop", || Box::new(analysis::StorageArrayLoopVisitor::default())),
     ("external_calls_in_loop", || Box::new(analysis::ExternalCallsInLoopVisitor::default())),
     ("check_effects_interactions", || Box::new(analysis::CheckEffectsInteractionsVisitor::default())),
-    ("raw_address_transfer", || Box::new(analysis::RawAddressTransferVisitor)),
+    ("secure_ether_transfer", || Box::new(analysis::SecureEtherTransferVisitor)),
     ("safe_erc20_functions", || Box::new(analysis::SafeERC20FunctionsVisitor)),
     ("unchecked_erc20_transfer", || Box::new(analysis::UncheckedERC20TransferVisitor::default())),
     ("unpaid_payable_functions", || Box::new(analysis::UnpaidPayableFunctionsVisitor)),

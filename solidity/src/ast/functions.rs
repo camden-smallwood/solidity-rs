@@ -2,6 +2,21 @@ use crate::ast::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[serde(rename_all = "camelCase")]
+pub enum FunctionKind {
+    Constructor,
+    Function,
+    Receive,
+    Fallback,
+}
+
+impl Display for FunctionKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{}", format!("{:?}", self).to_lowercase()))
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ParameterList {
@@ -26,18 +41,33 @@ impl Display for ParameterList {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub enum FunctionKind {
-    Constructor,
-    Function,
-    Receive,
-    Fallback,
+pub struct OverrideSpecifier {
+    pub overrides: Vec<IdentifierPath>,
+    pub src: String,
+    pub id: NodeID,
 }
 
-impl Display for FunctionKind {
+impl Display for OverrideSpecifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{}", format!("{:?}", self).to_lowercase()))
+        f.write_str("override")?;
+
+        if !self.overrides.is_empty() {
+            f.write_str("(")?;
+
+            for (i, identifier_path) in self.overrides.iter().enumerate() {
+                if i > 0 {
+                    f.write_str(", ")?;
+                }
+
+                f.write_fmt(format_args!("{}", identifier_path))?;
+            }
+
+            f.write_str(")")?;
+        }
+
+        Ok(())
     }
 }
 
