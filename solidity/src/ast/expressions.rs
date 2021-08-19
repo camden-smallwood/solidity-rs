@@ -127,6 +127,27 @@ impl Expression {
             Expression::UnhandledExpression { .. } => None
         }
     }
+
+    pub fn source_line(&self, source_unit: &SourceUnit) -> std::io::Result<usize> {
+        source_unit.source_line(match self {
+            Expression::Literal(Literal { src, .. }) => src.as_str(),
+            Expression::Identifier(Identifier { src, .. }) => src.as_str(),
+            Expression::UnaryOperation(UnaryOperation { src, .. }) => src.as_str(),
+            Expression::BinaryOperation(BinaryOperation { src, .. }) => src.as_str(),
+            Expression::Conditional(Conditional { src, .. }) => src.as_str(),
+            Expression::Assignment(Assignment { src, .. }) => src.as_str(),
+            Expression::FunctionCall(FunctionCall { src, .. }) => src.as_str(),
+            Expression::FunctionCallOptions(FunctionCallOptions { src, .. }) => src.as_str(),
+            Expression::IndexAccess(IndexAccess { src, .. }) => src.as_str(),
+            Expression::IndexRangeAccess(IndexRangeAccess { src, .. }) => src.as_str(),
+            Expression::MemberAccess(MemberAccess { src, .. }) => src.as_str(),
+            Expression::ElementaryTypeNameExpression(ElementaryTypeNameExpression { src, .. }) => src.as_str(),
+            Expression::TupleExpression(TupleExpression { src, .. }) => src.as_str(),
+            Expression::NewExpression(NewExpression { src, .. }) => src.as_str(),
+            Expression::UnhandledExpression { src: Some(src), .. } => src.as_str(),
+            _ => return Err(std::io::Error::from(std::io::ErrorKind::NotFound))
+        })
+    }
 }
 
 impl Display for Expression {
