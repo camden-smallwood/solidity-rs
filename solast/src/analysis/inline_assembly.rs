@@ -1,6 +1,6 @@
 use solidity::ast::*;
 use std::io;
-use yul::{YulExpression, YulFunctionCall, YulIdentifier, YulLiteral};
+use yul::ast::*;
 
 pub struct InlineAssemblyVisitor;
 

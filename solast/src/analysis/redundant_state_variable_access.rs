@@ -17,43 +17,39 @@ impl RedundantStateVariableAccessVisitor {
         expression: &dyn std::fmt::Display
     ) {
         match definition_node {
-            ContractDefinitionNode::FunctionDefinition(function_definition) => {
-                println!(
-                    "\tL{}: The {} {} in the `{}` {} contains {} which redundantly accesses storage: `{}`",
+            ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                "\tL{}: The {} {} in the `{}` {} contains {} which redundantly accesses storage: `{}`",
 
-                    source_line,
+                source_line,
 
-                    function_definition.visibility,
+                function_definition.visibility,
 
-                    if let FunctionKind::Constructor = function_definition.kind {
-                        format!("{}", function_definition.kind)
-                    } else {
-                        format!("`{}` {}", function_definition.name, function_definition.kind)
-                    },
+                if let FunctionKind::Constructor = function_definition.kind {
+                    format!("{}", function_definition.kind)
+                } else {
+                    format!("`{}` {}", function_definition.name, function_definition.kind)
+                },
 
-                    contract_definition.name,
-                    contract_definition.kind,
+                contract_definition.name,
+                contract_definition.kind,
 
-                    message,
-                    expression
-                );
-            }
+                message,
+                expression
+            ),
 
-            ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
-                println!(
-                    "\tL{}: The `{}` modifier in the `{}` {} contains {} which redundantly accesses storage: `{}`",
+            ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                "\tL{}: The `{}` modifier in the `{}` {} contains {} which redundantly accesses storage: `{}`",
 
-                    source_line,
+                source_line,
 
-                    modifier_definition.name,
+                modifier_definition.name,
 
-                    contract_definition.name,
-                    contract_definition.kind,
+                contract_definition.name,
+                contract_definition.kind,
 
-                    message,
-                    expression
-                );
-            }
+                message,
+                expression
+            ),
 
             _ => ()
         }

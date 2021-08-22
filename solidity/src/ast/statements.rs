@@ -1,6 +1,8 @@
-use crate::ast::*;
+use super::*;
+use eth_lang_utils::ast::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
+use yul::ast::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(untagged)]
@@ -406,9 +408,9 @@ pub struct ReturnContext<'a, 'b> {
 #[serde(rename_all = "camelCase")]
 pub struct InlineAssembly {
     #[serde(rename = "AST")]
-    pub ast: Option<yul::YulBlock>,
+    pub ast: Option<YulBlock>,
     pub evm_version: Option<String>,
-    pub external_references: Vec<yul::ExternalReference>,
+    pub external_references: Vec<ExternalReference>,
     pub operations: Option<String>,
     pub src: String,
     pub id: NodeID,

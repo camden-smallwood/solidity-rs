@@ -1,3 +1,4 @@
+use eth_lang_utils::ast::*;
 use solidity::ast::*;
 use std::{collections::HashMap, io};
 
@@ -141,37 +142,33 @@ impl CheckEffectsInteractionsVisitor {
         source_line: usize,
     ) {
         match definition_node {
-            ContractDefinitionNode::FunctionDefinition(function_definition) => {
-                println!(
-                    "\tL{}: The {} {} in the `{}` {} ignores the Check-Effects-Interactions pattern",
+            ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                "\tL{}: The {} {} in the `{}` {} ignores the Check-Effects-Interactions pattern",
 
-                    source_line,
+                source_line,
 
-                    function_definition.visibility,
+                function_definition.visibility,
 
-                    if let FunctionKind::Constructor = function_definition.kind {
-                        format!("{}", function_definition.kind)
-                    } else {
-                        format!("`{}` {}", function_definition.name, function_definition.kind)
-                    },
+                if let FunctionKind::Constructor = function_definition.kind {
+                    format!("{}", function_definition.kind)
+                } else {
+                    format!("`{}` {}", function_definition.name, function_definition.kind)
+                },
 
-                    contract_definition.name,
-                    contract_definition.kind
-                );
-            }
+                contract_definition.name,
+                contract_definition.kind
+            ),
 
-            ContractDefinitionNode::ModifierDefinition(modifier_definition) => {
-                println!(
-                    "\tL{}: The `{}` modifier in the `{}` {} ignores the Check-Effects-Interactions pattern",
+            ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                "\tL{}: The `{}` modifier in the `{}` {} ignores the Check-Effects-Interactions pattern",
 
-                    source_line,
+                source_line,
 
-                    modifier_definition.name,
+                modifier_definition.name,
 
-                    contract_definition.name,
-                    contract_definition.kind
-                );
-            }
+                contract_definition.name,
+                contract_definition.kind
+            ),
 
             _ => ()
         }

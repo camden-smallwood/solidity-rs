@@ -1,3 +1,4 @@
+use eth_lang_utils::ast::*;
 use solidity::ast::*;
 use std::{collections::HashSet, io};
 

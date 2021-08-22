@@ -57,6 +57,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a81dae078cea95a014a339291cec439d2f232ebe854a9d672b796c6afafa9b7"
 
 [[package]]
+name = "eth-lang-utils"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "fixed-hash"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -334,6 +341,7 @@ checksum = "c970da16e7c682fa90a261cf0724dee241c9f7831635ecc4e988ae8f3b505559"
 name = "solast"
 version = "0.1.0"
 dependencies = [
+ "eth-lang-utils",
  "primitive-types",
  "serde",
  "serde_json",
@@ -346,6 +354,7 @@ dependencies = [
 name = "solidity"
 version = "0.1.0"
 dependencies = [
+ "eth-lang-utils",
  "serde",
  "yul",
 ]
@@ -448,5 +457,6 @@ checksum = "85e60b0d1b5f99db2556934e21937020776a5d31520bf169e851ac44e6420214"
 name = "yul"
 version = "0.1.0"
 dependencies = [
+ "eth-lang-utils",
  "serde",
 ]

@@ -1,5 +1,5 @@
-use super::{ContractDefinition, SourceUnit};
-use crate::ast::{NodeID, VariableDeclaration, Visibility};
+use super::*;
+use eth_lang_utils::ast::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 

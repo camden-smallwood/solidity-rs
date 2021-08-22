@@ -1,10 +1,7 @@
-use crate::ast::*;
+use super::*;
+use eth_lang_utils::ast::*;
 use std::{collections::HashSet, io};
-use yul::{
-    YulAssignment, YulBlock, YulCase, YulExpression, YulExpressionStatement,
-    YulFunctionCall, YulIdentifier, YulIf, YulLiteral, YulStatement, YulSwitch,
-    YulVariableDeclaration,
-};
+use yul::ast::*;
 
 pub struct YulBlockContext<'a, 'b, 'c> {
     pub source_units: &'a [SourceUnit],
