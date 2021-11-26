@@ -2,16 +2,9 @@ use eth_lang_utils::ast::*;
 use solidity::ast::*;
 use std::collections::HashSet;
 
+#[derive(Default)]
 pub struct AssertUsageVisitor {
     reported_definitions: HashSet<NodeID>,
-}
-
-impl Default for AssertUsageVisitor {
-    fn default() -> Self {
-        Self {
-            reported_definitions: HashSet::new(),
-        }
-    }
 }
 
 impl AstVisitor for AssertUsageVisitor {

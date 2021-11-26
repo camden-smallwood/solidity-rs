@@ -17,16 +17,9 @@ struct ContractInfo {
     function_info: HashMap<NodeID, FunctionInfo>,
 }
 
+#[derive(Default)]
 pub struct CheckEffectsInteractionsVisitor {
     contract_info: HashMap<NodeID, ContractInfo>,
-}
-
-impl Default for CheckEffectsInteractionsVisitor {
-    fn default() -> Self {
-        Self {
-            contract_info: HashMap::new(),
-        }
-    }
 }
 
 impl CheckEffectsInteractionsVisitor {

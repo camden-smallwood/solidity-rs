@@ -2,16 +2,9 @@ use eth_lang_utils::ast::*;
 use solidity::ast::*;
 use std::collections::HashMap;
 
+#[derive(Default)]
 pub struct AbiEncodingVisitor {
     declaration_type_names: HashMap<NodeID, TypeName>
-}
-
-impl Default for AbiEncodingVisitor {
-    fn default() -> Self {
-        Self {
-            declaration_type_names: HashMap::new(),
-        }
-    }
 }
 
 impl AstVisitor for AbiEncodingVisitor {

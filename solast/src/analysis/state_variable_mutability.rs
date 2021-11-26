@@ -12,16 +12,9 @@ struct ContractInfo {
     variable_aliases: HashMap<NodeID, HashSet<NodeID>>,
 }
 
+#[derive(Default)]
 pub struct StateVariableMutabilityVisitor {
     contract_info: HashMap<NodeID, ContractInfo>,
-}
-
-impl Default for StateVariableMutabilityVisitor {
-    fn default() -> Self {
-        Self {
-            contract_info: HashMap::new(),
-        }
-    }
 }
 
 //

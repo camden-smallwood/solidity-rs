@@ -6,16 +6,9 @@ struct SourceUnitInfo {
     imported_paths: HashMap<String, bool>,
 }
 
+#[derive(Default)]
 pub struct RedundantImportsVisitor {
     source_unit_info: HashMap<NodeID, SourceUnitInfo>,
-}
-
-impl Default for RedundantImportsVisitor {
-    fn default() -> Self {
-        Self {
-            source_unit_info: HashMap::new(),
-        }
-    }
 }
 
 impl AstVisitor for RedundantImportsVisitor {

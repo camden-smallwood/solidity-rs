@@ -2,22 +2,13 @@ use eth_lang_utils::ast::*;
 use solidity::ast::*;
 use std::collections::HashMap;
 
-#[derive(Debug)]
 struct StorageSlot {
     member_sizes: Vec<usize>
 }
 
-#[derive(Debug)]
+#[derive(Default)]
 pub struct TightVariablePackingVisitor {
     storage_slots: HashMap<NodeID, Vec<StorageSlot>>
-}
-
-impl Default for TightVariablePackingVisitor {
-    fn default() -> Self {
-        Self {
-            storage_slots: HashMap::new()
-        }
-    }
 }
 
 fn type_name_size(source_units: &[SourceUnit], type_name: &TypeName) -> std::io::Result<usize> {

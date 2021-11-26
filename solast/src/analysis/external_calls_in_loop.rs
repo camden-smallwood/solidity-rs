@@ -2,45 +2,74 @@ use eth_lang_utils::ast::*;
 use solidity::ast::*;
 use std::io;
 
+#[derive(Default)]
 pub struct ExternalCallsInLoopVisitor {
     loop_ids: Vec<NodeID>,
-    makes_external_call: bool,
+    function_calls: Vec<FunctionCall>,
 }
 
-impl Default for ExternalCallsInLoopVisitor {
-    fn default() -> Self {
-        Self {
-            loop_ids: vec![],
-            makes_external_call: false,
+impl ExternalCallsInLoopVisitor {
+    fn print_message(
+        &mut self,
+        contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
+        source_line: usize,
+        expression: &dyn std::fmt::Display
+    ) {
+        match definition_node {
+            ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                "\tL{}: The {} {} in the `{}` {} makes an external call inside a loop: `{}`",
+
+                source_line,
+
+                function_definition.visibility,
+
+                if let FunctionKind::Constructor = function_definition.kind {
+                    format!("{}", "constructor")
+                } else {
+                    format!("`{}` {}", function_definition.name, function_definition.kind)
+                },
+
+                contract_definition.name,
+                contract_definition.kind,
+
+                expression
+            ),
+
+            ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                "\tL{}: The `{}` modifier in the `{}` {} makes an external call inside a loop: `{}`",
+
+                source_line,
+
+                modifier_definition.name,
+
+                contract_definition.name,
+                contract_definition.kind,
+
+                expression
+            ),
+
+            _ => {}
         }
     }
 }
 
 impl AstVisitor for ExternalCallsInLoopVisitor {
-    fn visit_function_definition<'a>(&mut self, _context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
-        self.loop_ids.clear();
-        self.makes_external_call = false;
+    fn visit_function_call<'a, 'b>(&mut self, context: &mut FunctionCallContext<'a, 'b>) -> io::Result<()> {
+        self.function_calls.push(context.function_call.clone());
 
         Ok(())
     }
 
-    fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
-        if self.makes_external_call {
-            println!(
-                "\tL{}: {} {} {} makes an external call inside a loop",
+    fn leave_function_call<'a, 'b>(&mut self, context: &mut FunctionCallContext<'a, 'b>) -> io::Result<()> {
+        match self.function_calls.pop() {
+            Some(function_call) => {
+                if function_call.id != context.function_call.id {
+                    return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid function call id stack"));
+                }
+            },
 
-                context.current_source_unit.source_line(context.function_definition.src.as_str())?,
-
-                format!("{:?}", context.function_definition.visibility),
-
-                if context.function_definition.name.is_empty() {
-                    format!("{}", context.contract_definition.name)
-                } else {
-                    format!("{}.{}", context.contract_definition.name, context.function_definition.name)
-                },
-                
-                context.function_definition.kind
-            );
+            None => return Err(io::Error::new(io::ErrorKind::InvalidData, "Not currently in a function call"))
         }
 
         Ok(())
@@ -56,16 +85,11 @@ impl AstVisitor for ExternalCallsInLoopVisitor {
         match self.loop_ids.pop() {
             Some(loop_id) => {
                 if loop_id != context.for_statement.id {
-                    return Err(io::Error::new(io::ErrorKind::InvalidData, "asdf"));
+                    return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid loop id stack"));
                 }
             }
 
-            None => {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "Not currently in a loop",
-                ))
-            }
+            None => return Err(io::Error::new(io::ErrorKind::InvalidData, "Not currently in a loop"))
         }
 
         Ok(())
@@ -79,18 +103,11 @@ impl AstVisitor for ExternalCallsInLoopVisitor {
 
     fn leave_while_statement<'a, 'b>(&mut self, context: &mut WhileStatementContext<'a, 'b>) -> io::Result<()> {
         match self.loop_ids.pop() {
-            Some(loop_id) => {
-                if loop_id != context.while_statement.id {
-                    return Err(io::Error::new(io::ErrorKind::InvalidData, "asdf"));
-                }
+            Some(loop_id) => if loop_id != context.while_statement.id {
+                return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid loop id stack"));
             }
 
-            None => {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "Not currently in a loop",
-                ))
-            }
+            None => return Err(io::Error::new(io::ErrorKind::InvalidData, "Not currently in a loop"))
         }
 
         Ok(())
@@ -98,23 +115,24 @@ impl AstVisitor for ExternalCallsInLoopVisitor {
 
     fn visit_identifier<'a, 'b>(&mut self, context: &mut IdentifierContext<'a, 'b>) -> io::Result<()> {
         match context.definition_node {
-            ContractDefinitionNode::FunctionDefinition(_) => {}
+            ContractDefinitionNode::FunctionDefinition(_) |
+            ContractDefinitionNode::ModifierDefinition(_) if !self.loop_ids.is_empty() => (),
             _ => return Ok(())
         }
 
-        if self.loop_ids.is_empty() || self.makes_external_call {
-            return Ok(());
-        }
-
         for source_unit in context.source_units.iter() {
-            let function_definition =
-                match source_unit.function_definition(context.identifier.referenced_declaration) {
-                    Some(function_definition) => function_definition,
-                    None => continue,
-                };
+            let called_function_definition = match source_unit.function_definition(context.identifier.referenced_declaration) {
+                Some(function_definition) => function_definition,
+                None => continue,
+            };
 
-            if let Visibility::External = function_definition.visibility {
-                self.makes_external_call = true;
+            if let Visibility::External = called_function_definition.visibility {
+                self.print_message(
+                    context.contract_definition,
+                    context.definition_node,
+                    context.current_source_unit.source_line(context.identifier.src.as_str())?,
+                    &self.function_calls.last().unwrap().clone(),
+                );
                 break;
             }
         }
@@ -124,12 +142,9 @@ impl AstVisitor for ExternalCallsInLoopVisitor {
 
     fn visit_member_access<'a, 'b>(&mut self, context: &mut MemberAccessContext<'a, 'b>) -> io::Result<()> {
         match context.definition_node {
-            ContractDefinitionNode::FunctionDefinition(_) => {}
+            ContractDefinitionNode::FunctionDefinition(_) |
+            ContractDefinitionNode::ModifierDefinition(_) if !self.loop_ids.is_empty() => (),
             _ => return Ok(())
-        }
-
-        if self.loop_ids.is_empty() || self.makes_external_call {
-            return Ok(());
         }
 
         if let Some(referenced_declaration) = context.member_access.referenced_declaration {
@@ -138,7 +153,12 @@ impl AstVisitor for ExternalCallsInLoopVisitor {
                     source_unit.function_definition(referenced_declaration)
                 {
                     if let Visibility::External = function_definition.visibility {
-                        self.makes_external_call = true;
+                        self.print_message(
+                            context.contract_definition,
+                            context.definition_node,
+                            context.current_source_unit.source_line(context.member_access.src.as_str())?,
+                            &self.function_calls.last().unwrap().clone(),
+                        );
                         break;
                     }
                 }

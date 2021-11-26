@@ -10,18 +10,10 @@ struct FunctionInfo {
     occurance_count: usize,
 }
 
+#[derive(Default)]
 pub struct UncheckedERC20TransferVisitor {
     block_info: HashMap<NodeID, BlockInfo>,
     function_info: HashMap<NodeID, FunctionInfo>,
-}
-
-impl Default for UncheckedERC20TransferVisitor {
-    fn default() -> Self {
-        Self {
-            block_info: HashMap::new(),
-            function_info: HashMap::new(),
-        }
-    }
 }
 
 impl AstVisitor for UncheckedERC20TransferVisitor {
@@ -55,39 +47,73 @@ impl AstVisitor for UncheckedERC20TransferVisitor {
         let function_info = self.function_info.get(&context.function_definition.id).unwrap();
 
         if function_info.occurance_count > 0 {
-            println!(
-                "\tL{}: {} {} {} makes {} without checking the {}, which can revert {} zero",
+            match context.definition_node {
+                ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                    "\tL{}: The {} {} in the `{}` {} makes {} without checking the {}, which can revert {} zero",
 
-                context.current_source_unit.source_line(context.function_definition.src.as_str())?,
+                    context.current_source_unit.source_line(context.function_definition.src.as_str())?,
 
-                format!("{:?}", context.function_definition.visibility),
+                    function_definition.visibility,
 
-                if context.function_definition.name.is_empty() {
-                    format!("{}", context.contract_definition.name)
-                } else {
-                    format!("{}.{}", context.contract_definition.name, context.function_definition.name)
-                },
+                    if let FunctionKind::Constructor = function_definition.kind {
+                        format!("{}", "constructor")
+                    } else {
+                        format!("`{}` {}", function_definition.name, function_definition.kind)
+                    },
+        
+                    context.contract_definition.name,
+                    context.contract_definition.kind,
 
-                context.function_definition.kind,
+                    if function_info.occurance_count == 1 {
+                        "an ERC-20 transfer"
+                    } else {
+                        "ERC-20 transfers"
+                    },
 
-                if function_info.occurance_count == 1 {
-                    "an ERC-20 transfer"
-                } else {
-                    "ERC-20 transfers"
-                },
-
-                if function_info.occurance_count == 1 {
-                    "amount"
-                } else {
-                    "amounts"
-                },
+                    if function_info.occurance_count == 1 {
+                        "amount"
+                    } else {
+                        "amounts"
+                    },
+                    
+                    if function_info.occurance_count == 1 {
+                        "if"
+                    } else {
+                        "if any are"
+                    },
+                ),
                 
-                if function_info.occurance_count == 1 {
-                    "if"
-                } else {
-                    "if any are"
-                },
-            );
+                ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                    "\tL{}: The `{}` modifier in the `{}` {} makes {} without checking the {}, which can revert {} zero",
+
+                    context.current_source_unit.source_line(context.function_definition.src.as_str())?,
+
+                    modifier_definition.name,
+        
+                    context.contract_definition.name,
+                    context.contract_definition.kind,
+
+                    if function_info.occurance_count == 1 {
+                        "an ERC-20 transfer"
+                    } else {
+                        "ERC-20 transfers"
+                    },
+
+                    if function_info.occurance_count == 1 {
+                        "amount"
+                    } else {
+                        "amounts"
+                    },
+                    
+                    if function_info.occurance_count == 1 {
+                        "if"
+                    } else {
+                        "if any are"
+                    },
+                ),
+                
+                _ => ()
+            }
         }
 
         Ok(())

@@ -8,76 +8,44 @@ impl UnpaidPayableFunctionsVisitor {
         &mut self,
         contract_definition: &ContractDefinition,
         definition_node: &ContractDefinitionNode,
-        called_contract_definition: &ContractDefinition,
-        called_definition_node: &ContractDefinitionNode,
+        source_line: usize,
+        expression: &dyn std::fmt::Display
     ) {
-        println!(
-            "\t{} {} {} makes a call to the {} payable {} {} without paying",
+        match definition_node {
+            ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
+                "\tL{}: The {} {} in the `{}` {} calls a payable function without paying: `{}`",
 
-            format!(
-                "{:?}",
-                match definition_node {
-                    ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition.visibility,
-                    ContractDefinitionNode::ModifierDefinition(modifier_definition) => modifier_definition.visibility,
-                    _ => unimplemented!("{:?}", definition_node),
-                }
+                source_line,
+
+                function_definition.visibility,
+
+                if let FunctionKind::Constructor = function_definition.kind {
+                    format!("{}", "constructor")
+                } else {
+                    format!("`{}` {}", function_definition.name, function_definition.kind)
+                },
+
+                contract_definition.name,
+                contract_definition.kind,
+
+                expression
             ),
 
-            {
-                let name = format!(
-                    "{}",
-                    match definition_node {
-                        ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition.name.as_str(),
-                        ContractDefinitionNode::ModifierDefinition(modifier_definition) => modifier_definition.name.as_str(),
-                        _ => unimplemented!("{:?}", definition_node),
-                    }
-                );
+            ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
+                "\tL{}: The `{}` modifier in the `{}` {} calls a payable function without paying: `{}`",
 
-                if name.is_empty() {
-                    format!("{}", contract_definition.name)
-                } else {
-                    format!("{}.{}", contract_definition.name, name)
-                }
-            },
+                source_line,
 
-            match definition_node {
-                ContractDefinitionNode::FunctionDefinition(function_definition) => format!("{}", function_definition.kind),
-                ContractDefinitionNode::ModifierDefinition(_) => "modifier".into(),
-                _ => unimplemented!("{:?}", definition_node),
-            },
+                modifier_definition.name,
 
-            format!(
-                "{:?}",
-                match called_definition_node {
-                    ContractDefinitionNode::FunctionDefinition(called_function_definition) => called_function_definition.visibility,
-                    ContractDefinitionNode::ModifierDefinition(called_modifier_definition) => called_modifier_definition.visibility,
-                    _ => unimplemented!("{:?}", called_definition_node),
-                }
-            ).to_lowercase(),
+                contract_definition.name,
+                contract_definition.kind,
 
-            {
-                let name = format!(
-                    "{}",
-                    match called_definition_node {
-                        ContractDefinitionNode::FunctionDefinition(called_function_definition) => called_function_definition.name.as_str(),
-                        ContractDefinitionNode::ModifierDefinition(called_modifier_definition) => called_modifier_definition.name.as_str(),
-                        _ => unimplemented!("{:?}", called_definition_node),
-                    }
-                );
+                expression
+            ),
 
-                if name.is_empty() {
-                    format!("{}", called_contract_definition.name)
-                } else {
-                    format!("{}.{}", called_contract_definition.name, name)
-                }
-            },
-
-            match called_definition_node {
-                ContractDefinitionNode::FunctionDefinition(called_function_definition) => format!("{}", called_function_definition.kind),
-                ContractDefinitionNode::ModifierDefinition(_) => "modifier".into(),
-                _ => unimplemented!("{:?}", called_definition_node),
-            }
-        );
+            _ => {}
+        }
     }
 }
 
@@ -86,18 +54,16 @@ impl AstVisitor for UnpaidPayableFunctionsVisitor {
         match context.function_call.expression.as_ref() {
             solidity::ast::Expression::Identifier(identifier) => {
                 for source_unit in context.source_units.iter() {
-                    if let Some((called_contract_definition, called_definition_node)) = source_unit.find_contract_definition_node(identifier.referenced_declaration) {
-                        if let ContractDefinitionNode::FunctionDefinition(FunctionDefinition {
-                            state_mutability: StateMutability::Payable,
-                            ..
-                        }) = called_definition_node {
-                            self.print_message(
-                                context.contract_definition,
-                                context.definition_node,
-                                called_contract_definition,
-                                called_definition_node,
-                            );
-                        }
+                    if let Some(FunctionDefinition {
+                        state_mutability: StateMutability::Payable,
+                        ..
+                    }) = source_unit.function_definition(identifier.referenced_declaration) {
+                        self.print_message(
+                            context.contract_definition,
+                            context.definition_node,
+                            context.current_source_unit.source_line(context.function_call.src.as_str())?,
+                            context.function_call,
+                        );
                         break;
                     }
                 }
@@ -110,18 +76,16 @@ impl AstVisitor for UnpaidPayableFunctionsVisitor {
                 };
 
                 for source_unit in context.source_units.iter() {
-                    if let Some((called_contract_definition, called_definition_node)) = source_unit.find_contract_definition_node(referenced_declaration) {
-                        if let ContractDefinitionNode::FunctionDefinition(FunctionDefinition {
-                            state_mutability: StateMutability::Payable,
-                            ..
-                        }) = called_definition_node {
-                            self.print_message(
-                                context.contract_definition,
-                                context.definition_node,
-                                called_contract_definition,
-                                called_definition_node,
-                            );
-                        }
+                    if let Some(FunctionDefinition {
+                        state_mutability: StateMutability::Payable,
+                        ..
+                    }) = source_unit.function_definition(referenced_declaration) {
+                        self.print_message(
+                            context.contract_definition,
+                            context.definition_node,
+                            context.current_source_unit.source_line(context.function_call.src.as_str())?,
+                            context.function_call,
+                        );
                         break;
                     }
                 }

@@ -6,16 +6,9 @@ pub struct ContractInfo {
     variable_info: HashMap<NodeID, bool>,
 }
 
+#[derive(Default)]
 pub struct UnusedStateVariablesVisitor {
     contract_info: HashMap<NodeID, ContractInfo>,
-}
-
-impl Default for UnusedStateVariablesVisitor {
-    fn default() -> Self {
-        Self {
-            contract_info: HashMap::new(),
-        }
-    }
 }
 
 impl AstVisitor for UnusedStateVariablesVisitor {

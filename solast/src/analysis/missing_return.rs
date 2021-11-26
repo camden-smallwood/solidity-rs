@@ -6,16 +6,9 @@ struct FunctionInfo {
     assigned_return_variables: HashSet<NodeID>,
 }
 
+#[derive(Default)]
 pub struct MissingReturnVisitor {
     function_info: HashMap<NodeID, FunctionInfo>,
-}
-
-impl Default for MissingReturnVisitor {
-    fn default() -> Self {
-        Self {
-            function_info: HashMap::new(),
-        }
-    }
 }
 
 impl MissingReturnVisitor {

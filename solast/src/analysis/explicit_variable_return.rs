@@ -2,16 +2,9 @@ use eth_lang_utils::ast::*;
 use solidity::ast::*;
 use std::{collections::HashSet, io};
 
+#[derive(Default)]
 pub struct ExplicitVariableReturnVisitor{
     local_variable_ids: HashSet<NodeID>,
-}
-
-impl Default for ExplicitVariableReturnVisitor {
-    fn default() -> Self {
-        Self {
-            local_variable_ids: HashSet::new(),
-        }
-    }
 }
 
 impl ExplicitVariableReturnVisitor {

@@ -6,18 +6,10 @@ struct FunctionInfo {
     loops_over_storage_array: bool,
 }
 
+#[derive(Default)]
 pub struct StorageArrayLoopVisitor {
     storage_arrays: HashSet<NodeID>,
     functions: HashMap<NodeID, FunctionInfo>,
-}
-
-impl Default for StorageArrayLoopVisitor {
-    fn default() -> Self {
-        Self {
-            storage_arrays: HashSet::new(),
-            functions: HashMap::new(),
-        }
-    }
 }
 
 impl StorageArrayLoopVisitor {
