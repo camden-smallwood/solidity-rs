@@ -384,6 +384,10 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
     }
 
     fn visit_member_access<'a, 'b>(&mut self, context: &mut MemberAccessContext<'a, 'b>) -> io::Result<()> {
+        if context.blocks.is_empty() {
+            return Ok(())
+        }
+        
         let definition_id = match context.definition_node {
             &ContractDefinitionNode::FunctionDefinition(FunctionDefinition { id, .. }) => id,
             &ContractDefinitionNode::ModifierDefinition(ModifierDefinition { id, .. }) => id,
@@ -536,6 +540,10 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
     }
 
     fn visit_function_call<'a, 'b>(&mut self, context: &mut FunctionCallContext<'a, 'b>) -> io::Result<()> {
+        if context.blocks.is_empty() {
+            return Ok(())
+        }
+
         let definition_id = match context.definition_node {
             &ContractDefinitionNode::FunctionDefinition(FunctionDefinition { id, .. })
             | &ContractDefinitionNode::ModifierDefinition(ModifierDefinition { id, .. }) => id,

@@ -113,6 +113,11 @@ impl RedundantComparisonsVisitor {
 
 impl AstVisitor for RedundantComparisonsVisitor {
     fn visit_binary_operation<'a, 'b>(&mut self, context: &mut BinaryOperationContext<'a, 'b>) -> io::Result<()> {
+        match context.binary_operation.operator.as_str() {
+            "==" | "!=" | ">" | ">=" | "<" | "<=" => (),
+            _ => return Ok(())
+        }
+
         if match (context.binary_operation.left_expression.as_ref(), context.binary_operation.right_expression.as_ref()) {
             (Expression::Literal(_), Expression::Literal(_)) => true,
             (_, Expression::Literal(_)) => self.is_right_literal_redundant(context),
