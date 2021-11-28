@@ -28,6 +28,7 @@ pub enum ContractDefinitionNode {
     FunctionDefinition(FunctionDefinition),
     ModifierDefinition(ModifierDefinition),
     ErrorDefinition(ErrorDefinition),
+    UserDefinedValueTypeDefinition(UserDefinedValueTypeDefinition),
 }
 
 impl Display for ContractDefinitionNode {
@@ -41,6 +42,7 @@ impl Display for ContractDefinitionNode {
             ContractDefinitionNode::FunctionDefinition(function_definition) => function_definition.fmt(f),
             ContractDefinitionNode::ModifierDefinition(modifier_definition) => modifier_definition.fmt(f),
             ContractDefinitionNode::ErrorDefinition(error_definition) => error_definition.fmt(f),
+            ContractDefinitionNode::UserDefinedValueTypeDefinition(user_defined_value_type_definition) => user_defined_value_type_definition.fmt(f),
         }
     }
 }
@@ -384,7 +386,8 @@ impl Display for ContractDefinition {
                     ContractDefinitionNode::UsingForDirective(_)
                     | ContractDefinitionNode::EventDefinition(_)
                     | ContractDefinitionNode::ErrorDefinition(_)
-                    | ContractDefinitionNode::VariableDeclaration(_) => ";",
+                    | ContractDefinitionNode::VariableDeclaration(_)
+                    | ContractDefinitionNode::UserDefinedValueTypeDefinition(_) => ";",
 
                     ContractDefinitionNode::StructDefinition(_)
                     | ContractDefinitionNode::EnumDefinition(_)
@@ -508,6 +511,18 @@ impl<'a> ContractDefinitionContext<'a> {
             current_source_unit: self.current_source_unit,
             contract_definition: self.contract_definition,
             error_definition
+        }
+    }
+    
+    pub fn create_user_defined_value_type_definition_context(
+        &self,
+        user_defined_value_type_definition: &'a UserDefinedValueTypeDefinition
+    ) -> UserDefinedValueTypeDefinitionContext<'a> {
+        UserDefinedValueTypeDefinitionContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition: Some(self.contract_definition),
+            user_defined_value_type_definition,
         }
     }
 }

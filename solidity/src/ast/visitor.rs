@@ -196,6 +196,9 @@ pub trait AstVisitor {
     fn visit_modifier_definition<'a>(&mut self, context: &mut ModifierDefinitionContext<'a>) -> io::Result<()> { Ok(()) }
     fn leave_modifier_definition<'a>(&mut self, context: &mut ModifierDefinitionContext<'a>) -> io::Result<()> { Ok(()) }
 
+    fn visit_user_defined_value_type_definition<'a>(&mut self, context: &mut UserDefinedValueTypeDefinitionContext<'a>) -> io::Result<()> { Ok(()) }
+    fn leave_user_defined_value_type_definition<'a>(&mut self, context: &mut UserDefinedValueTypeDefinitionContext<'a>) -> io::Result<()> { Ok(()) }
+
     fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> { Ok(()) }
     fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> { Ok(()) }
 
@@ -382,6 +385,12 @@ impl AstVisitor for AstVisitorData<'_> {
                     self.visit_enum_definition(&mut context)?;
                     self.leave_enum_definition(&mut context)?;
                 }
+
+                SourceUnitNode::UserDefinedValueTypeDefinition(user_defined_value_type_definition) => {
+                    let mut context = context.create_user_defined_value_type_definition_context(user_defined_value_type_definition);
+                    self.visit_user_defined_value_type_definition(&mut context)?;
+                    self.leave_user_defined_value_type_definition(&mut context)?;
+                }
             }
         }
 
@@ -521,6 +530,12 @@ impl AstVisitor for AstVisitorData<'_> {
                     self.visit_modifier_definition(&mut context)?;
                     self.leave_modifier_definition(&mut context)?;
                 }
+
+                ContractDefinitionNode::UserDefinedValueTypeDefinition(user_defined_value_type_definition) => {
+                    let mut context = context.create_user_defined_value_type_definition_context(user_defined_value_type_definition);
+                    self.visit_user_defined_value_type_definition(&mut context)?;
+                    self.leave_user_defined_value_type_definition(&mut context)?;
+                },
             }
         }
 
@@ -688,6 +703,22 @@ impl AstVisitor for AstVisitorData<'_> {
         Ok(())
     }
 
+    fn visit_user_defined_value_type_definition<'a>(&mut self, context: &mut UserDefinedValueTypeDefinitionContext<'a>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_user_defined_value_type_definition(context)?;
+        }
+
+        Ok(())
+    }
+    
+    fn leave_user_defined_value_type_definition<'a>(&mut self, context: &mut UserDefinedValueTypeDefinitionContext<'a>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_user_defined_value_type_definition(context)?;
+        }
+
+        Ok(())
+    }
+    
     fn visit_modifier_invocation<'a>(&mut self, context: &mut ModifierInvocationContext<'a>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.visit_modifier_invocation(context)?;

@@ -11,6 +11,7 @@ pub enum SourceUnitNode {
     ContractDefinition(ContractDefinition),
     StructDefinition(StructDefinition),
     EnumDefinition(EnumDefinition),
+    UserDefinedValueTypeDefinition(UserDefinedValueTypeDefinition),
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -111,6 +112,14 @@ impl SourceUnit {
                 if id == struct_definition.id {
                     return Some(struct_definition);
                 }
+            } else if let SourceUnitNode::ContractDefinition(contract_definition) = node {
+                for node in contract_definition.nodes.iter() {
+                    if let ContractDefinitionNode::StructDefinition(struct_definition) = node {
+                        if id == struct_definition.id {
+                            return Some(struct_definition);
+                        }
+                    }
+                }
             }
         }
 
@@ -122,6 +131,34 @@ impl SourceUnit {
             if let SourceUnitNode::EnumDefinition(enum_definition) = node {
                 if id == enum_definition.id {
                     return Some(enum_definition);
+                }
+            } else if let SourceUnitNode::ContractDefinition(contract_definition) = node {
+                for node in contract_definition.nodes.iter() {
+                    if let ContractDefinitionNode::EnumDefinition(enum_definition) = node {
+                        if id == enum_definition.id {
+                            return Some(enum_definition);
+                        }
+                    }
+                }
+            }
+        }
+
+        None
+    }
+
+    pub fn user_defined_value_type_definition(&self, id: NodeID) -> Option<&UserDefinedValueTypeDefinition> {
+        for node in self.nodes.iter() {
+            if let SourceUnitNode::UserDefinedValueTypeDefinition(user_defined_value_type_definition) = node {
+                if id == user_defined_value_type_definition.id {
+                    return Some(user_defined_value_type_definition);
+                }
+            } else if let SourceUnitNode::ContractDefinition(contract_definition) = node {
+                for node in contract_definition.nodes.iter() {
+                    if let ContractDefinitionNode::UserDefinedValueTypeDefinition(user_defined_value_type_definition) = node {
+                        if id == user_defined_value_type_definition.id {
+                            return Some(user_defined_value_type_definition);
+                        }
+                    }
                 }
             }
         }
@@ -171,18 +208,17 @@ impl SourceUnit {
         for node in self.nodes.iter() {
             if let SourceUnitNode::ContractDefinition(contract_definition) = node {
                 for node in contract_definition.nodes.iter() {
-                    if id
-                        == match node {
-                            ContractDefinitionNode::UsingForDirective(node) => node.id,
-                            ContractDefinitionNode::StructDefinition(node) => node.id,
-                            ContractDefinitionNode::EnumDefinition(node) => node.id,
-                            ContractDefinitionNode::VariableDeclaration(node) => node.id,
-                            ContractDefinitionNode::EventDefinition(node) => node.id,
-                            ContractDefinitionNode::FunctionDefinition(node) => node.id,
-                            ContractDefinitionNode::ModifierDefinition(node) => node.id,
-                            ContractDefinitionNode::ErrorDefinition(node) => node.id,
-                        }
-                    {
+                    if id == match node {
+                        ContractDefinitionNode::UsingForDirective(node) => node.id,
+                        ContractDefinitionNode::StructDefinition(node) => node.id,
+                        ContractDefinitionNode::EnumDefinition(node) => node.id,
+                        ContractDefinitionNode::VariableDeclaration(node) => node.id,
+                        ContractDefinitionNode::EventDefinition(node) => node.id,
+                        ContractDefinitionNode::FunctionDefinition(node) => node.id,
+                        ContractDefinitionNode::ModifierDefinition(node) => node.id,
+                        ContractDefinitionNode::ErrorDefinition(node) => node.id,
+                        ContractDefinitionNode::UserDefinedValueTypeDefinition(node) => node.id,
+                    } {
                         return Some((contract_definition, node));
                     }
                 }
@@ -253,6 +289,18 @@ impl<'a> SourceUnitContext<'a> {
             current_source_unit: self.current_source_unit,
             contract_definition: None,
             enum_definition,
+        }
+    }
+
+    pub fn create_user_defined_value_type_definition_context(
+        &self,
+        user_defined_value_type_definition: &'a UserDefinedValueTypeDefinition,
+    ) -> UserDefinedValueTypeDefinitionContext<'a> {
+        UserDefinedValueTypeDefinitionContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition: None,
+            user_defined_value_type_definition,
         }
     }
 }

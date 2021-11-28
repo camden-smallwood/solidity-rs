@@ -34,7 +34,7 @@ truffle init
 cp ~/Downloads/awesome-contracts/*.sol contracts/
 ```
 
-Use your favorite text editor to change the `solc` version in `truffle-config.js` to `0.8.7` (or the relevant `0.8.X`).
+Use your favorite text editor to change the `solc` version in `truffle-config.js` to `0.8.10` (or the relevant `0.8.X`).
 
 ```Json
 module.exports = {
@@ -42,7 +42,7 @@ module.exports = {
   mocha: {},
   compilers: {
     solc: {
-      version: "0.8.7",
+      version: "0.8.10",
     }
   }
 };
