@@ -455,9 +455,9 @@ impl<'a> ContractDefinitionContext<'a> {
         VariableDeclarationContext {
             source_units: self.source_units,
             current_source_unit: self.current_source_unit,
-            contract_definition: self.contract_definition,
-            definition_node,
-            blocks,
+            contract_definition: Some(self.contract_definition),
+            definition_node: Some(definition_node),
+            blocks: Some(blocks),
             variable_declaration
         }
     }

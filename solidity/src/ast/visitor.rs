@@ -386,6 +386,12 @@ impl AstVisitor for AstVisitorData<'_> {
                     self.leave_enum_definition(&mut context)?;
                 }
 
+                SourceUnitNode::VariableDeclaration(variable_declaration) => {
+                    let mut context = context.create_variable_declaration_context(variable_declaration);
+                    self.visit_variable_declaration(&mut context)?;
+                    self.leave_variable_declaration(&mut context)?;
+                }
+
                 SourceUnitNode::UserDefinedValueTypeDefinition(user_defined_value_type_definition) => {
                     let mut context = context.create_user_defined_value_type_definition_context(user_defined_value_type_definition);
                     self.visit_user_defined_value_type_definition(&mut context)?;
@@ -620,15 +626,7 @@ impl AstVisitor for AstVisitorData<'_> {
         }
 
         let mut blocks = vec![];
-
-        let mut context = BlockContext {
-            source_units: context.source_units,
-            current_source_unit: context.current_source_unit,
-            contract_definition: context.contract_definition,
-            definition_node: context.definition_node,
-            blocks: &mut blocks,
-            block: &context.modifier_definition.body,
-        };
+        let mut context = context.create_block_context(&context.modifier_definition.body, &mut blocks);
 
         self.visit_block(&mut context)?;
         self.leave_block(&mut context)?;
@@ -653,9 +651,9 @@ impl AstVisitor for AstVisitorData<'_> {
             let mut context = VariableDeclarationContext {
                 source_units: context.source_units,
                 current_source_unit: context.current_source_unit,
-                contract_definition: context.contract_definition,
-                definition_node: context.definition_node,
-                blocks: &mut vec![],
+                contract_definition: Some(context.contract_definition),
+                definition_node: Some(context.definition_node),
+                blocks: None,
                 variable_declaration
             };
             
@@ -975,9 +973,9 @@ impl AstVisitor for AstVisitorData<'_> {
                 let mut context = VariableDeclarationContext {
                     source_units: context.source_units,
                     current_source_unit: context.current_source_unit,
-                    contract_definition: context.contract_definition,
-                    definition_node: context.definition_node,
-                    blocks: context.blocks,
+                    contract_definition: Some(context.contract_definition),
+                    definition_node: Some(context.definition_node),
+                    blocks: Some(context.blocks),
                     variable_declaration
                 };
                 

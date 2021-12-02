@@ -11,6 +11,7 @@ pub enum SourceUnitNode {
     ContractDefinition(ContractDefinition),
     StructDefinition(StructDefinition),
     EnumDefinition(EnumDefinition),
+    VariableDeclaration(VariableDeclaration),
     UserDefinedValueTypeDefinition(UserDefinedValueTypeDefinition),
 }
 
@@ -289,6 +290,20 @@ impl<'a> SourceUnitContext<'a> {
             current_source_unit: self.current_source_unit,
             contract_definition: None,
             enum_definition,
+        }
+    }
+
+    pub fn create_variable_declaration_context<'b>(
+        &self,
+        variable_declaration: &'a VariableDeclaration,
+    ) -> VariableDeclarationContext<'a, 'b> {
+        VariableDeclarationContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition: None,
+            definition_node: None,
+            blocks: None,
+            variable_declaration,
         }
     }
 

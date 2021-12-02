@@ -50,8 +50,18 @@ impl AstVisitor for UnusedStateVariablesVisitor {
     }
 
     fn visit_variable_declaration<'a, 'b>(&mut self, context: &mut VariableDeclarationContext<'a, 'b>) -> io::Result<()> {
-        if let ContractDefinitionNode::VariableDeclaration(variable_declaration) = context.definition_node {
-            let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
+        let contract_definition = match context.contract_definition.as_ref() {
+            Some(contract_definition) => contract_definition,
+            None => return Ok(())
+        };
+
+        let definition_node = match context.definition_node.as_ref() {
+            Some(definition_node) => definition_node,
+            None => return Ok(())
+        };
+
+        if let ContractDefinitionNode::VariableDeclaration(variable_declaration) = definition_node {
+            let contract_info = self.contract_info.get_mut(&contract_definition.id).unwrap();
 
             if !contract_info.variable_info.contains_key(&variable_declaration.id) {
                 contract_info.variable_info.insert(variable_declaration.id, false);

@@ -122,8 +122,8 @@ impl Display for VariableDeclaration {
 pub struct VariableDeclarationContext<'a, 'b> {
     pub source_units: &'a [SourceUnit],
     pub current_source_unit: &'a SourceUnit,
-    pub contract_definition: &'a ContractDefinition,
-    pub definition_node: &'a ContractDefinitionNode,
-    pub blocks: &'b mut Vec<&'a Block>,
+    pub contract_definition: Option<&'a ContractDefinition>,
+    pub definition_node: Option<&'a ContractDefinitionNode>,
+    pub blocks: Option<&'b mut Vec<&'a Block>>,
     pub variable_declaration: &'a VariableDeclaration,
 }

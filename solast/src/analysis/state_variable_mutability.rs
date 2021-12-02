@@ -78,12 +78,22 @@ impl AstVisitor for StateVariableMutabilityVisitor {
     }
 
     fn visit_variable_declaration<'a, 'b>(&mut self, context: &mut VariableDeclarationContext<'a, 'b>) -> io::Result<()> {
-        let contract_info = match self.contract_info.get_mut(&context.contract_definition.id) {
+        let contract_definition = match context.contract_definition.as_ref() {
+            Some(contract_definition) => contract_definition,
+            None => return Ok(())
+        };
+
+        let contract_info = match self.contract_info.get_mut(&contract_definition.id) {
             Some(contract_info) => contract_info,
             None => return Ok(())
         };
 
-        match context.definition_node {
+        let definition_node = match context.definition_node.as_ref() {
+            Some(definition_node) => definition_node,
+            None => return Ok(())
+        };
+
+        match definition_node {
             ContractDefinitionNode::VariableDeclaration(_) => {
                 if !contract_info.variable_info.contains_key(&context.variable_declaration.id) {
                     contract_info.variable_info.insert(context.variable_declaration.id, VariableInfo {
