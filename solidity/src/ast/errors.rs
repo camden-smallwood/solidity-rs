@@ -23,6 +23,6 @@ impl Display for ErrorDefinition {
 pub struct ErrorDefinitionContext<'a> {
     pub source_units: &'a [SourceUnit],
     pub current_source_unit: &'a SourceUnit,
-    pub contract_definition: &'a ContractDefinition,
+    pub contract_definition: Option<&'a ContractDefinition>,
     pub error_definition: &'a ErrorDefinition,
 }

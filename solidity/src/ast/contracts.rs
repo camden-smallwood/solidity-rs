@@ -509,7 +509,7 @@ impl<'a> ContractDefinitionContext<'a> {
         ErrorDefinitionContext {
             source_units: self.source_units,
             current_source_unit: self.current_source_unit,
-            contract_definition: self.contract_definition,
+            contract_definition: Some(self.contract_definition),
             error_definition
         }
     }

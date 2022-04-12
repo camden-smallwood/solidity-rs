@@ -386,6 +386,12 @@ impl AstVisitor for AstVisitorData<'_> {
                     self.leave_enum_definition(&mut context)?;
                 }
 
+                SourceUnitNode::ErrorDefinition(error_definition) => {
+                    let mut context = context.create_error_definition_context(error_definition);
+                    self.visit_error_definition(&mut context)?;
+                    self.leave_error_definition(&mut context)?;
+                }
+
                 SourceUnitNode::VariableDeclaration(variable_declaration) => {
                     let mut context = context.create_variable_declaration_context(variable_declaration);
                     self.visit_variable_declaration(&mut context)?;

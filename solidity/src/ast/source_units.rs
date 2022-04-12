@@ -11,6 +11,7 @@ pub enum SourceUnitNode {
     ContractDefinition(ContractDefinition),
     StructDefinition(StructDefinition),
     EnumDefinition(EnumDefinition),
+    ErrorDefinition(ErrorDefinition),
     VariableDeclaration(VariableDeclaration),
     UserDefinedValueTypeDefinition(UserDefinedValueTypeDefinition),
 }
@@ -290,6 +291,18 @@ impl<'a> SourceUnitContext<'a> {
             current_source_unit: self.current_source_unit,
             contract_definition: None,
             enum_definition,
+        }
+    }
+
+    pub fn create_error_definition_context(
+        &self,
+        error_definition: &'a ErrorDefinition,
+    ) -> ErrorDefinitionContext<'a> {
+        ErrorDefinitionContext {
+            source_units: self.source_units,
+            current_source_unit: self.current_source_unit,
+            contract_definition: None,
+            error_definition,
         }
     }
 
