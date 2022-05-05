@@ -37,7 +37,7 @@ cp ~/Downloads/awesome-contracts/*.sol contracts/
 
 Use your favorite text editor to change the `solc` version in `truffle-config.js` to `0.8.13` (or the relevant `0.8.X`).
 
-```Json
+```js
 module.exports = {
   networks: {},
   mocha: {},
