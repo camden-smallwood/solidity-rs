@@ -13,9 +13,10 @@ Some legacy versions of Solidity are inherently supported (0.5.X-0.7.X), but the
 cargo run --release -- [--todo_list] [--contract=<contract_name>] [--analyzer_name1] [--analyzer_nameN] <project_directory>
 ```
 
-Currently, SolAST requires utilization of either a [truffle](https://www.trufflesuite.com/) project or a [brownie](https://eth-brownie.readthedocs.io/en/stable/) project.
-
-Please file an issue if you would like support for another build system.
+Currently, SolAST requires utilization of one of the following build systems:
+* [Brownie](https://eth-brownie.readthedocs.io/en/stable/)
+* [Hardhat](https://hardhat.org/)
+* [Truffle](https://www.trufflesuite.com/)
 
 If you only have `.sol` files, you can create a quick truffle project by performing the following:
 
@@ -34,7 +35,7 @@ truffle init
 cp ~/Downloads/awesome-contracts/*.sol contracts/
 ```
 
-Use your favorite text editor to change the `solc` version in `truffle-config.js` to `0.8.10` (or the relevant `0.8.X`).
+Use your favorite text editor to change the `solc` version in `truffle-config.js` to `0.8.13` (or the relevant `0.8.X`).
 
 ```Json
 module.exports = {
@@ -42,7 +43,7 @@ module.exports = {
   mocha: {},
   compilers: {
     solc: {
-      version: "0.8.10",
+      version: "0.8.13",
     }
   }
 };
