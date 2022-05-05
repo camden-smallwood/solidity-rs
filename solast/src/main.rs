@@ -1,10 +1,11 @@
-use solidity::ast::*;
-use std::{collections::HashSet, env, fs::File, io, path::PathBuf};
-
 mod analysis;
 mod brownie;
+mod hardhat;
 mod truffle;
 mod todo_list;
+
+use solidity::ast::*;
+use std::{collections::HashSet, env, fs::File, io, path::PathBuf};
 
 const VISITOR_TYPES: &'static [(&'static str, fn() -> Box<dyn AstVisitor>)] = &[
     ("no_spdx_identifier", || Box::new(analysis::NoSpdxIdentifierVisitor)),
@@ -104,6 +105,7 @@ fn main() -> io::Result<()> {
     let mut source_units: Vec<SourceUnit> = vec![];
 
     let brownie_config_path = path.join("brownie-config.yaml");
+    let hardhat_config_path = path.join("hardhat.config.js");
     let truffle_config_path = path.join("truffle-config.js");
 
     if brownie_config_path.is_file() {
@@ -128,7 +130,7 @@ fn main() -> io::Result<()> {
                     continue;
                 }
 
-                let file: brownie::File = simd_json::from_reader(File::open(path)?)?;
+                let file: brownie::File = serde_json::from_reader(File::open(path)?)?;
 
                 if let Some(mut source_unit) = file.ast {
                     if let Some(contract_name) = contract_name.as_ref().map(String::as_str) {
@@ -139,6 +141,49 @@ fn main() -> io::Result<()> {
 
                     if source_units.iter().find(|existing_source_unit| existing_source_unit.absolute_path == source_unit.absolute_path).is_none() {
                         source_unit.source = file.source.clone();
+                        source_units.push(source_unit);
+                    }
+                }
+            }
+        }
+    } else if hardhat_config_path.is_file() {
+        let build_path = path.join("artifacts").join("build-info");
+
+        if !build_path.exists() || !build_path.is_dir() {
+            todo!("hardhat project not compiled")
+        }
+
+        let console_path = PathBuf::new()
+            .join("hardhat")
+            .join("console.sol")
+            .to_string_lossy()
+            .to_string();
+
+        for path in std::fs::read_dir(build_path)? {
+            let path = path?.path();
+
+            if !path.is_file() || !path.extension().map(|extension| extension == "json").unwrap_or(false) {
+                continue;
+            }
+
+            let file: hardhat::File = serde_json::from_reader(File::open(path)?)?;
+
+            for (source_path, source) in file.output.sources {
+                let mut source_unit = source.ast;
+
+                if source_unit.absolute_path.as_ref().map(String::as_str).unwrap_or("").ends_with(console_path.as_str()) {
+                    continue;
+                }
+                
+                if let Some(contract_name) = contract_name.as_ref().map(String::as_str) {
+                    if !source_unit.contract_definitions().iter().find(|c| c.name == contract_name).is_some() {
+                        continue;
+                    }
+                }
+
+                if source_units.iter().find(|existing_source_unit| existing_source_unit.absolute_path == source_unit.absolute_path).is_none() {
+                    if let Some(source) = file.input.sources.get(&source_path) {
+                        source_unit.source = Some(source.content.clone());
                         source_units.push(source_unit);
                     }
                 }
@@ -164,7 +209,7 @@ fn main() -> io::Result<()> {
                 continue;
             }
 
-            let file: truffle::File = simd_json::from_reader(File::open(path)?)?;
+            let file: truffle::File = serde_json::from_reader(File::open(path)?)?;
 
             if let Some(mut source_unit) = file.ast {
                 if source_unit.absolute_path.as_ref().map(String::as_str).unwrap_or("").ends_with(migrations_path.as_str()) {
@@ -184,7 +229,7 @@ fn main() -> io::Result<()> {
             }
         }
     } else {
-        todo!("truffle config not found; implement support for other project types")
+        unimplemented!("no supported project configuration found")
     }
 
     source_units.sort_by(|lhs, rhs| {
