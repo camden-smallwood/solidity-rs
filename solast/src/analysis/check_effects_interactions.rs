@@ -81,9 +81,8 @@ impl CheckEffectsInteractionsVisitor {
         let mut makes_post_external_call_assignment = false;
         
         for id in expression.referenced_declarations() {
-            if contract_definition.hierarchy_contains_state_variable(source_units, id) {
-                makes_post_external_call_assignment = true;
-                break;
+            if !contract_definition.hierarchy_contains_state_variable(source_units, id) {
+                continue;
             }
 
             let block_info = function_info.block_info.get(&block_id).unwrap();
