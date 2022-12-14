@@ -41,14 +41,14 @@ impl AstVisitor for UnrestrictedSetterFunctionsVisitor {
         }
 
         println!(
-            "\tL{}: {} {} {} ({}) is an unprotected setter function",
+            "\tL{}: {:?} {} {} ({}) is an unprotected setter function",
 
             context.current_source_unit.source_line(context.function_definition.src.as_str())?,
 
-            format!("{:?}", context.function_definition.visibility),
+            context.function_definition.visibility,
 
             if let FunctionKind::Constructor = context.function_definition.kind {
-                format!("{}", context.contract_definition.name)
+                context.contract_definition.name.to_string()
             } else {
                 format!("{}.{}", context.contract_definition.name, context.function_definition.name)
             },

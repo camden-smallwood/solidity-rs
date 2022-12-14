@@ -13,11 +13,9 @@ pub struct UnusedStateVariablesVisitor {
 
 impl AstVisitor for UnusedStateVariablesVisitor {
     fn visit_contract_definition<'a>(&mut self, context: &mut ContractDefinitionContext<'a>) -> io::Result<()> {
-        if !self.contract_info.contains_key(&context.contract_definition.id) {
-            self.contract_info.insert(context.contract_definition.id, ContractInfo {
-                variable_info: HashMap::new(),
-            });
-        }
+        self.contract_info.entry(context.contract_definition.id).or_insert_with(|| ContractInfo {
+            variable_info: HashMap::new(),
+        });
 
         Ok(())
     }
@@ -63,9 +61,7 @@ impl AstVisitor for UnusedStateVariablesVisitor {
         if let ContractDefinitionNode::VariableDeclaration(variable_declaration) = definition_node {
             let contract_info = self.contract_info.get_mut(&contract_definition.id).unwrap();
 
-            if !contract_info.variable_info.contains_key(&variable_declaration.id) {
-                contract_info.variable_info.insert(variable_declaration.id, false);
-            }
+            contract_info.variable_info.entry(variable_declaration.id).or_insert_with(|| false);
         }
 
         Ok(())

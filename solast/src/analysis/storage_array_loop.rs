@@ -40,7 +40,7 @@ impl StorageArrayLoopVisitor {
             solidity::ast::Expression::MemberAccess(member_access) => {
                 let referenced_declarations = member_access.expression.referenced_declarations();
 
-                if referenced_declarations.len() == 0 {
+                if referenced_declarations.is_empty() {
                     return false;
                 }
 
@@ -51,11 +51,9 @@ impl StorageArrayLoopVisitor {
             }
 
             solidity::ast::Expression::TupleExpression(tuple_expression) => {
-                for component in tuple_expression.components.iter() {
-                    if let Some(component) = component {
-                        if self.expression_contains_storage_array_length(component) {
-                            return true;
-                        }
+                for component in tuple_expression.components.iter().flatten() {
+                    if self.expression_contains_storage_array_length(component) {
+                        return true;
                     }
                 }
 
@@ -69,14 +67,9 @@ impl StorageArrayLoopVisitor {
 
 impl AstVisitor for StorageArrayLoopVisitor {
     fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
-        if !self.functions.contains_key(&context.function_definition.id) {
-            self.functions.insert(
-                context.function_definition.id,
-                FunctionInfo {
-                    loops_over_storage_array: false,
-                },
-            );
-        }
+        self.functions.entry(context.function_definition.id).or_insert_with(|| FunctionInfo {
+            loops_over_storage_array: false,
+        });
 
         for variable_declaration in context.function_definition.parameters.parameters.iter() {
             if let solidity::ast::StorageLocation::Storage = variable_declaration.storage_location {
@@ -95,14 +88,14 @@ impl AstVisitor for StorageArrayLoopVisitor {
         if let Some(function_info) = self.functions.get(&context.function_definition.id) {
             if function_info.loops_over_storage_array {
                 println!(
-                    "\tL{}: {} {} {} performs a loop over a storage array, querying the length over each iteration",
+                    "\tL{}: {:?} {} {} performs a loop over a storage array, querying the length over each iteration",
 
                     context.current_source_unit.source_line(context.function_definition.src.as_str())?,
 
-                    format!("{:?}", context.function_definition.visibility),
+                    context.function_definition.visibility,
 
                     if context.function_definition.name.is_empty() {
-                        format!("{}", context.contract_definition.name)
+                        context.contract_definition.name.to_string()
                     } else {
                         format!("{}.{}", context.contract_definition.name, context.function_definition.name)
                     },
@@ -118,7 +111,7 @@ impl AstVisitor for StorageArrayLoopVisitor {
     fn visit_variable_declaration<'a, 'b>(&mut self, context: &mut VariableDeclarationContext<'a, 'b>) -> io::Result<()> {
         let storage_location = match &context.variable_declaration.storage_location {
             solidity::ast::StorageLocation::Default if context.variable_declaration.state_variable => solidity::ast::StorageLocation::Storage,
-            storage_location => storage_location.clone(),
+            storage_location => *storage_location,
         };
 
         if let solidity::ast::StorageLocation::Storage = storage_location {

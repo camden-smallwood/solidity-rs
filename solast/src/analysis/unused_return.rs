@@ -44,7 +44,7 @@ impl AstVisitor for UnusedReturnVisitor {
                         function_definition.visibility,
 
                         if function_definition.name.is_empty() {
-                            format!("{}", context.contract_definition.name)
+                            context.contract_definition.name.to_string()
                         } else {
                             format!("{}.{}", context.contract_definition.name, function_definition.name)
                         },
@@ -54,7 +54,7 @@ impl AstVisitor for UnusedReturnVisitor {
                         format!("{:?}", called_function_definition.visibility).to_lowercase(),
 
                         if called_function_definition.name.is_empty() {
-                            format!("{}", called_contract_definition.name)
+                            called_contract_definition.name.to_string()
                         } else {
                             format!("{}.{}", called_contract_definition.name, called_function_definition.name)
                         },
@@ -76,7 +76,7 @@ impl AstVisitor for UnusedReturnVisitor {
                         format!("{:?}", modifier_definition.visibility).to_lowercase(),
 
                         if modifier_definition.name.is_empty() {
-                            format!("{}", context.contract_definition.name)
+                            context.contract_definition.name.to_string()
                         } else {
                             format!("{}.{}", context.contract_definition.name, modifier_definition.name)
                         },
@@ -84,7 +84,7 @@ impl AstVisitor for UnusedReturnVisitor {
                         format!("{:?}", called_function_definition.visibility).to_lowercase(),
 
                         if called_function_definition.name.is_empty() {
-                            format!("{}", called_contract_definition.name)
+                            called_contract_definition.name.to_string()
                         } else {
                             format!("{}.{}", called_contract_definition.name, called_function_definition.name)
                         },

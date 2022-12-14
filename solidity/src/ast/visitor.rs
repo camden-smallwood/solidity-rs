@@ -974,20 +974,18 @@ impl AstVisitor for AstVisitorData<'_> {
             visitor.visit_variable_declaration_statement(context)?;
         }
 
-        for variable_declaration in context.variable_declaration_statement.declarations.iter() {
-            if let Some(variable_declaration) = variable_declaration {
-                let mut context = VariableDeclarationContext {
-                    source_units: context.source_units,
-                    current_source_unit: context.current_source_unit,
-                    contract_definition: Some(context.contract_definition),
-                    definition_node: Some(context.definition_node),
-                    blocks: Some(context.blocks),
-                    variable_declaration
-                };
-                
-                self.visit_variable_declaration(&mut context)?;
-                self.leave_variable_declaration(&mut context)?;
-            }
+        for variable_declaration in context.variable_declaration_statement.declarations.iter().flatten() {
+            let mut context = VariableDeclarationContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: Some(context.contract_definition),
+                definition_node: Some(context.definition_node),
+                blocks: Some(context.blocks),
+                variable_declaration
+            };
+            
+            self.visit_variable_declaration(&mut context)?;
+            self.leave_variable_declaration(&mut context)?;
         }
 
         if let Some(initial_value) = context.variable_declaration_statement.initial_value.as_ref() {
@@ -1964,21 +1962,19 @@ impl AstVisitor for AstVisitorData<'_> {
             visitor.visit_tuple_expression(context)?;
         }
 
-        for component in context.tuple_expression.components.iter() {
-            if let Some(component) = component {
-                let mut component_context = ExpressionContext {
-                    source_units: context.source_units,
-                    current_source_unit: context.current_source_unit,
-                    contract_definition: context.contract_definition,
-                    definition_node: context.definition_node,
-                    blocks: context.blocks,
-                    statement: context.statement,
-                    expression: component,
-                };
-        
-                self.visit_expression(&mut component_context)?;
-                self.leave_expression(&mut component_context)?;
-            }
+        for component in context.tuple_expression.components.iter().flatten() {
+            let mut component_context = ExpressionContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: context.blocks,
+                statement: context.statement,
+                expression: component,
+            };
+    
+            self.visit_expression(&mut component_context)?;
+            self.leave_expression(&mut component_context)?;
         }
 
         Ok(())
@@ -2108,7 +2104,7 @@ impl AstVisitor for AstVisitorData<'_> {
                 statement: context.statement,
                 inline_assembly: context.inline_assembly,
                 yul_blocks: context.yul_blocks,
-                yul_statement: yul_statement,
+                yul_statement,
             };
 
             self.visit_yul_statement(&mut context)?;

@@ -3,14 +3,14 @@ use eth_lang_utils::ast::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct TypeDescriptions {
     pub type_identifier: Option<String>,
     pub type_string: Option<String>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum TypeName {
     FunctionTypeName(FunctionTypeName),
@@ -34,7 +34,7 @@ impl Display for TypeName {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ElementaryTypeName {
     pub state_mutability: Option<StateMutability>,
@@ -63,7 +63,7 @@ impl Display for ElementaryTypeName {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserDefinedTypeName {
     pub path_node: Option<IdentifierPath>,
@@ -83,12 +83,12 @@ impl Display for UserDefinedTypeName {
         if let Some(path_node) = self.path_node.as_ref() {
             f.write_fmt(format_args!("{}", path_node))
         } else {
-            f.write_fmt(format_args!("{}", self.name.as_ref().map(String::as_str).unwrap_or("")))
+            f.write_fmt(format_args!("{}", self.name.as_deref().unwrap_or("")))
         }
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FunctionTypeName {
     pub visibility: Visibility,
@@ -98,7 +98,7 @@ pub struct FunctionTypeName {
     pub type_descriptions: TypeDescriptions,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ArrayTypeName {
     pub base_type: Box<TypeName>,
@@ -119,7 +119,7 @@ impl Display for ArrayTypeName {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Mapping {
     pub key_type: Box<TypeName>,

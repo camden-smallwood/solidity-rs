@@ -3,7 +3,7 @@ use eth_lang_utils::ast::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Identifier {
     pub argument_types: Option<Vec<TypeDescriptions>>,
@@ -41,7 +41,7 @@ pub struct IdentifierContext<'a, 'b> {
     pub identifier: &'a Identifier,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IdentifierPath {
     pub name: String,

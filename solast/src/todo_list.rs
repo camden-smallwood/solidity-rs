@@ -103,14 +103,14 @@ pub fn print(source_units: &[SourceUnit]) {
                     }
                     
                     if let Some(true) = modifier_definition.r#virtual {
-                        line.push_str(format!(" virtual").as_str());
+                        line.push_str(" virtual");
                     }
             
                     if let Some(overrides) = modifier_definition.overrides.as_ref() {
                         line.push_str(format!(" {}", overrides).as_str());
                     }
                     
-                    line.push_str(format!("`").as_str());
+                    line.push('`');
 
                     lines.push(line);
                 }
@@ -152,7 +152,7 @@ pub fn print(source_units: &[SourceUnit]) {
                     }
             
                     if let Some(true) = function_definition.r#virtual {
-                        line.push_str(format!(" virtual").as_str());
+                        line.push_str(" virtual");
                     }
             
                     if let Some(overrides) = function_definition.overrides.as_ref() {
@@ -167,7 +167,7 @@ pub fn print(source_units: &[SourceUnit]) {
                         line.push_str(format!(" returns {}", function_definition.return_parameters).as_str());
                     }
 
-                    line.push_str(format!("`").as_str());
+                    line.push('`');
 
                     lines.push(line);
                 }

@@ -3,7 +3,7 @@ use eth_lang_utils::ast::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct UsingForDirective {
     pub library_name: IdentifierPath,
@@ -19,7 +19,7 @@ impl Display for UsingForDirective {
             self.library_name,
             match self.type_name.as_ref() {
                 Some(type_name) => format!("{}", type_name),
-                None => format!("_"),
+                None => "_".to_string(),
             }
         ))
     }

@@ -21,7 +21,7 @@ impl AstVisitor for SourceUnitVisitor {
             println!();
         }
 
-        println!("{}:", context.current_source_unit.absolute_path.as_ref().map(|path| path.as_str()).unwrap_or("<ABSOLUTE_PATH_NOT_SET/>"));
+        println!("{}:", context.current_source_unit.absolute_path.as_deref().unwrap_or("<ABSOLUTE_PATH_NOT_SET/>"));
 
         Ok(())
     }

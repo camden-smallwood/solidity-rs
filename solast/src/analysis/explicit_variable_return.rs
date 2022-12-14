@@ -25,7 +25,7 @@ impl ExplicitVariableReturnVisitor {
                 function_definition.visibility,
 
                 if let FunctionKind::Constructor = function_definition.kind {
-                    format!("{}", "constructor")
+                    "constructor".to_string()
                 } else {
                     format!("`{}` {}", function_definition.name, function_definition.kind)
                 },
@@ -60,11 +60,9 @@ impl ExplicitVariableReturnVisitor {
 
 impl AstVisitor for ExplicitVariableReturnVisitor {
     fn visit_variable_declaration_statement<'a, 'b>(&mut self, context: &mut VariableDeclarationStatementContext<'a, 'b>) -> io::Result<()> {
-        for declaration in context.variable_declaration_statement.declarations.iter() {
-            if let Some(declaration) = declaration {
-                if !self.local_variable_ids.contains(&declaration.id) {
-                    self.local_variable_ids.insert(declaration.id);
-                }
+        for declaration in context.variable_declaration_statement.declarations.iter().flatten() {
+            if !self.local_variable_ids.contains(&declaration.id) {
+                self.local_variable_ids.insert(declaration.id);
             }
         }
 
@@ -88,17 +86,15 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
             Some(Expression::TupleExpression(tuple_expression)) => {
                 let mut all_local_variables = true;
 
-                for component in tuple_expression.components.iter() {
-                    if let Some(component) = component {
-                        if let Expression::Identifier(identifier) = component {
-                            if !self.local_variable_ids.contains(&identifier.referenced_declaration) {
-                                all_local_variables = false;
-                                break;
-                            }
-                        } else {
+                for component in tuple_expression.components.iter().flatten() {
+                    if let Expression::Identifier(identifier) = component {
+                        if !self.local_variable_ids.contains(&identifier.referenced_declaration) {
                             all_local_variables = false;
                             break;
                         }
+                    } else {
+                        all_local_variables = false;
+                        break;
                     }
                 }
 

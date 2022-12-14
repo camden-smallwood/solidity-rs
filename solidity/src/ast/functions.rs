@@ -18,7 +18,7 @@ impl Display for FunctionKind {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ParameterList {
     pub parameters: Vec<VariableDeclaration>,
@@ -42,7 +42,7 @@ impl Display for ParameterList {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct OverrideSpecifier {
     pub overrides: Vec<IdentifierPath>,
@@ -72,7 +72,7 @@ impl Display for OverrideSpecifier {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FunctionDefinition {
     pub base_functions: Option<Vec<NodeID>>,
@@ -105,7 +105,7 @@ impl FunctionDefinition {
 
         match expression {
             Expression::Identifier(identifier) => {
-                if self.return_parameters.parameters.iter().find(|p| p.id == identifier.referenced_declaration).is_some() {
+                if self.return_parameters.parameters.iter().any(|p| p.id == identifier.referenced_declaration) {
                     ids.push(identifier.referenced_declaration);
                 }
             }
@@ -127,10 +127,8 @@ impl FunctionDefinition {
             }
 
             Expression::TupleExpression(tuple_expression) => {
-                for component in tuple_expression.components.iter() {
-                    if let Some(component) = component {
-                        ids.extend(self.get_assigned_return_variables(component));
-                    }
+                for component in tuple_expression.components.iter().flatten() {
+                    ids.extend(self.get_assigned_return_variables(component));
                 }
             }
 

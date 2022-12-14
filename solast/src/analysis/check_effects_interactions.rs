@@ -60,9 +60,7 @@ impl CheckEffectsInteractionsVisitor {
                     }
                 }
 
-                if state_variable_id.is_none() {
-                    return None
-                }
+                state_variable_id?;
             }
             
             state_variable_id
@@ -169,11 +167,9 @@ impl CheckEffectsInteractionsVisitor {
 
 impl AstVisitor for CheckEffectsInteractionsVisitor {
     fn visit_contract_definition<'a>(&mut self, context: &mut ContractDefinitionContext<'a>) -> io::Result<()> {
-        if !self.contract_info.contains_key(&context.contract_definition.id) {
-            self.contract_info.insert(context.contract_definition.id, ContractInfo {
-                function_info: HashMap::new(),
-            });
-        }
+        self.contract_info.entry(context.contract_definition.id).or_insert_with(|| ContractInfo {
+            function_info: HashMap::new(),
+        });
 
         Ok(())
     }
@@ -181,11 +177,9 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
     fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
         let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
 
-        if !contract_info.function_info.contains_key(&context.function_definition.id) {
-            contract_info.function_info.insert(context.function_definition.id, FunctionInfo {
-                block_info: HashMap::new(),
-            });
-        }
+        contract_info.function_info.entry(context.function_definition.id).or_insert_with(|| FunctionInfo {
+            block_info: HashMap::new(),
+        });
 
         Ok(())
     }
@@ -193,33 +187,29 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
     fn visit_modifier_definition<'a>(&mut self, context: &mut ModifierDefinitionContext<'a>) -> io::Result<()> {
         let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
 
-        if !contract_info.function_info.contains_key(&context.modifier_definition.id) {
-            contract_info.function_info.insert(context.modifier_definition.id, FunctionInfo {
-                block_info: HashMap::new(),
-            });
-        }
+        contract_info.function_info.entry(context.modifier_definition.id).or_insert_with(|| FunctionInfo {
+            block_info: HashMap::new(),
+        });
 
         Ok(())
     }
 
     fn visit_block<'a, 'b>(&mut self, context: &mut BlockContext<'a, 'b>) -> io::Result<()> {
         let definition_id = match context.definition_node {
-            &ContractDefinitionNode::FunctionDefinition(FunctionDefinition { id, .. }) => id,
-            &ContractDefinitionNode::ModifierDefinition(ModifierDefinition { id, .. }) => id,
+            ContractDefinitionNode::FunctionDefinition(FunctionDefinition { id, .. }) => id,
+            ContractDefinitionNode::ModifierDefinition(ModifierDefinition { id, .. }) => id,
             _ => return Ok(())
         };
 
         let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
-        let function_info = contract_info.function_info.get_mut(&definition_id).unwrap();
+        let function_info = contract_info.function_info.get_mut(definition_id).unwrap();
 
-        if !function_info.block_info.contains_key(&context.block.id) {
-            function_info.block_info.insert(context.block.id, BlockInfo {
-                makes_external_call: false,
-                makes_post_external_call_assignment: false,
-                variable_bindings: HashMap::new(),
-                parent_blocks: context.blocks.iter().map(|&block| block.id).collect(),
-            });
-        }
+        function_info.block_info.entry(context.block.id).or_insert_with(|| BlockInfo {
+            makes_external_call: false,
+            makes_post_external_call_assignment: false,
+            variable_bindings: HashMap::new(),
+            parent_blocks: context.blocks.iter().map(|&block| block.id).collect(),
+        });
 
         Ok(())
     }
@@ -230,13 +220,13 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
         }
         
         let definition_id = match context.definition_node {
-            &ContractDefinitionNode::FunctionDefinition(FunctionDefinition { id, .. }) => id,
-            &ContractDefinitionNode::ModifierDefinition(ModifierDefinition { id, .. }) => id,
+            ContractDefinitionNode::FunctionDefinition(FunctionDefinition { id, .. }) => id,
+            ContractDefinitionNode::ModifierDefinition(ModifierDefinition { id, .. }) => id,
             _ => return Ok(())
         };
 
         let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
-        let function_info = contract_info.function_info.get_mut(&definition_id).unwrap();
+        let function_info = contract_info.function_info.get_mut(definition_id).unwrap();
         let block_id = context.blocks.last().unwrap().id;
         
         //
@@ -270,11 +260,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
 
                 let block_info = function_info.block_info.get_mut(&block_id).unwrap();
 
-                if !block_info.variable_bindings.contains_key(&state_variable_id) {
-                    block_info.variable_bindings.insert(state_variable_id, vec![]);
-                }
-
-                let variable_bindings = block_info.variable_bindings.get_mut(&state_variable_id).unwrap();
+                let variable_bindings = block_info.variable_bindings.entry(state_variable_id).or_insert_with(Vec::new);
 
                 if !variable_bindings.contains(&local_variable_id) {
                     variable_bindings.push(local_variable_id);
@@ -294,7 +280,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
                         _ => continue
                     };
                     
-                    let local_variable_id = match context.variable_declaration_statement.declarations.iter().nth(i).unwrap() {
+                    let local_variable_id = match context.variable_declaration_statement.declarations.get(i).unwrap() {
                         &Some(VariableDeclaration {
                             storage_location: StorageLocation::Storage,
                             id,
@@ -317,11 +303,7 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
 
                     let block_info = function_info.block_info.get_mut(&block_id).unwrap();
 
-                    if !block_info.variable_bindings.contains_key(&state_variable_id) {
-                        block_info.variable_bindings.insert(state_variable_id, vec![]);
-                    }
-
-                    let variable_bindings = block_info.variable_bindings.get_mut(&state_variable_id).unwrap();
+                    let variable_bindings = block_info.variable_bindings.entry(state_variable_id).or_insert_with(Vec::new);
 
                     if !variable_bindings.contains(&local_variable_id) {
                         variable_bindings.push(local_variable_id);
@@ -341,13 +323,13 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
         }
 
         let definition_id = match context.definition_node {
-            &ContractDefinitionNode::FunctionDefinition(FunctionDefinition { id, .. }) => id,
-            &ContractDefinitionNode::ModifierDefinition(ModifierDefinition { id, .. }) => id,
+            ContractDefinitionNode::FunctionDefinition(FunctionDefinition { id, .. }) => id,
+            ContractDefinitionNode::ModifierDefinition(ModifierDefinition { id, .. }) => id,
             _ => return Ok(())
         };
 
         let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
-        let function_info = contract_info.function_info.get_mut(&definition_id).unwrap();
+        let function_info = contract_info.function_info.get_mut(definition_id).unwrap();
         let block_info = function_info.block_info.get_mut(&context.blocks.last().unwrap().id).unwrap();
 
         //
@@ -381,13 +363,13 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
         }
         
         let definition_id = match context.definition_node {
-            &ContractDefinitionNode::FunctionDefinition(FunctionDefinition { id, .. }) => id,
-            &ContractDefinitionNode::ModifierDefinition(ModifierDefinition { id, .. }) => id,
+            ContractDefinitionNode::FunctionDefinition(FunctionDefinition { id, .. }) => id,
+            ContractDefinitionNode::ModifierDefinition(ModifierDefinition { id, .. }) => id,
             _ => return Ok(())
         };
 
         let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
-        let function_info = contract_info.function_info.get_mut(&definition_id).unwrap();
+        let function_info = contract_info.function_info.get_mut(definition_id).unwrap();
         let block_info = function_info.block_info.get_mut(&context.blocks.last().unwrap().id).unwrap();
 
         //

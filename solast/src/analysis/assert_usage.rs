@@ -15,7 +15,7 @@ impl AstVisitor for AssertUsageVisitor {
 
         let definition_id = match context.definition_node {
             ContractDefinitionNode::FunctionDefinition(FunctionDefinition { id, .. }) |
-            ContractDefinitionNode::ModifierDefinition(ModifierDefinition { id, .. }) => id.clone(),
+            ContractDefinitionNode::ModifierDefinition(ModifierDefinition { id, .. }) => *id,
 
             _ => return Ok(())
         };
@@ -56,7 +56,7 @@ impl AstVisitor for AssertUsageVisitor {
                 function_definition.visibility,
 
                 if let FunctionKind::Constructor = function_definition.kind {
-                    format!("{}", "constructor")
+                    "constructor".to_string()
                 } else {
                     format!("`{}` {}", function_definition.name, function_definition.kind)
                 },

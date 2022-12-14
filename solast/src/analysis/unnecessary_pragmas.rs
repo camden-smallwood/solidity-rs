@@ -13,7 +13,7 @@ impl UnnecessaryPragmasVisitor {
             match literal {
                 "^" | ">" | ">=" | "<=" | "<" => op = Some(literal),
 
-                _ if !literal.starts_with(".") => {
+                _ if !literal.starts_with('.') => {
                     match op {
                         None | Some("=" | "^" | ">" | ">=") => {
                             lower = Some(literal.parse().unwrap_or(0.0));
@@ -43,12 +43,12 @@ impl UnnecessaryPragmasVisitor {
             }
         }
 
-        if lower.is_some() && upper.is_none() {
-            upper = Some(lower.unwrap() + 0.1);
+        if let (Some(lower), None) = (lower, upper) {
+            upper = Some(lower + 0.1);
         }
-        
-        if lower.is_none() && upper.is_some() {
-            lower = Some(upper.unwrap() - 0.1);
+
+        if let (None, Some(upper)) = (lower, upper) {
+            lower = Some(upper - 0.1);
         }
 
         if abicoder.contains(&"v2") {
@@ -93,6 +93,6 @@ impl AstVisitor for UnnecessaryPragmasVisitor {
 
         self.check_pragma_directives(&mut solidity, &mut abicoder);
 
-        return Ok(())
+        Ok(())
     }
 }

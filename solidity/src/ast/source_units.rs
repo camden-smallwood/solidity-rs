@@ -3,7 +3,7 @@ use eth_lang_utils::ast::*;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, io};
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum SourceUnitNode {
     PragmaDirective(PragmaDirective),
@@ -36,10 +36,9 @@ impl SourceUnit {
             _ => return Err(io::Error::from(io::ErrorKind::NotFound))
         };
 
-        let mut tokens = src.split(':');
         let mut values: Vec<Option<usize>> = vec![];
 
-        while let Some(token) = tokens.next() {
+        for token in src.split(':') {
             values.push(if token.is_empty() {
                 None
             } else {

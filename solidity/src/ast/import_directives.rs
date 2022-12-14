@@ -2,7 +2,7 @@ use super::*;
 use eth_lang_utils::ast::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SymbolAlias {
     pub foreign: Expression,
@@ -10,7 +10,7 @@ pub struct SymbolAlias {
     pub name_location: Option<String>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ImportDirective {
     pub file: String,

@@ -21,7 +21,7 @@ impl InlineAssemblyVisitor {
                 function_definition.visibility,
 
                 if let FunctionKind::Constructor = function_definition.kind {
-                    format!("{}", "constructor")
+                    "constructor".to_string()
                 } else {
                     format!("`{}` {}", function_definition.name, function_definition.kind)
                 },
@@ -95,7 +95,7 @@ impl AstVisitor for InlineAssemblyVisitor {
             }
 
             "calldatacopy" => {
-                let arguments = match context.yul_function_call.arguments.iter().nth(2) {
+                let arguments = match context.yul_function_call.arguments.get(2) {
                     Some(YulExpression::YulFunctionCall(YulFunctionCall {
                         function_name: YulIdentifier { name },
                         arguments,
@@ -104,7 +104,7 @@ impl AstVisitor for InlineAssemblyVisitor {
                     _ => return Ok(())
                 };
 
-                match arguments.iter().nth(0) {
+                match arguments.get(0) {
                     Some(YulExpression::YulFunctionCall(YulFunctionCall {
                         function_name: YulIdentifier { name },
                         ..
@@ -113,7 +113,7 @@ impl AstVisitor for InlineAssemblyVisitor {
                     _ => return Ok(())
                 }
 
-                let value = match arguments.iter().nth(1) {
+                let value = match arguments.get(1) {
                     Some(
                         YulExpression::YulLiteral(YulLiteral {
                             value: Some(value),

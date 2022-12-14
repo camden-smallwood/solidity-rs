@@ -22,7 +22,7 @@ impl AstVisitor for SelfdestructUsageVisitor {
                             function_definition.visibility,
             
                             if let FunctionKind::Constructor = function_definition.kind {
-                                format!("{}", "constructor")
+                                "constructor".to_string()
                             } else {
                                 format!("`{}` {}", function_definition.name, function_definition.kind)
                             },

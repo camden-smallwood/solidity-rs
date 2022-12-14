@@ -64,10 +64,10 @@ fn type_name_size(source_units: &[SourceUnit], type_name: &TypeName) -> std::io:
         }
 
         TypeName::UserDefinedTypeName(UserDefinedTypeName { referenced_declaration, .. }) => {
-            let id = referenced_declaration.clone();
+            let id = *referenced_declaration;
 
             for source_unit in source_units.iter() {
-                if let Some(_) = source_unit.enum_definition(id) {
+                if source_unit.enum_definition(id).is_some() {
                     return Ok(1)
                 } else if let Some(struct_definition) = source_unit.struct_definition(id) {
                     let mut size = 0;
@@ -79,7 +79,7 @@ fn type_name_size(source_units: &[SourceUnit], type_name: &TypeName) -> std::io:
                     return Ok(size)
                 } else {
                     for contract_definition in source_unit.contract_definitions() {
-                        if let Some(_) = contract_definition.enum_definition(id) {
+                        if contract_definition.enum_definition(id).is_some() {
                             return Ok(1)
                         } else if let Some(struct_definition) = contract_definition.struct_definition(id) {
                             let mut size = 0;

@@ -18,27 +18,17 @@ pub struct UncheckedERC20TransferVisitor {
 
 impl AstVisitor for UncheckedERC20TransferVisitor {
     fn visit_block<'a, 'b>(&mut self, context: &mut BlockContext<'a, 'b>) -> io::Result<()> {
-        if !self.block_info.contains_key(&context.block.id) {
-            self.block_info.insert(
-                context.block.id,
-                BlockInfo {
-                    verified_declarations: HashSet::new(),
-                },
-            );
-        }
+        self.block_info.entry(context.block.id).or_insert_with(|| BlockInfo {
+            verified_declarations: HashSet::new(),
+        });
 
         Ok(())
     }
 
     fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
-        if !self.function_info.contains_key(&context.function_definition.id) {
-            self.function_info.insert(
-                context.function_definition.id,
-                FunctionInfo {
-                    occurance_count: 0
-                }
-            );
-        }
+        self.function_info.entry(context.function_definition.id).or_insert_with(|| FunctionInfo {
+            occurance_count: 0
+        });
 
         Ok(())
     }
@@ -56,7 +46,7 @@ impl AstVisitor for UncheckedERC20TransferVisitor {
                     function_definition.visibility,
 
                     if let FunctionKind::Constructor = function_definition.kind {
-                        format!("{}", "constructor")
+                        "constructor".to_string()
                     } else {
                         format!("`{}` {}", function_definition.name, function_definition.kind)
                     },
@@ -125,16 +115,9 @@ impl AstVisitor for UncheckedERC20TransferVisitor {
             solidity::ast::BlockOrStatement::Statement(_) => return Ok(()),
         };
 
-        if !self.block_info.contains_key(&block.id) {
-            self.block_info.insert(
-                block.id,
-                BlockInfo {
-                    verified_declarations: HashSet::new(),
-                },
-            );
-        }
-
-        let block_info = self.block_info.get_mut(&block.id).unwrap();
+        let block_info = self.block_info.entry(block.id).or_insert_with(|| BlockInfo {
+            verified_declarations: HashSet::new(),
+        });
 
         let mut operations = match &context.if_statement.condition {
             solidity::ast::Expression::BinaryOperation(expr) => vec![expr],

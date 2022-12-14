@@ -26,7 +26,7 @@ impl RedundantAssignmentsVisitor {
                 function_definition.visibility,
 
                 if let FunctionKind::Constructor = function_definition.kind {
-                    format!("{}", "constructor")
+                    "constructor".to_string()
                 } else {
                     format!("`{}` {}", function_definition.name, function_definition.kind)
                 },
@@ -67,7 +67,7 @@ impl AstVisitor for RedundantAssignmentsVisitor {
                     component_ids.extend(component.referenced_declarations());
                 }
 
-                if !component_ids.is_empty() && tuple_component_ids.iter().find(|&ids| ids.eq(&component_ids)).is_some() {
+                if !component_ids.is_empty() && tuple_component_ids.iter().any(|ids| ids.eq(&component_ids)) {
                     self.print_message(
                         context.contract_definition,
                         context.definition_node,

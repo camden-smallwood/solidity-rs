@@ -20,7 +20,7 @@ impl LargeLiteralsVisitor {
                 function_definition.visibility,
 
                 if let FunctionKind::Constructor = function_definition.kind {
-                    format!("{}", "constructor")
+                    "constructor".to_string()
                 } else {
                     format!("`{}` {}", function_definition.name, function_definition.kind)
                 },
@@ -52,7 +52,9 @@ impl LargeLiteralsVisitor {
 impl AstVisitor for LargeLiteralsVisitor {
     fn visit_literal<'a, 'b>(&mut self, context: &mut LiteralContext<'a, 'b>) -> io::Result<()> {
         if let Some(value) = context.literal.value.as_ref() {
-            if value.chars().all(char::is_numeric) && (|n| (n > 6) && ((n % 3) != 0))(value.len()) {
+            let n = value.len();
+
+            if value.chars().all(char::is_numeric) && (n > 6) && ((n % 3) != 0) {
                 self.print_message(
                     context.contract_definition,
                     context.definition_node,

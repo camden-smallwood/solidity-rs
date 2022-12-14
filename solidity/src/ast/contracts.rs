@@ -17,7 +17,7 @@ impl Display for ContractKind {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum ContractDefinitionNode {
     UsingForDirective(UsingForDirective),
@@ -47,7 +47,7 @@ impl Display for ContractDefinitionNode {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct InheritanceSpecifier {
     pub base_name: IdentifierPath,
@@ -81,7 +81,7 @@ impl Display for InheritanceSpecifier {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ContractDefinition {
     pub name: String,
@@ -276,7 +276,7 @@ impl ContractDefinition {
                     };
 
                     // Attempt to retrieve the requested state variable from the current contract in the inheritance hierarchy
-                    if let Some(_) = contract_definition.variable_declaration(state_variable_id) {
+                    if contract_definition.variable_declaration(state_variable_id).is_some() {
                         return true;
                     }
                 }
@@ -291,7 +291,7 @@ impl ContractDefinition {
     pub fn get_assigned_state_variables(
         &self,
         source_units: &[SourceUnit],
-        definition_node: &ContractDefinitionNode,
+        _definition_node: &ContractDefinitionNode,
         expression: &Expression,
     ) -> Vec<NodeID> {
         let mut ids = vec![];
@@ -309,7 +309,7 @@ impl ContractDefinition {
             Expression::Assignment(assignment) => {
                 ids.extend(self.get_assigned_state_variables(
                     source_units,
-                    definition_node,
+                    _definition_node,
                     assignment.left_hand_side.as_ref(),
                 ));
             }
@@ -317,7 +317,7 @@ impl ContractDefinition {
             Expression::IndexAccess(index_access) => {
                 ids.extend(self.get_assigned_state_variables(
                     source_units,
-                    definition_node,
+                    _definition_node,
                     index_access.base_expression.as_ref(),
                 ));
             }
@@ -325,7 +325,7 @@ impl ContractDefinition {
             Expression::IndexRangeAccess(index_range_access) => {
                 ids.extend(self.get_assigned_state_variables(
                     source_units,
-                    definition_node,
+                    _definition_node,
                     index_range_access.base_expression.as_ref(),
                 ));
             }
@@ -333,20 +333,18 @@ impl ContractDefinition {
             Expression::MemberAccess(member_access) => {
                 ids.extend(self.get_assigned_state_variables(
                     source_units,
-                    definition_node,
+                    _definition_node,
                     member_access.expression.as_ref(),
                 ));
             }
 
             Expression::TupleExpression(tuple_expression) => {
-                for component in tuple_expression.components.iter() {
-                    if let Some(component) = component {
-                        ids.extend(self.get_assigned_state_variables(
-                            source_units,
-                            definition_node,
-                            component,
-                        ));
-                    }
+                for component in tuple_expression.components.iter().flatten() {
+                    ids.extend(self.get_assigned_state_variables(
+                        source_units,
+                        _definition_node,
+                        component,
+                    ));
                 }
             }
 

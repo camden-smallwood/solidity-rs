@@ -10,7 +10,10 @@ use std::{collections::HashSet, env, fs::File, io, path::PathBuf};
 #[cfg(feature = "simd")]
 use simd_json;
 
-const VISITOR_TYPES: &'static [(&'static str, fn() -> Box<dyn AstVisitor>)] = &[
+type VisitorConstructor = fn() -> Box<dyn AstVisitor>;
+type VisitorEntry = (&'static str, VisitorConstructor);
+
+const VISITOR_TYPES: &[VisitorEntry] = &[
     ("no_spdx_identifier", || Box::new(analysis::NoSpdxIdentifierVisitor)),
     ("floating_solidity_version", || Box::new(analysis::FloatingSolidityVersionVisitor)),
     ("node_modules_imports", || Box::new(analysis::NodeModulesImportsVisitor)),
@@ -53,14 +56,14 @@ const VISITOR_TYPES: &'static [(&'static str, fn() -> Box<dyn AstVisitor>)] = &[
 
 fn main() -> io::Result<()> {
     let mut args = env::args();
-    args.next().ok_or(io::Error::from(io::ErrorKind::BrokenPipe))?;
+    args.next().ok_or_else(|| io::Error::from(io::ErrorKind::BrokenPipe))?;
 
     let mut path: Option<PathBuf> = None;
     let mut should_print_todo_list = false;
     let mut visitor_names: HashSet<String> = HashSet::new();
     let mut contract_name: Option<String> = None;
 
-    while let Some(arg) = args.next() {
+    for arg in args {
         match arg {
             arg if arg.starts_with("--") => match &arg.as_str()[2..] {
                 "todo-list" | "todo_list" => {
@@ -75,7 +78,7 @@ fn main() -> io::Result<()> {
                     contract_name = Some(s.trim_start_matches("contract=").into());
                 }
 
-                s if VISITOR_TYPES.iter().find(|visitor| visitor.0 == s).is_some() => {
+                s if VISITOR_TYPES.iter().any(|visitor| visitor.0 == s) => {
                     if !visitor_names.contains(s) {
                         visitor_names.insert(s.into());
                     }
@@ -136,13 +139,13 @@ fn main() -> io::Result<()> {
                 let file: brownie::File = simd_json::from_reader(File::open(path)?)?;
 
                 if let Some(mut source_unit) = file.ast {
-                    if let Some(contract_name) = contract_name.as_ref().map(String::as_str) {
-                        if !source_unit.contract_definitions().iter().find(|c| c.name == contract_name).is_some() {
+                    if let Some(contract_name) = contract_name.as_deref() {
+                        if !source_unit.contract_definitions().iter().any(|c| c.name == contract_name) {
                             continue;
                         }
                     }
 
-                    if source_units.iter().find(|existing_source_unit| existing_source_unit.absolute_path == source_unit.absolute_path).is_none() {
+                    if !source_units.iter().any(|existing_source_unit| existing_source_unit.absolute_path == source_unit.absolute_path) {
                         source_unit.source = file.source.clone();
                         source_units.push(source_unit);
                     }
@@ -174,17 +177,17 @@ fn main() -> io::Result<()> {
             for (source_path, source) in file.output.sources {
                 let mut source_unit = source.ast;
 
-                if source_unit.absolute_path.as_ref().map(String::as_str).unwrap_or("").ends_with(console_path.as_str()) {
+                if source_unit.absolute_path.as_deref().unwrap_or("").ends_with(console_path.as_str()) {
                     continue;
                 }
                 
-                if let Some(contract_name) = contract_name.as_ref().map(String::as_str) {
-                    if !source_unit.contract_definitions().iter().find(|c| c.name == contract_name).is_some() {
+                if let Some(contract_name) = contract_name.as_deref() {
+                    if !source_unit.contract_definitions().iter().any(|c| c.name == contract_name) {
                         continue;
                     }
                 }
 
-                if source_units.iter().find(|existing_source_unit| existing_source_unit.absolute_path == source_unit.absolute_path).is_none() {
+                if !source_units.iter().any(|existing_source_unit| existing_source_unit.absolute_path == source_unit.absolute_path) {
                     if let Some(source) = file.input.sources.get(&source_path) {
                         source_unit.source = Some(source.content.clone());
                         source_units.push(source_unit);
@@ -215,17 +218,17 @@ fn main() -> io::Result<()> {
             let file: truffle::File = simd_json::from_reader(File::open(path)?)?;
 
             if let Some(mut source_unit) = file.ast {
-                if source_unit.absolute_path.as_ref().map(String::as_str).unwrap_or("").ends_with(migrations_path.as_str()) {
+                if source_unit.absolute_path.as_deref().unwrap_or("").ends_with(migrations_path.as_str()) {
                     continue;
                 }
                 
-                if let Some(contract_name) = contract_name.as_ref().map(String::as_str) {
-                    if !source_unit.contract_definitions().iter().find(|c| c.name == contract_name).is_some() {
+                if let Some(contract_name) = contract_name.as_deref() {
+                    if !source_unit.contract_definitions().iter().any(|c| c.name == contract_name) {
                         continue;
                     }
                 }
 
-                if source_units.iter().find(|existing_source_unit| existing_source_unit.absolute_path == source_unit.absolute_path).is_none() {
+                if !source_units.iter().any(|existing_source_unit| existing_source_unit.absolute_path == source_unit.absolute_path) {
                     source_unit.source = file.source.clone();
                     source_units.push(source_unit);
                 }
@@ -236,8 +239,8 @@ fn main() -> io::Result<()> {
     }
 
     source_units.sort_by(|lhs, rhs| {
-        let lhs = lhs.absolute_path.as_ref().map(String::as_str).unwrap_or("");
-        let rhs = rhs.absolute_path.as_ref().map(String::as_str).unwrap_or("");
+        let lhs = lhs.absolute_path.as_deref().unwrap_or("");
+        let rhs = rhs.absolute_path.as_deref().unwrap_or("");
         lhs.cmp(rhs)
     });
 
@@ -265,7 +268,7 @@ fn main() -> io::Result<()> {
         // Skip node_modules imports
         //
 
-        if source_unit.absolute_path.as_ref().map(String::as_str).unwrap_or("").starts_with("@") {
+        if source_unit.absolute_path.as_deref().unwrap_or("").starts_with('@') {
             continue;
         }
 

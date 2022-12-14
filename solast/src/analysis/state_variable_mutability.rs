@@ -25,12 +25,10 @@ pub struct StateVariableMutabilityVisitor {
 
 impl AstVisitor for StateVariableMutabilityVisitor {
     fn visit_contract_definition<'a>(&mut self, context: &mut ContractDefinitionContext<'a>) -> io::Result<()> {
-        if !self.contract_info.contains_key(&context.contract_definition.id) {
-            self.contract_info.insert(context.contract_definition.id, ContractInfo {
-                variable_info: HashMap::new(),
-                variable_aliases: HashMap::new(),
-            });
-        }
+        self.contract_info.entry(context.contract_definition.id).or_insert_with(|| ContractInfo {
+            variable_info: HashMap::new(),
+            variable_aliases: HashMap::new(),
+        });
 
         Ok(())
     }
@@ -95,16 +93,12 @@ impl AstVisitor for StateVariableMutabilityVisitor {
 
         match definition_node {
             ContractDefinitionNode::VariableDeclaration(_) => {
-                if !contract_info.variable_info.contains_key(&context.variable_declaration.id) {
-                    contract_info.variable_info.insert(context.variable_declaration.id, VariableInfo {
-                        assigned: false,
-                        constant: context.variable_declaration.value.is_some(),
-                    });
-                }
+                contract_info.variable_info.entry(context.variable_declaration.id).or_insert_with(|| VariableInfo {
+                    assigned: false,
+                    constant: context.variable_declaration.value.is_some(),
+                });
 
-                if !contract_info.variable_aliases.contains_key(&context.variable_declaration.id) {
-                    contract_info.variable_aliases.insert(context.variable_declaration.id, HashSet::new());
-                }
+                contract_info.variable_aliases.entry(context.variable_declaration.id).or_insert_with(HashSet::new);
             }
 
             ContractDefinitionNode::FunctionDefinition(_) | ContractDefinitionNode::ModifierDefinition(_) => {
@@ -145,7 +139,7 @@ impl AstVisitor for StateVariableMutabilityVisitor {
     
             if let Some(&referenced_declaration) = referenced_declarations.first() {
                 if let Some((id, _)) = contract_info.variable_aliases.iter_mut().find(|(_, aliases)| aliases.contains(&referenced_declaration)) {
-                    contract_info.variable_info.get_mut(&id).unwrap().assigned = true;
+                    contract_info.variable_info.get_mut(id).unwrap().assigned = true;
                 }
             }
         }

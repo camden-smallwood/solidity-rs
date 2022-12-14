@@ -26,7 +26,7 @@ impl MissingReturnVisitor {
             function_definition.visibility,
 
             if let FunctionKind::Constructor = function_definition.kind {
-                format!("{}", "constructor")
+                "constructor".to_string()
             } else {
                 format!("`{}` {}", function_definition.name, function_definition.kind)
             },
@@ -47,14 +47,9 @@ impl AstVisitor for MissingReturnVisitor {
             return Ok(());
         }
 
-        if !self.function_info.contains_key(&context.function_definition.id) {
-            self.function_info.insert(
-                context.function_definition.id,
-                FunctionInfo {
-                    assigned_return_variables: HashSet::new(),
-                },
-            );
-        }
+        self.function_info.entry(context.function_definition.id).or_insert_with(|| FunctionInfo {
+            assigned_return_variables: HashSet::new(),
+        });
 
         Ok(())
     }

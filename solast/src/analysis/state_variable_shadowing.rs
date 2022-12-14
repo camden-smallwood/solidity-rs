@@ -29,14 +29,14 @@ impl AstVisitor for StateVariableShadowingVisitor {
 
                         if variable_declaration.name == base_variable_declaration.name {
                             println!(
-                                "\tL{}: {} {} {} has a {} {} parameter '{}' which shadows the {} {} {} state variable",
+                                "\tL{}: {:?} {} {} has a {} {} parameter '{}' which shadows the {} {} {} state variable",
 
                                 context.current_source_unit.source_line(variable_declaration.src.as_str())?,
 
-                                format!("{:?}", context.function_definition.visibility),
+                                context.function_definition.visibility,
 
                                 if context.function_definition.name.is_empty() {
-                                    format!("{}", context.contract_definition.name)
+                                    context.contract_definition.name.to_string()
                                 } else {
                                     format!("{}.{}", context.contract_definition.name, context.function_definition.name)
                                 },
@@ -54,7 +54,7 @@ impl AstVisitor for StateVariableShadowingVisitor {
                                 base_variable_declaration.type_descriptions.type_string.as_ref().unwrap(),
 
                                 if base_variable_declaration.name.is_empty() {
-                                    format!("{}", base_contract_definition.name)
+                                    base_contract_definition.name.to_string()
                                 } else {
                                     format!("{}.{}", base_contract_definition.name, base_variable_declaration.name)
                                 },
