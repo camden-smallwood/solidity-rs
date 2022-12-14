@@ -7,6 +7,9 @@ mod todo_list;
 use solidity::ast::*;
 use std::{collections::HashSet, env, fs::File, io, path::PathBuf};
 
+#[cfg(feature = "simd")]
+use simd_json;
+
 const VISITOR_TYPES: &'static [(&'static str, fn() -> Box<dyn AstVisitor>)] = &[
     ("no_spdx_identifier", || Box::new(analysis::NoSpdxIdentifierVisitor)),
     ("floating_solidity_version", || Box::new(analysis::FloatingSolidityVersionVisitor)),
@@ -130,7 +133,7 @@ fn main() -> io::Result<()> {
                     continue;
                 }
 
-                let file: brownie::File = serde_json::from_reader(File::open(path)?)?;
+                let file: brownie::File = simd_json::from_reader(File::open(path)?)?;
 
                 if let Some(mut source_unit) = file.ast {
                     if let Some(contract_name) = contract_name.as_ref().map(String::as_str) {
@@ -166,7 +169,7 @@ fn main() -> io::Result<()> {
                 continue;
             }
 
-            let file: hardhat::File = serde_json::from_reader(File::open(path)?)?;
+            let file: hardhat::File = simd_json::from_reader(File::open(path)?)?;
 
             for (source_path, source) in file.output.sources {
                 let mut source_unit = source.ast;
@@ -209,7 +212,7 @@ fn main() -> io::Result<()> {
                 continue;
             }
 
-            let file: truffle::File = serde_json::from_reader(File::open(path)?)?;
+            let file: truffle::File = simd_json::from_reader(File::open(path)?)?;
 
             if let Some(mut source_unit) = file.ast {
                 if source_unit.absolute_path.as_ref().map(String::as_str).unwrap_or("").ends_with(migrations_path.as_str()) {
