@@ -7,9 +7,6 @@ mod todo_list;
 use solidity::ast::*;
 use std::{collections::HashSet, env, fs::File, io, path::PathBuf};
 
-#[cfg(feature = "simd")]
-use simd_json;
-
 type VisitorConstructor = fn() -> Box<dyn AstVisitor>;
 type VisitorEntry = (&'static str, VisitorConstructor);
 
