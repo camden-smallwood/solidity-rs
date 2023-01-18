@@ -17,41 +17,11 @@ impl ManipulatableBalanceUsageVisitor {
         source_line: usize,
         expression: &dyn std::fmt::Display
     ) {
-        match definition_node {
-            ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                "\tL{}: The {} {} in the `{}` {} contains manipulatable balance usage: `{}`",
-
-                source_line,
-
-                function_definition.visibility,
-
-                if let FunctionKind::Constructor = function_definition.kind {
-                    "constructor".to_string()
-                } else {
-                    format!("`{}` {}", function_definition.name, function_definition.kind)
-                },
-
-                contract_definition.name,
-                contract_definition.kind,
-
-                expression
-            ),
-
-            ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                "\tL{}: The `{}` modifier in the `{}` {} contains manipulatable balance usage: `{}`",
-
-                source_line,
-
-                modifier_definition.name,
-
-                contract_definition.name,
-                contract_definition.kind,
-
-                expression
-            ),
-
-            _ => {}
-        }
+        println!(
+            "\t{} contains manipulatable balance usage: `{}`",
+            contract_definition.definition_node_location(source_line, definition_node),
+            expression
+        );
     }
 }
 

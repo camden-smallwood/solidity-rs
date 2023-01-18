@@ -11,41 +11,11 @@ impl LargeLiteralsVisitor {
         source_line: usize,
         literal: &Literal
     ) {
-        match definition_node {
-            ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                "\tL{}: The {} {} in the `{}` {} contains a large literal, which may be difficult to read: `{}`",
-    
-                source_line,
-    
-                function_definition.visibility,
-
-                if let FunctionKind::Constructor = function_definition.kind {
-                    "constructor".to_string()
-                } else {
-                    format!("`{}` {}", function_definition.name, function_definition.kind)
-                },
-    
-                contract_definition.name,
-                contract_definition.kind,
-    
-                literal
-            ),
-
-            ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                "\tL{}: The `{}` modifier in the `{}` {} contains a large literal, which may be difficult to read: `{}`",
-
-                source_line,
-
-                modifier_definition.name,
-
-                contract_definition.name,
-                contract_definition.kind,
-    
-                literal
-            ),
-
-            _ => {}
-        }
+        println!(
+            "\t{} contains a large literal, which may be difficult to read: `{}`",
+            contract_definition.definition_node_location(source_line, definition_node),
+            literal
+        );
     }
 }
 

@@ -3,6 +3,24 @@ use std::io;
 
 pub struct RedundantGetterFunctionVisitor;
 
+impl RedundantGetterFunctionVisitor {
+    fn print_message(
+        &mut self,
+        contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
+        variable_declaration: &VariableDeclaration,
+        source_line: usize,
+    ) {
+        println!(
+            "\t{} is a redundant getter function for the {} `{}.{}` state variable",
+            contract_definition.definition_node_location(source_line, definition_node),
+            variable_declaration.visibility,
+            contract_definition.name,
+            variable_declaration.name,
+        );
+    }
+}
+
 impl AstVisitor for RedundantGetterFunctionVisitor {
     fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
         if context.function_definition.name.is_empty() || context.function_definition.body.is_none() {
@@ -50,19 +68,11 @@ impl AstVisitor for RedundantGetterFunctionVisitor {
             return Ok(());
         }
 
-        println!(
-            "\tL{}: The {} {}.{} {} is a redundant getter function for the {} {}.{} state variable",
-
+        self.print_message(
+            context.contract_definition,
+            context.definition_node,
+            variable_declaration,
             context.current_source_unit.source_line(context.function_definition.src.as_str())?,
-
-            context.function_definition.visibility,
-            context.contract_definition.name,
-            context.function_definition.name,
-            context.function_definition.kind,
-            
-            variable_declaration.visibility,
-            context.contract_definition.name,
-            variable_declaration.name,
         );
 
         Ok(())

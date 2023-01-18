@@ -15,24 +15,12 @@ impl MissingReturnVisitor {
     fn print_message(
         &mut self,
         contract_definition: &ContractDefinition,
-        function_definition: &FunctionDefinition,
+        definition_node: &ContractDefinitionNode,
         source_line: usize
     ) {
         println!(
-            "\tL{}: The {} {} in the `{}` {} is missing an explicit return statement",
-
-            source_line,
-
-            function_definition.visibility,
-
-            if let FunctionKind::Constructor = function_definition.kind {
-                "constructor".to_string()
-            } else {
-                format!("`{}` {}", function_definition.name, function_definition.kind)
-            },
-
-            contract_definition.name,
-            contract_definition.kind
+            "\t{} is missing an explicit return statement",
+            contract_definition.definition_node_location(source_line, definition_node),
         );
     }
 }
@@ -73,7 +61,7 @@ impl AstVisitor for MissingReturnVisitor {
         if assigned.iter().all(|assigned| !assigned) {
             self.print_message(
                 context.contract_definition,
-                context.function_definition,
+                context.definition_node,
                 context.current_source_unit.source_line(context.function_definition.src.as_str())?
             );
         }

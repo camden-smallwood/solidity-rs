@@ -1,6 +1,7 @@
 mod abi_encoding;
 mod abstract_contracts;
 mod address_balance;
+mod address_zero;
 mod assert_usage;
 mod assignment_comparisons;
 mod check_effects_interactions;
@@ -40,7 +41,7 @@ mod unrestricted_setter_functions;
 mod unused_return;
 
 pub use self::{
-    abi_encoding::*, abstract_contracts::*, address_balance::*, assert_usage::*,
+    abi_encoding::*, abstract_contracts::*, address_balance::*, address_zero::*, assert_usage::*,
     assignment_comparisons::*, check_effects_interactions::*, comparison_utilization::*,
     divide_before_multiply::*, explicit_variable_return::*, external_calls_in_loop::*,
     floating_solidity_version::*, ineffectual_statements::*, inline_assembly::*,

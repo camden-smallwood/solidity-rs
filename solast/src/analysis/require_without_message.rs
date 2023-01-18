@@ -11,41 +11,11 @@ impl RequireWithoutMessageVisitor {
         source_line: usize,
         function_call: &FunctionCall
     ) {
-        match definition_node {
-            ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                "\tL{}: The {} {} in the `{}` {} contains a requirement without a message: `{}`",
-    
-                source_line,
-    
-                function_definition.visibility,
-
-                if let FunctionKind::Constructor = function_definition.kind {
-                    "constructor".to_string()
-                } else {
-                    format!("`{}` {}", function_definition.name, function_definition.kind)
-                },
-    
-                contract_definition.name,
-                contract_definition.kind,
-    
-                function_call
-            ),
-
-            ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                "\tL{}: The `{}` modifier in the `{}` {} contains a requirement without a message: `{}`",
-
-                source_line,
-
-                modifier_definition.name,
-
-                contract_definition.name,
-                contract_definition.kind,
-    
-                function_call
-            ),
-
-            _ => {}
-        }
+        println!(
+            "\t{} contains a requirement without a message: `{}`",
+            contract_definition.definition_node_location(source_line, definition_node),
+            function_call
+        );
     }
 }
 

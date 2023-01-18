@@ -131,37 +131,10 @@ impl CheckEffectsInteractionsVisitor {
         definition_node: &ContractDefinitionNode,
         source_line: usize,
     ) {
-        match definition_node {
-            ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                "\tL{}: The {} {} in the `{}` {} ignores the Check-Effects-Interactions pattern",
-
-                source_line,
-
-                function_definition.visibility,
-
-                if let FunctionKind::Constructor = function_definition.kind {
-                    format!("{}", function_definition.kind)
-                } else {
-                    format!("`{}` {}", function_definition.name, function_definition.kind)
-                },
-
-                contract_definition.name,
-                contract_definition.kind
-            ),
-
-            ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                "\tL{}: The `{}` modifier in the `{}` {} ignores the Check-Effects-Interactions pattern",
-
-                source_line,
-
-                modifier_definition.name,
-
-                contract_definition.name,
-                contract_definition.kind
-            ),
-
-            _ => ()
-        }
+        println!(
+            "\t{} ignores the Check-Effects-Interactions pattern",
+            contract_definition.definition_node_location(source_line, definition_node),
+        );
     }
 }
 

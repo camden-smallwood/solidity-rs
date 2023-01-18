@@ -11,53 +11,16 @@ impl AddressBalanceVisitor {
         expression: &dyn std::fmt::Display,
         external: bool,
     ) {
-        match definition_node {
-            ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                "\tL{}: The {} {} in the `{}` {} contains `{}` usage, which can be optimized with assembly: `{}`",
-
-                source_line,
-
-                function_definition.visibility,
-
-                if let FunctionKind::Constructor = function_definition.kind {
-                    "constructor".to_string()
-                } else {
-                    format!("`{}` {}", function_definition.name, function_definition.kind)
-                },
-
-                contract_definition.name,
-                contract_definition.kind,
-
-                expression,
-
-                if external {
-                    "assembly { bal := balance(addr); }"
-                } else {
-                    "assembly { bal := selfbalance(); }"
-                }
-            ),
-
-            ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                "\tL{}: The `{}` modifier in the `{}` {} contains `{}` usage, which can be optimized with assembly: `{}`",
-
-                source_line,
-
-                modifier_definition.name,
-
-                contract_definition.name,
-                contract_definition.kind,
-
-                expression,
-
-                if external {
-                    "assembly { bal := balance(addr); }"
-                } else {
-                    "assembly { bal := selfbalance(); }"
-                }
-            ),
-
-            _ => {}
-        }
+        println!(
+            "\t{} contains `{}` usage, which can be optimized with assembly: `{}`",
+            contract_definition.definition_node_location(source_line, definition_node),
+            expression,
+            if external {
+                "assembly { bal := balance(addr); }"
+            } else {
+                "assembly { bal := selfbalance(); }"
+            }
+        );
     }
 }
 
@@ -97,7 +60,7 @@ impl AstVisitor for AddressBalanceVisitor {
                 context.contract_definition,
                 context.definition_node,
                 context.current_source_unit.source_line(context.member_access.src.as_str())?,
-                expression,
+                context.member_access,
                 name != "this"
             );
         }

@@ -12,45 +12,12 @@ impl AssignmentComparisonsVisitor {
         message: String,
         expression: &dyn std::fmt::Display
     ) {
-        match definition_node {
-            ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                "\tL{}: The {} {} in the `{}` {} contains a {} that performs an assignment: `{}`",
-
-                source_line,
-
-                function_definition.visibility,
-
-                if let FunctionKind::Constructor = function_definition.kind {
-                    format!("{}", function_definition.kind)
-                } else {
-                    format!("`{}` {}", function_definition.name, function_definition.kind)
-                },
-
-                contract_definition.name,
-                contract_definition.kind,
-
-                message,
-
-                expression
-            ),
-
-            ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                "\tL{}: The `{}` modifier in the `{}` {} contains a {} that performs an assignment: `{}`",
-
-                source_line,
-
-                modifier_definition.name,
-
-                contract_definition.name,
-                contract_definition.kind,
-
-                message,
-
-                expression
-            ),
-
-            _ => ()
-        }
+        println!(
+            "\t{} contains {} that performs an assignment: `{}`",
+            contract_definition.definition_node_location(source_line, definition_node),
+            message,
+            expression
+        );
     }
 }
 

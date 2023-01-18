@@ -50,6 +50,7 @@ const VISITOR_TYPES: &[VisitorEntry] = &[
     ("invalid_using_for_directives", || Box::new(analysis::InvalidUsingForDirectivesVisitor)),
     ("abi_encoding", || Box::new(analysis::AbiEncodingVisitor::default())),
     ("address_balance", || Box::new(analysis::AddressBalanceVisitor)),
+    ("address_zero", || Box::new(analysis::AddressZeroVisitor)),
 ];
 
 fn main() -> io::Result<()> {

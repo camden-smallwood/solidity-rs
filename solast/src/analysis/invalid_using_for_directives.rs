@@ -7,18 +7,14 @@ impl InvalidUsingForDirectivesVisitor {
     fn print_message(
         &mut self,
         contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
         source_line: usize,
         using_for_directive: &UsingForDirective
     ) {
         println!(
-            "\tL{}: The `{}` {} contains an invalid using-for directive: `{}`",
-
-            source_line,
-
-            contract_definition.name,
-            contract_definition.kind,
-
-            using_for_directive
+            "\t{} contains an invalid using-for directive: `{}`",
+            contract_definition.definition_node_location(source_line, definition_node),
+            using_for_directive,
         );
     }
 }
@@ -124,6 +120,7 @@ impl AstVisitor for InvalidUsingForDirectivesVisitor {
         if !usable_function_found {
             self.print_message(
                 context.contract_definition,
+                context.definition_node,
                 context.current_source_unit.source_line(context.using_for_directive.src.as_str())?,
                 context.using_for_directive
             );

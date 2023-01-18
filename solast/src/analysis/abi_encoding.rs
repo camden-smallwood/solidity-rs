@@ -7,6 +7,22 @@ pub struct AbiEncodingVisitor {
     declaration_type_names: HashMap<NodeID, TypeName>
 }
 
+impl AbiEncodingVisitor {
+    fn print_message(
+        &mut self,
+        contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
+        source_line: usize,
+        expression: &dyn std::fmt::Display,
+    ) {
+        println!(
+            "\t{} contains the potential for hash collisions: `{}`",
+            contract_definition.definition_node_location(source_line, definition_node),
+            expression,
+        );
+    }
+}
+
 impl AstVisitor for AbiEncodingVisitor {
     fn visit_variable_declaration<'a, 'b>(&mut self, context: &mut VariableDeclarationContext<'a, 'b>) -> std::io::Result<()> {
         //
@@ -73,41 +89,12 @@ impl AstVisitor for AbiEncodingVisitor {
         //
 
         if any_arguments_variably_sized {
-            match context.definition_node {
-                ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                    "\tL{}: The {} {} in the `{}` {} contains the potential for hash collisions: `{}`",
-
-                    context.current_source_unit.source_line(context.function_call.src.as_str())?,
-
-                    function_definition.visibility,
-    
-                    if let FunctionKind::Constructor = function_definition.kind {
-                        "constructor".to_string()
-                    } else {
-                        format!("`{}` {}", function_definition.name, function_definition.kind)
-                    },
-    
-                    context.contract_definition.name,
-                    context.contract_definition.kind,
-    
-                    context.function_call
-                ),
-
-                ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                    "\tL{}: The `{}` modifier in the `{}` {} contains the potential for hash collisions: `{}`",
-    
-                    context.current_source_unit.source_line(context.function_call.src.as_str())?,
-
-                    modifier_definition.name,
-    
-                    context.contract_definition.name,
-                    context.contract_definition.kind,
-    
-                    context.function_call
-                ),
-
-                _ => {}
-            }
+            self.print_message(
+                context.contract_definition,
+                context.definition_node,
+                context.current_source_unit.source_line(context.function_call.src.as_str())?,
+                context.function_call,
+            );
         }
 
         Ok(())

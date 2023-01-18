@@ -489,7 +489,7 @@ impl AstVisitor for AstVisitorData<'_> {
         for definition_node in context.contract_definition.nodes.iter() {
             match definition_node {
                 ContractDefinitionNode::UsingForDirective(using_for_directive) => {
-                    let mut context = context.create_using_for_directive_context(using_for_directive);
+                    let mut context = context.create_using_for_directive_context(definition_node, using_for_directive);
                     self.visit_using_for_directive(&mut context)?;
                     self.leave_using_for_directive(&mut context)?;
                 }

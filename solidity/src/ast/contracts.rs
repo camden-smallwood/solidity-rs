@@ -353,6 +353,49 @@ impl ContractDefinition {
 
         ids
     }
+
+    pub fn definition_node_location(&self, source_line: usize, definition_node: &ContractDefinitionNode) -> String {
+        format!(
+            "L{}: The {}",
+
+            source_line,
+
+            match definition_node {
+                ContractDefinitionNode::FunctionDefinition(function_definition) => format!(
+                    "{} {} in the `{}` {}",
+                    
+                    function_definition.visibility,
+
+                    if let FunctionKind::Constructor = function_definition.kind {
+                        "constructor".to_string()
+                    } else {
+                        format!(
+                            "`{}` {}",
+                            function_definition.name, function_definition.kind
+                        )
+                    },
+
+                    self.name,
+                    self.kind,
+                ),
+    
+                ContractDefinitionNode::ModifierDefinition(modifier_definition) => format!(
+                    "`{}` modifier in the `{}` {}",
+                    modifier_definition.name,
+                    self.name,
+                    self.kind,
+                ),
+
+                ContractDefinitionNode::UsingForDirective(_) => format!(
+                    "`{}` {}",
+                    self.name,
+                    self.kind,
+                ),
+    
+                x => panic!("Unsupported definition node: {x:?}"),
+            },
+        )
+    }
 }
 
 impl Display for ContractDefinition {
@@ -410,12 +453,14 @@ pub struct ContractDefinitionContext<'a> {
 impl<'a> ContractDefinitionContext<'a> {
     pub fn create_using_for_directive_context(
         &self,
+        definition_node: &'a ContractDefinitionNode,
         using_for_directive: &'a UsingForDirective
     ) -> UsingForDirectiveContext<'a> {
         UsingForDirectiveContext {
             source_units: self.source_units,
             current_source_unit: self.current_source_unit,
             contract_definition: self.contract_definition,
+            definition_node,
             using_for_directive
         }
     }

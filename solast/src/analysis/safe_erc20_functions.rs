@@ -11,45 +11,12 @@ impl SafeERC20FunctionsVisitor {
         unsafe_name: &str,
         safe_name: &str
     ) {
-        match definition_node {
-            ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                "\tL{}: The {} {} in the `{}` {} uses `ERC20.{}` instead of `SafeERC20.{}`",
-    
-                source_line,
-    
-                function_definition.visibility,
-
-                if let FunctionKind::Constructor = function_definition.kind {
-                    "constructor".to_string()
-                } else {
-                    format!("`{}` {}", function_definition.name, function_definition.kind)
-                },
-    
-                contract_definition.name,
-                contract_definition.kind,
-    
-                unsafe_name,
-    
-                safe_name,
-            ),
-
-            ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                "\tL{}: The `{}` modifier in the `{}` {} uses `ERC20.{}` instead of `SafeERC20.{}`",
-
-                source_line,
-
-                modifier_definition.name,
-
-                contract_definition.name,
-                contract_definition.kind,
-
-                unsafe_name,
-    
-                safe_name,
-            ),
-
-            _ => {}
-        }
+        println!(
+            "\t{} uses `ERC20.{}` instead of `SafeERC20.{}`",
+            contract_definition.definition_node_location(source_line, definition_node),
+            unsafe_name,
+            safe_name,
+        );
     }
 }
 

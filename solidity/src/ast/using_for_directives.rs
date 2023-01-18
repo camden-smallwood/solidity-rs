@@ -29,5 +29,6 @@ pub struct UsingForDirectiveContext<'a> {
     pub source_units: &'a [SourceUnit],
     pub current_source_unit: &'a SourceUnit,
     pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
     pub using_for_directive: &'a UsingForDirective,
 }

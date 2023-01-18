@@ -7,6 +7,22 @@ pub struct AssertUsageVisitor {
     reported_definitions: HashSet<NodeID>,
 }
 
+impl AssertUsageVisitor {
+    fn print_message(
+        &mut self,
+        contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
+        source_line: usize,
+        expression: &dyn std::fmt::Display,
+    ) {
+        println!(
+            "\t{} contains assert usage: `{}`",
+            contract_definition.definition_node_location(source_line, definition_node),
+            expression,
+        );
+    }
+}
+
 impl AstVisitor for AssertUsageVisitor {
     fn visit_function_call<'a, 'b>(&mut self, context: &mut FunctionCallContext<'a, 'b>) -> std::io::Result<()> {
         //
@@ -47,38 +63,12 @@ impl AstVisitor for AssertUsageVisitor {
         // Print a message about the assert usage
         //
 
-        match context.definition_node {
-            ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                "\tL{}: The {} {} in the `{}` {} contains `assert` usage",
-
-                context.current_source_unit.source_line(context.function_call.src.as_str())?,
-
-                function_definition.visibility,
-
-                if let FunctionKind::Constructor = function_definition.kind {
-                    "constructor".to_string()
-                } else {
-                    format!("`{}` {}", function_definition.name, function_definition.kind)
-                },
-
-                context.contract_definition.name,
-                context.contract_definition.kind
-            ),
-
-            ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                "\tL{}: The {} `{}` modifier in the `{}` {} contains `assert` usage",
-
-                context.current_source_unit.source_line(context.function_call.src.as_str())?,
-
-                modifier_definition.visibility,
-                modifier_definition.name,
-
-                context.contract_definition.name,
-                context.contract_definition.kind
-            ),
-
-            _ => {}
-        }
+        self.print_message(
+            context.contract_definition,
+            context.definition_node,
+            context.current_source_unit.source_line(context.function_call.src.as_str())?,
+            context.function_call,
+        );
         
         Ok(())
     }

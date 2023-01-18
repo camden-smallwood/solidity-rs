@@ -17,41 +17,11 @@ impl RedundantAssignmentsVisitor {
         source_line: usize,
         assignment: &Assignment
     ) {
-        match definition_node {
-            ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                "\tL{}: The {} {} in the `{}` {} contains a redundant assignment: `{}`",
-    
-                source_line,
-    
-                function_definition.visibility,
-
-                if let FunctionKind::Constructor = function_definition.kind {
-                    "constructor".to_string()
-                } else {
-                    format!("`{}` {}", function_definition.name, function_definition.kind)
-                },
-    
-                contract_definition.name,
-                contract_definition.kind,
-    
-                assignment
-            ),
-
-            ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                "\tL{}: The `{}` modifier in the `{}` {} contains a redundant assignment: `{}`",
-
-                source_line,
-
-                modifier_definition.name,
-
-                contract_definition.name,
-                contract_definition.kind,
-    
-                assignment
-            ),
-
-            _ => {}
-        }
+        println!(
+            "\t{} contains a redundant assignment: `{}`",
+            contract_definition.definition_node_location(source_line, definition_node),
+            assignment,
+        );
     }
 }
 
