@@ -52,6 +52,7 @@ const VISITOR_TYPES: &[VisitorEntry] = &[
     ("redundant_assignments", || Box::new(analysis::RedundantAssignmentsVisitor)),
     ("invalid_using_for_directives", || Box::new(analysis::InvalidUsingForDirectivesVisitor)),
     ("abi_encoding", || Box::new(analysis::AbiEncodingVisitor::default())),
+    ("address_balance", || Box::new(analysis::AddressBalanceVisitor)),
 ];
 
 fn main() -> io::Result<()> {
@@ -111,7 +112,8 @@ fn main() -> io::Result<()> {
     let mut source_units: Vec<SourceUnit> = vec![];
 
     let brownie_config_path = path.join("brownie-config.yaml");
-    let hardhat_config_path = path.join("hardhat.config.js");
+    let hardhat_config_js_path = path.join("hardhat.config.js");
+    let hardhat_config_ts_path = path.join("hardhat.config.ts");
     let truffle_config_path = path.join("truffle-config.js");
 
     if brownie_config_path.is_file() {
@@ -152,7 +154,7 @@ fn main() -> io::Result<()> {
                 }
             }
         }
-    } else if hardhat_config_path.is_file() {
+    } else if hardhat_config_js_path.is_file() || hardhat_config_ts_path.is_file() {
         let build_path = path.join("artifacts").join("build-info");
 
         if !build_path.exists() || !build_path.is_dir() {
