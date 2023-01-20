@@ -3,6 +3,20 @@ use std::io;
 
 pub struct DivideBeforeMultiplyVisitor;
 
+impl DivideBeforeMultiplyVisitor {
+    fn print_message(
+        &mut self,
+        contract_definition: &ContractDefinition,
+        definition_node: &ContractDefinitionNode,
+        source_line: usize,
+    ) {
+        println!(
+            "\t{} performs a multiplication on the result of a division",
+            contract_definition.definition_node_location(source_line, definition_node),
+        );
+    }
+}
+
 //
 // TODO:
 //   1. track variable assignments, transfering all operations that occurred
@@ -17,37 +31,11 @@ impl AstVisitor for DivideBeforeMultiplyVisitor {
 
         if let Expression::BinaryOperation(left_operation) = context.binary_operation.left_expression.as_ref() {
             if left_operation.contains_operation("/") {
-                match context.definition_node {
-                    ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                        "\tL{}: The {} {} in the `{}` {} performs a multiplication on the result of a division",
-    
-                        context.current_source_unit.source_line(context.binary_operation.src.as_str())?,
-
-                        function_definition.visibility,
-    
-                        if let FunctionKind::Constructor = function_definition.kind {
-                            format!("{}", function_definition.kind)
-                        } else {
-                            format!("`{}` {}", function_definition.name, function_definition.kind)
-                        },
-    
-                        context.contract_definition.name,
-                        context.contract_definition.kind
-                    ),
-    
-                    ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                        "\tL{}: The `{}` modifier in the `{}` {} performs a multiplication on the result of a division",
-
-                        context.current_source_unit.source_line(context.binary_operation.src.as_str())?,
-
-                        modifier_definition.name,
-    
-                        context.contract_definition.name,
-                        context.contract_definition.kind
-                    ),
-    
-                    _ => ()
-                }
+                self.print_message(
+                    context.contract_definition,
+                    context.definition_node,
+                    context.current_source_unit.source_line(context.binary_operation.src.as_str())?,
+                );
             }
         }
 
