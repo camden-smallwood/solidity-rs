@@ -86,7 +86,13 @@ impl AstVisitor for InvalidUsingForDirectivesVisitor {
             // Check to see if the parameter type matches the requested type
             //
 
-            let parameter_type_name = match function_definition.parameters.parameters.first().map(|p| p.type_name.as_ref()) {
+            let parameter_list = if function_definition.parameters.parameters.is_empty() {
+                &function_definition.return_parameters
+            } else {
+                &function_definition.parameters
+            };
+
+            let parameter_type_name = match parameter_list.parameters.first().map(|p| p.type_name.as_ref()) {
                 Some(Some(type_name)) => type_name,
                 _ => continue
             };
