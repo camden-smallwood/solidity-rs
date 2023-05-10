@@ -1,7 +1,7 @@
 use super::*;
 use eth_lang_utils::ast::*;
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[serde(rename_all = "lowercase")]
@@ -93,11 +93,14 @@ pub struct ContractDefinition {
     pub is_abstract: Option<bool>,
     pub base_contracts: Vec<InheritanceSpecifier>,
     pub contract_dependencies: Vec<NodeID>,
+    pub used_events: Option<Vec<NodeID>>,
     pub used_errors: Option<Vec<NodeID>>,
     pub nodes: Vec<ContractDefinitionNode>,
     pub scope: NodeID,
     pub fully_implemented: Option<bool>,
     pub linearized_base_contracts: Option<Vec<NodeID>>,
+    #[serde(rename = "internalFunctionIDs")]
+    pub internal_function_ids: Option<HashMap<String, NodeID>>,
     pub src: String,
     pub id: NodeID,
 }
