@@ -10,7 +10,13 @@ Some legacy versions of Solidity are inherently supported (0.5.X-0.7.X), but the
 ## Usage
 
 ```
-cargo run --release -- [--todo_list] [--contract=<contract_name>] [--analyzer_name1] [--analyzer_nameN] <project_directory>
+cargo run --release -- \
+  [--todo_list] \
+  [--contract=<contract_name>] \
+  [--output_format=<plain_text | json>]
+  [--analyzer_name1] \
+  [--analyzer_nameN] \
+  <project_directory>
 ```
 
 Currently, SolAST requires utilization of one of the following build systems:

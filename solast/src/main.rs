@@ -9,6 +9,24 @@ use report::Report;
 use solidity::ast::*;
 use std::{cell::RefCell, collections::HashSet, env, fs::File, io, path::PathBuf, rc::Rc};
 
+#[derive(Debug)]
+enum OutputFormat {
+    PlainText,
+    Json,
+}
+
+impl TryFrom<&str> for OutputFormat {
+    type Error = io::Error;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value.to_lowercase().as_str() {
+            "plaintext" | "plain-text" | "plain_text" => Ok(Self::PlainText),
+            "json" => Ok(Self::Json),
+            s => Err(io::Error::new(io::ErrorKind::Unsupported, s)),
+        }
+    }
+}
+
 fn main() -> io::Result<()> {
     let mut args = env::args();
     args.next().ok_or_else(|| io::Error::from(io::ErrorKind::BrokenPipe))?;
@@ -17,6 +35,7 @@ fn main() -> io::Result<()> {
     let mut should_print_todo_list = false;
     let mut visitor_names: HashSet<String> = HashSet::new();
     let mut contract_name: Option<String> = None;
+    let mut output_format = OutputFormat::PlainText;
 
     for arg in args {
         match arg {
@@ -31,6 +50,10 @@ fn main() -> io::Result<()> {
                     }
                     
                     contract_name = Some(s.trim_start_matches("contract=").into());
+                }
+
+                s if s.starts_with("output-format=") || s.starts_with("output_format=") => {
+                    output_format = OutputFormat::try_from(&arg.as_str()[16..])?;
                 }
 
                 s if analysis::VISITOR_TYPES.iter().any(|visitor| visitor.0 == s) => {
@@ -204,7 +227,7 @@ fn main() -> io::Result<()> {
         todo_list::print(source_units.as_slice());
     }
 
-    let mut report = Rc::new(RefCell::new(Report::default()));
+    let report = Rc::new(RefCell::new(Report::default()));
     let mut visitors: Vec<Box<dyn AstVisitor>> = vec![];
 
     for &(visitor_name, create_visitor) in analysis::VISITOR_TYPES {
@@ -253,12 +276,20 @@ fn main() -> io::Result<()> {
     }
 
     //
-    // TODO: check for report format
+    // Display the report in the desired format
     //
 
     report.borrow_mut().sort_entries();
 
-    println!("{}", report.borrow());
+    match output_format {
+        OutputFormat::PlainText => {
+            println!("{}", report.borrow());
+        }
+
+        OutputFormat::Json => {
+            println!("{}", simd_json::to_string(&report.borrow().clone()).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?);
+        }
+    }
 
     Ok(())
 }
