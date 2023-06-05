@@ -1,18 +1,27 @@
+use crate::report::Report;
 use eth_lang_utils::ast::*;
 use solidity::ast::*;
-use std::{collections::{HashMap, HashSet}, io};
+use std::{cell::RefCell, collections::{HashMap, HashSet}, io, rc::Rc};
 
 struct FunctionInfo {
     loops_over_storage_array: bool,
 }
 
-#[derive(Default)]
 pub struct StorageArrayLoopVisitor {
+    report: Rc<RefCell<Report>>,
     storage_arrays: HashSet<NodeID>,
     functions: HashMap<NodeID, FunctionInfo>,
 }
 
 impl StorageArrayLoopVisitor {
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self {
+            report,
+            storage_arrays: HashSet::new(),
+            functions: HashMap::new(),
+        }
+    }
+
     fn expression_contains_storage_array_length(&self, expression: &solidity::ast::Expression) -> bool {
         match expression {
             solidity::ast::Expression::BinaryOperation(binary_operation) => {
@@ -87,20 +96,22 @@ impl AstVisitor for StorageArrayLoopVisitor {
     fn leave_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
         if let Some(function_info) = self.functions.get(&context.function_definition.id) {
             if function_info.loops_over_storage_array {
-                println!(
-                    "\tL{}: {:?} {} {} performs a loop over a storage array, querying the length over each iteration",
-
-                    context.current_source_unit.source_line(context.function_definition.src.as_str())?,
-
-                    context.function_definition.visibility,
-
-                    if context.function_definition.name.is_empty() {
-                        context.contract_definition.name.to_string()
-                    } else {
-                        format!("{}.{}", context.contract_definition.name, context.function_definition.name)
-                    },
-
-                    context.function_definition.kind
+                self.report.borrow_mut().add_entry(
+                    context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
+                    Some(context.current_source_unit.source_line(context.function_definition.src.as_str())?),
+                    format!(
+                        "{:?} {} {} performs a loop over a storage array, querying the length over each iteration",
+    
+                        context.function_definition.visibility,
+    
+                        if context.function_definition.name.is_empty() {
+                            context.contract_definition.name.to_string()
+                        } else {
+                            format!("{}.{}", context.contract_definition.name, context.function_definition.name)
+                        },
+    
+                        context.function_definition.kind
+                    ),
                 );
             }
         }

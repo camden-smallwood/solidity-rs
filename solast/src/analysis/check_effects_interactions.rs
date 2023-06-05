@@ -1,6 +1,7 @@
+use crate::report::Report;
 use eth_lang_utils::ast::*;
 use solidity::ast::*;
-use std::{collections::HashMap, io};
+use std::{cell::RefCell, collections::HashMap, io, rc::Rc};
 
 struct BlockInfo {
     makes_external_call: bool,
@@ -17,16 +18,24 @@ struct ContractInfo {
     function_info: HashMap<NodeID, FunctionInfo>,
 }
 
-#[derive(Default)]
 pub struct CheckEffectsInteractionsVisitor {
+    report: Rc<RefCell<Report>>,
     contract_info: HashMap<NodeID, ContractInfo>,
 }
 
 impl CheckEffectsInteractionsVisitor {
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self {
+            report,
+            contract_info: HashMap::new(),
+        }
+    }
+
     fn get_state_variable_id(
+        &self,
         source_units: &[SourceUnit],
         contract_definition: &ContractDefinition,
-        function_info: &mut FunctionInfo,
+        function_id: NodeID,
         block_id: NodeID,
         referenced_declaration: NodeID
     ) -> Option<NodeID> {
@@ -35,6 +44,8 @@ impl CheckEffectsInteractionsVisitor {
         } else {
             let mut state_variable_id = None;
 
+            let contract_info = self.contract_info.get(&contract_definition.id).unwrap();
+            let function_info = contract_info.function_info.get(&function_id).unwrap();
             let block_info = function_info.block_info.get(&block_id).unwrap();
 
             for (&current_state_variable_id, local_variable_ids) in block_info.variable_bindings.iter() {
@@ -68,10 +79,12 @@ impl CheckEffectsInteractionsVisitor {
     }
 
     fn check_expression(
+        &mut self,
+        source_unit_path: String,
         source_units: &[SourceUnit],
         contract_definition: &ContractDefinition,
         definition_node: &ContractDefinitionNode,
-        function_info: &mut FunctionInfo,
+        function_id: NodeID,
         block_id: NodeID,
         expression: &Expression,
         source_line: usize,
@@ -83,6 +96,8 @@ impl CheckEffectsInteractionsVisitor {
                 continue;
             }
 
+            let contract_info = self.contract_info.get(&contract_definition.id).unwrap();
+            let function_info = contract_info.function_info.get(&function_id).unwrap();
             let block_info = function_info.block_info.get(&block_id).unwrap();
 
             for (_, ids) in block_info.variable_bindings.iter() {
@@ -117,24 +132,22 @@ impl CheckEffectsInteractionsVisitor {
         }
 
         if makes_post_external_call_assignment {
+            let contract_info = self.contract_info.get_mut(&contract_definition.id).unwrap();
+            let function_info = contract_info.function_info.get_mut(&function_id).unwrap();
             let block_info = function_info.block_info.get_mut(&block_id).unwrap();
             block_info.makes_post_external_call_assignment = true;
 
-            Self::print_message(contract_definition, definition_node, source_line);
+            self.report.borrow_mut().add_entry(
+                source_unit_path,
+                Some(source_line),
+                format!(
+                    "{} ignores the Check-Effects-Interactions pattern",
+                    contract_definition.definition_node_location(definition_node),
+                ),
+            );
         }
 
         Ok(())
-    }
-
-    fn print_message(
-        contract_definition: &ContractDefinition,
-        definition_node: &ContractDefinitionNode,
-        source_line: usize,
-    ) {
-        println!(
-            "\t{} ignores the Check-Effects-Interactions pattern",
-            contract_definition.definition_node_location(source_line, definition_node),
-        );
     }
 }
 
@@ -198,8 +211,6 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
             _ => return Ok(())
         };
 
-        let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
-        let function_info = contract_info.function_info.get_mut(definition_id).unwrap();
         let block_id = context.blocks.last().unwrap().id;
         
         //
@@ -220,10 +231,10 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
                     _ => return Ok(())
                 };
 
-                let state_variable_id = match Self::get_state_variable_id(
+                let state_variable_id = match self.get_state_variable_id(
                     context.source_units,
                     context.contract_definition,
-                    function_info,
+                    *definition_id,
                     block_id,
                     referenced_declaration
                 ) {
@@ -231,6 +242,8 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
                     None => return Ok(())
                 };
 
+                let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
+                let function_info = contract_info.function_info.get_mut(definition_id).unwrap();
                 let block_info = function_info.block_info.get_mut(&block_id).unwrap();
 
                 let variable_bindings = block_info.variable_bindings.entry(state_variable_id).or_insert_with(Vec::new);
@@ -263,10 +276,10 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
                         _ => continue
                     };
 
-                    let state_variable_id = match Self::get_state_variable_id(
+                    let state_variable_id = match self.get_state_variable_id(
                         context.source_units,
                         context.contract_definition,
-                        function_info,
+                        *definition_id,
                         block_id,
                         referenced_declaration
                     ) {
@@ -274,6 +287,8 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
                         None => continue
                     };
 
+                    let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
+                    let function_info = contract_info.function_info.get_mut(definition_id).unwrap();
                     let block_info = function_info.block_info.get_mut(&block_id).unwrap();
 
                     let variable_bindings = block_info.variable_bindings.entry(state_variable_id).or_insert_with(Vec::new);
@@ -379,38 +394,41 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
             _ => return Ok(())
         };
 
-        let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
-        let function_info = contract_info.function_info.get_mut(&definition_id).unwrap();
         let block_id = context.blocks.last().unwrap().id;
-        let block_info = function_info.block_info.get(&block_id).unwrap();
 
-        //
-        // Don't check the assignment if the current block is already marked
-        //
+        {
+            let contract_info = self.contract_info.get_mut(&context.contract_definition.id).unwrap();
+            let function_info = contract_info.function_info.get_mut(&definition_id).unwrap();
+            let block_info = function_info.block_info.get(&block_id).unwrap();
 
-        if block_info.makes_post_external_call_assignment {
-            return Ok(())
-        }
+            //
+            // Don't check the assignment if the current block is already marked
+            //
 
-        //
-        // Don't check for post-call assignments if the current scope doesn't make an external call
-        //
-        
-        let mut makes_external_call = block_info.makes_external_call;
-
-        if !makes_external_call {
-            for &parent_block_id in block_info.parent_blocks.iter().rev() {
-                if let Some(BlockInfo {
-                    makes_external_call: true,
-                    ..
-                }) = function_info.block_info.get(&parent_block_id) {
-                    makes_external_call = true;
-                    break;
-                }
+            if block_info.makes_post_external_call_assignment {
+                return Ok(())
             }
 
+            //
+            // Don't check for post-call assignments if the current scope doesn't make an external call
+            //
+            
+            let mut makes_external_call = block_info.makes_external_call;
+
             if !makes_external_call {
-                return Ok(())
+                for &parent_block_id in block_info.parent_blocks.iter().rev() {
+                    if let Some(BlockInfo {
+                        makes_external_call: true,
+                        ..
+                    }) = function_info.block_info.get(&parent_block_id) {
+                        makes_external_call = true;
+                        break;
+                    }
+                }
+
+                if !makes_external_call {
+                    return Ok(())
+                }
             }
         }
 
@@ -418,11 +436,12 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
         // Check for post external call state variable assignments
         //
 
-        Self::check_expression(
+        self.check_expression(
+            context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
             context.source_units,
             context.contract_definition,
             context.definition_node,
-            function_info,
+            definition_id,
             block_id,
             context.assignment.left_hand_side.as_ref(),
             context.current_source_unit.source_line(context.assignment.src.as_str())?
@@ -475,11 +494,12 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
         // Check for post external call unary operations
         //
         
-        Self::check_expression(
+        self.check_expression(
+            context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
             context.source_units,
             context.contract_definition,
             context.definition_node,
-            function_info,
+            definition_id,
             block_id,
             context.unary_operation.sub_expression.as_ref(),
             context.current_source_unit.source_line(context.unary_operation.src.as_str())?
@@ -547,11 +567,12 @@ impl AstVisitor for CheckEffectsInteractionsVisitor {
             _ => return Ok(())
         };
 
-        Self::check_expression(
+        self.check_expression(
+            context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
             context.source_units,
             context.contract_definition,
             context.definition_node,
-            function_info,
+            definition_id,
             block_id,
             expression,
             context.current_source_unit.source_line(context.function_call.src.as_str())?

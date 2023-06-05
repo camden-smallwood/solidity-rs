@@ -1,7 +1,16 @@
+use crate::report::Report;
 use solidity::ast::*;
-use std::io;
+use std::{cell::RefCell, io, rc::Rc};
 
-pub struct StateVariableShadowingVisitor;
+pub struct StateVariableShadowingVisitor {
+    report: Rc<RefCell<Report>>,
+}
+
+impl StateVariableShadowingVisitor {
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self { report }
+    }
+}
 
 impl AstVisitor for StateVariableShadowingVisitor {
     fn visit_function_definition<'a>(&mut self, context: &mut FunctionDefinitionContext<'a>) -> io::Result<()> {
@@ -28,36 +37,38 @@ impl AstVisitor for StateVariableShadowingVisitor {
                         }
 
                         if variable_declaration.name == base_variable_declaration.name {
-                            println!(
-                                "\tL{}: {:?} {} {} has a {} {} parameter '{}' which shadows the {} {} {} state variable",
-
-                                context.current_source_unit.source_line(variable_declaration.src.as_str())?,
-
-                                context.function_definition.visibility,
-
-                                if context.function_definition.name.is_empty() {
-                                    context.contract_definition.name.to_string()
-                                } else {
-                                    format!("{}.{}", context.contract_definition.name, context.function_definition.name)
-                                },
-
-                                context.function_definition.kind,
-
-                                variable_declaration.type_descriptions.type_string.as_ref().unwrap(),
-
-                                format!("{:?}", variable_declaration.storage_location).to_lowercase(),
-
-                                variable_declaration.name,
-                                
-                                format!("{:?}", base_variable_declaration.visibility).to_lowercase(),
-
-                                base_variable_declaration.type_descriptions.type_string.as_ref().unwrap(),
-
-                                if base_variable_declaration.name.is_empty() {
-                                    base_contract_definition.name.to_string()
-                                } else {
-                                    format!("{}.{}", base_contract_definition.name, base_variable_declaration.name)
-                                },
+                            self.report.borrow_mut().add_entry(
+                                context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
+                                Some(context.current_source_unit.source_line(variable_declaration.src.as_str())?),
+                                format!(
+                                    "{:?} {} {} has a {} {} parameter '{}' which shadows the {} {} {} state variable",
+    
+                                    context.function_definition.visibility,
+    
+                                    if context.function_definition.name.is_empty() {
+                                        context.contract_definition.name.to_string()
+                                    } else {
+                                        format!("{}.{}", context.contract_definition.name, context.function_definition.name)
+                                    },
+    
+                                    context.function_definition.kind,
+    
+                                    variable_declaration.type_descriptions.type_string.as_ref().unwrap(),
+    
+                                    format!("{:?}", variable_declaration.storage_location).to_lowercase(),
+    
+                                    variable_declaration.name,
+                                    
+                                    format!("{:?}", base_variable_declaration.visibility).to_lowercase(),
+    
+                                    base_variable_declaration.type_descriptions.type_string.as_ref().unwrap(),
+    
+                                    if base_variable_declaration.name.is_empty() {
+                                        base_contract_definition.name.to_string()
+                                    } else {
+                                        format!("{}.{}", base_contract_definition.name, base_variable_declaration.name)
+                                    },
+                                ),
                             );
                         }
                     }

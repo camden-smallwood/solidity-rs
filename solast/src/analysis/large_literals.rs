@@ -1,21 +1,14 @@
+use crate::report::Report;
 use solidity::ast::*;
-use std::io;
+use std::{io, cell::RefCell, rc::Rc};
 
-pub struct LargeLiteralsVisitor;
+pub struct LargeLiteralsVisitor {
+    report: Rc<RefCell<Report>>,
+}
 
 impl LargeLiteralsVisitor {
-    fn print_message(
-        &mut self,
-        contract_definition: &ContractDefinition,
-        definition_node: &ContractDefinitionNode,
-        source_line: usize,
-        literal: &Literal
-    ) {
-        println!(
-            "\t{} contains a large literal, which may be difficult to read: `{}`",
-            contract_definition.definition_node_location(source_line, definition_node),
-            literal
-        );
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self { report }
     }
 }
 
@@ -25,11 +18,14 @@ impl AstVisitor for LargeLiteralsVisitor {
             let n = value.len();
 
             if value.chars().all(char::is_numeric) && (n > 6) && ((n % 3) != 0) {
-                self.print_message(
-                    context.contract_definition,
-                    context.definition_node,
-                    context.current_source_unit.source_line(context.literal.src.as_str())?,
-                    context.literal
+                self.report.borrow_mut().add_entry(
+                    context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
+                    Some(context.current_source_unit.source_line(context.literal.src.as_str())?),
+                    format!(
+                        "{} contains a large literal, which may be difficult to read: `{}`",
+                        context.contract_definition.definition_node_location(context.definition_node),
+                        context.literal
+                    ),
                 );
             }
         }

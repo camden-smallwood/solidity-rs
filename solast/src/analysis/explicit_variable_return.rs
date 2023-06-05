@@ -1,27 +1,19 @@
+use crate::report::Report;
 use eth_lang_utils::ast::*;
 use solidity::ast::*;
-use std::{collections::HashSet, io};
+use std::{cell::RefCell, collections::HashSet, io, rc::Rc};
 
-#[derive(Default)]
 pub struct ExplicitVariableReturnVisitor{
+    report: Rc<RefCell<Report>>,
     local_variable_ids: HashSet<NodeID>,
 }
 
 impl ExplicitVariableReturnVisitor {
-    fn print_message(
-        &mut self,
-        contract_definition: &ContractDefinition,
-        definition_node: &ContractDefinitionNode,
-        source_line: usize,
-        description: &str,
-        expression: &dyn std::fmt::Display
-    ) {
-        println!(
-            "\t{} returns {} explicitly: `{}`",
-            contract_definition.definition_node_location(source_line, definition_node),
-            description,
-            expression
-        );
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self {
+            report,
+            local_variable_ids: HashSet::new(),
+        }
     }
 }
 
@@ -37,16 +29,12 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
     }
 
     fn visit_return<'a, 'b>(&mut self, context: &mut ReturnContext<'a, 'b>) -> io::Result<()> {
-        match context.return_statement.expression.as_ref() {
+        let description = match context.return_statement.expression.as_ref() {
             Some(Expression::Identifier(identifier)) => {
                 if self.local_variable_ids.contains(&identifier.referenced_declaration) {
-                    self.print_message(
-                        context.contract_definition,
-                        context.definition_node,
-                        context.current_source_unit.source_line(context.return_statement.src.as_str())?,
-                        "a local variable",
-                        context.return_statement
-                    );
+                    Some("a local variable")
+                } else {
+                    None
                 }
             }
 
@@ -66,17 +54,26 @@ impl AstVisitor for ExplicitVariableReturnVisitor {
                 }
 
                 if all_local_variables {
-                    self.print_message(
-                        context.contract_definition,
-                        context.definition_node,
-                        context.current_source_unit.source_line(context.return_statement.src.as_str())?,
-                        "local variables",
-                        context.return_statement
-                    );
+                    Some("local variables")
+                } else {
+                    None
                 }
             }
 
-            _ => {}
+            _ => None,
+        };
+
+        if let Some(description) = description {
+            self.report.borrow_mut().add_entry(
+                context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
+                Some(context.current_source_unit.source_line(context.return_statement.src.as_str())?),
+                format!(
+                    "{} returns {} explicitly: `{}`",
+                    context.contract_definition.definition_node_location(context.definition_node),
+                    description,
+                    context.return_statement
+                ),
+            );
         }
 
         Ok(())

@@ -1,14 +1,24 @@
+use crate::report::Report;
 use eth_lang_utils::ast::*;
 use solidity::ast::*;
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 struct StorageSlot {
     member_sizes: Vec<usize>
 }
 
-#[derive(Default)]
 pub struct TightVariablePackingVisitor {
+    report: Rc<RefCell<Report>>,
     storage_slots: HashMap<NodeID, Vec<StorageSlot>>
+}
+
+impl TightVariablePackingVisitor {
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self {
+            report,
+            storage_slots: HashMap::new(),
+        }
+    }
 }
 
 fn type_name_size(source_units: &[SourceUnit], type_name: &TypeName) -> std::io::Result<usize> {

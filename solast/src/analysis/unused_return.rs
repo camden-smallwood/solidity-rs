@@ -1,22 +1,14 @@
+use crate::report::Report;
 use solidity::ast::*;
+use std::{cell::RefCell, rc::Rc};
 
-pub struct UnusedReturnVisitor;
+pub struct UnusedReturnVisitor {
+    report: Rc<RefCell<Report>>,
+}
 
 impl UnusedReturnVisitor {
-    fn print_message(
-        &mut self,
-        contract_definition: &ContractDefinition,
-        definition_node: &ContractDefinitionNode,
-        source_line: usize,
-        called_name: &str,
-        return_parameter_count: usize,
-    ) {
-        println!(
-            "\t{} makes a call to the {}, ignoring the returned {}",
-            contract_definition.definition_node_location(source_line, definition_node),
-            called_name,
-            if return_parameter_count == 1 { "value" } else { "values" },
-        );
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self { report }
     }
 }
 
@@ -50,26 +42,30 @@ impl AstVisitor for UnusedReturnVisitor {
         for source_unit in context.source_units.iter() {
             if let Some((called_contract_definition, called_function_definition)) = source_unit.function_and_contract_definition(referenced_declaration) {
                 if !called_function_definition.return_parameters.parameters.is_empty() {
-                    self.print_message(
-                        context.contract_definition,
-                        context.definition_node,
-                        context.current_source_unit.source_line(src)?,
-
+                    self.report.borrow_mut().add_entry(
+                        context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
+                        Some(context.current_source_unit.source_line(src)?),
                         format!(
-                            "{} `{}` {}",
+                            "{} makes a call to the {}, ignoring the returned {}",
 
-                            format!("{:?}", called_function_definition.visibility).to_lowercase(),
+                            context.contract_definition.definition_node_location(context.definition_node),
+                            
+                            format!(
+                                "{} `{}` {}",
     
-                            if called_function_definition.name.is_empty() {
-                                called_contract_definition.name.to_string()
-                            } else {
-                                format!("{}.{}", called_contract_definition.name, called_function_definition.name)
-                            },
-    
-                            format!("{:?}", called_function_definition.kind).to_lowercase(),
-                        ).as_str(),
-
-                        called_function_definition.return_parameters.parameters.len(),
+                                format!("{:?}", called_function_definition.visibility).to_lowercase(),
+        
+                                if called_function_definition.name.is_empty() {
+                                    called_contract_definition.name.to_string()
+                                } else {
+                                    format!("{}.{}", called_contract_definition.name, called_function_definition.name)
+                                },
+        
+                                format!("{:?}", called_function_definition.kind).to_lowercase(),
+                            ),
+                            
+                            if called_function_definition.return_parameters.parameters.len() == 1 { "value" } else { "values" },
+                        ),
                     );
                 }
                 

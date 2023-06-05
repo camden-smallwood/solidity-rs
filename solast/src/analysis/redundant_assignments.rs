@@ -1,26 +1,38 @@
+use crate::report::Report;
 use eth_lang_utils::ast::*;
 use solidity::ast::*;
-use std::io;
+use std::{cell::RefCell, io, rc::Rc};
 
 //
 // TODO:
 //   determine if something is assigned to, then re-assigned to without being referenced
 //
 
-pub struct RedundantAssignmentsVisitor;
+pub struct RedundantAssignmentsVisitor {
+    report: Rc<RefCell<Report>>,
+}
 
 impl RedundantAssignmentsVisitor {
-    fn print_message(
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self { report }
+    }
+    
+    fn add_report_entry(
         &mut self,
+        source_unit_path: String,
         contract_definition: &ContractDefinition,
         definition_node: &ContractDefinitionNode,
         source_line: usize,
         assignment: &Assignment
     ) {
-        println!(
-            "\t{} contains a redundant assignment: `{}`",
-            contract_definition.definition_node_location(source_line, definition_node),
-            assignment,
+        self.report.borrow_mut().add_entry(
+            source_unit_path,
+            Some(source_line),
+            format!(
+                "{} contains a redundant assignment: `{}`",
+                contract_definition.definition_node_location(definition_node),
+                assignment,
+            ),
         );
     }
 }
@@ -38,7 +50,8 @@ impl AstVisitor for RedundantAssignmentsVisitor {
                 }
 
                 if !component_ids.is_empty() && tuple_component_ids.iter().any(|ids| ids.eq(&component_ids)) {
-                    self.print_message(
+                    self.add_report_entry(
+                        context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
                         context.contract_definition,
                         context.definition_node,
                         context.current_source_unit.source_line(context.assignment.src.as_str())?,

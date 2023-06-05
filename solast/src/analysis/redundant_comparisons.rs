@@ -1,21 +1,33 @@
+use crate::report::Report;
 use primitive_types::U512;
 use solidity::ast::*;
-use std::{io, str::FromStr};
+use std::{cell::RefCell, io, rc::Rc, str::FromStr};
 
-pub struct RedundantComparisonsVisitor;
+pub struct RedundantComparisonsVisitor {
+    report: Rc<RefCell<Report>>,
+}
 
 impl RedundantComparisonsVisitor {
-    fn print_message(
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self { report }
+    }
+
+    fn add_report_entry(
         &mut self,
+        source_unit_path: String,
         contract_definition: &ContractDefinition,
         definition_node: &ContractDefinitionNode,
         source_line: usize,
         binary_operation: &BinaryOperation
     ) {
-        println!(
-            "\t{} contains a redundant comparison: `{}`",
-            contract_definition.definition_node_location(source_line, definition_node),
-            binary_operation
+        self.report.borrow_mut().add_entry(
+            source_unit_path,
+            Some(source_line),
+            format!(
+                "{} contains a redundant comparison: `{}`",
+                contract_definition.definition_node_location(definition_node),
+                binary_operation
+            ),
         );
     }
 
@@ -94,7 +106,8 @@ impl AstVisitor for RedundantComparisonsVisitor {
             (Expression::Literal(_), _) => self.is_left_literal_redundant(context),
             _ => false
         } {
-            self.print_message(
+            self.add_report_entry(
+                context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
                 context.contract_definition,
                 context.definition_node,
                 context.current_source_unit.source_line(context.binary_operation.src.as_str())?,

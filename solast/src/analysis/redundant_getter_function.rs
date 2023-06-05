@@ -1,23 +1,14 @@
+use crate::report::Report;
 use solidity::ast::*;
-use std::io;
+use std::{cell::RefCell, io, rc::Rc};
 
-pub struct RedundantGetterFunctionVisitor;
+pub struct RedundantGetterFunctionVisitor {
+    report: Rc<RefCell<Report>>,
+}
 
 impl RedundantGetterFunctionVisitor {
-    fn print_message(
-        &mut self,
-        contract_definition: &ContractDefinition,
-        definition_node: &ContractDefinitionNode,
-        variable_declaration: &VariableDeclaration,
-        source_line: usize,
-    ) {
-        println!(
-            "\t{} is a redundant getter function for the {} `{}.{}` state variable",
-            contract_definition.definition_node_location(source_line, definition_node),
-            variable_declaration.visibility,
-            contract_definition.name,
-            variable_declaration.name,
-        );
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self { report }
     }
 }
 
@@ -68,11 +59,16 @@ impl AstVisitor for RedundantGetterFunctionVisitor {
             return Ok(());
         }
 
-        self.print_message(
-            context.contract_definition,
-            context.definition_node,
-            variable_declaration,
-            context.current_source_unit.source_line(context.function_definition.src.as_str())?,
+        self.report.borrow_mut().add_entry(
+            context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
+            Some(context.current_source_unit.source_line(context.function_definition.src.as_str())?),
+            format!(
+                "{} is a redundant getter function for the {} `{}.{}` state variable",
+                context.contract_definition.definition_node_location(context.definition_node),
+                variable_declaration.visibility,
+                context.contract_definition.name,
+                variable_declaration.name,
+            ),
         );
 
         Ok(())

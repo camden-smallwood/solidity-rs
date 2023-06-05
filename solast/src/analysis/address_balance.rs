@@ -1,25 +1,38 @@
+use crate::report::Report;
 use solidity::ast::*;
+use std::{cell::RefCell, rc::Rc};
 
-pub struct AddressBalanceVisitor;
+pub struct AddressBalanceVisitor {
+    report: Rc<RefCell<Report>>,
+}
 
 impl AddressBalanceVisitor {
-    fn print_message(
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self { report }
+    }
+
+    fn add_report_entry(
         &mut self,
+        source_unit_path: String,
         contract_definition: &ContractDefinition,
         definition_node: &ContractDefinitionNode,
         source_line: usize,
         expression: &dyn std::fmt::Display,
         external: bool,
     ) {
-        println!(
-            "\t{} contains `{}` usage, which can be optimized with assembly: `{}`",
-            contract_definition.definition_node_location(source_line, definition_node),
-            expression,
-            if external {
-                "assembly { bal := balance(addr); }"
-            } else {
-                "assembly { bal := selfbalance(); }"
-            }
+        self.report.borrow_mut().add_entry(
+            source_unit_path,
+            Some(source_line),
+            format!(
+                "{} contains `{}` usage, which can be optimized with assembly: `{}`",
+                contract_definition.definition_node_location(definition_node),
+                expression,
+                if external {
+                    "assembly { bal := balance(addr); }"
+                } else {
+                    "assembly { bal := selfbalance(); }"
+                }
+            ),
         );
     }
 }
@@ -56,7 +69,8 @@ impl AstVisitor for AddressBalanceVisitor {
             name,
             ..
         })) = arguments.first() {
-            self.print_message(
+            self.add_report_entry(
+                context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
                 context.contract_definition,
                 context.definition_node,
                 context.current_source_unit.source_line(context.member_access.src.as_str())?,

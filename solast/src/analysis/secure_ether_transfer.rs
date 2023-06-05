@@ -1,20 +1,32 @@
+use crate::report::Report;
 use solidity::ast::*;
-use std::io;
+use std::{cell::RefCell, io, rc::Rc};
 
-pub struct SecureEtherTransferVisitor;
+pub struct SecureEtherTransferVisitor {
+    report: Rc<RefCell<Report>>,
+}
 
 impl SecureEtherTransferVisitor {
-    fn print_message(
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self { report }
+    }
+
+    fn add_report_entry(
         &mut self,
+        source_unit_path: String,
         contract_definition: &ContractDefinition,
         definition_node: &ContractDefinitionNode,
         source_line: usize,
         expression: &dyn std::fmt::Display
     ) {
-        println!(
-            "\t{} ignores the Secure-Ether-Transfer pattern: `{}`",
-            contract_definition.definition_node_location(source_line, definition_node),
-            expression
+        self.report.borrow_mut().add_entry(
+            source_unit_path,
+            Some(source_line),
+            format!(
+                "{} ignores the Secure-Ether-Transfer pattern: `{}`",
+                contract_definition.definition_node_location(definition_node),
+                expression
+            ),
         );
     }
 }
@@ -35,7 +47,8 @@ impl AstVisitor for SecureEtherTransferVisitor {
             }
             
             if member_access.referenced_declaration.is_none() || member_access.referenced_declaration.map(|id| id == 0).unwrap_or(false) {
-                self.print_message(
+                self.add_report_entry(
+                    context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
                     context.contract_definition,
                     context.definition_node,
                     context.current_source_unit.source_line(context.function_call.src.as_str())?,
@@ -62,7 +75,8 @@ impl AstVisitor for SecureEtherTransferVisitor {
             }
             
             if member_access.referenced_declaration.is_none() || member_access.referenced_declaration.map(|id| id == 0).unwrap_or(false) {
-                self.print_message(
+                self.add_report_entry(
+                    context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
                     context.contract_definition,
                     context.definition_node,
                     context.current_source_unit.source_line(context.function_call_options.src.as_str())?,

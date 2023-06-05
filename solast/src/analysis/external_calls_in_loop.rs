@@ -1,25 +1,39 @@
+use crate::report::Report;
 use eth_lang_utils::ast::*;
 use solidity::ast::*;
-use std::io;
+use std::{cell::RefCell, io, rc::Rc};
 
-#[derive(Default)]
 pub struct ExternalCallsInLoopVisitor {
+    report: Rc<RefCell<Report>>,
     loop_ids: Vec<NodeID>,
     function_calls: Vec<FunctionCall>,
 }
 
 impl ExternalCallsInLoopVisitor {
-    fn print_message(
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self {
+            report,
+            loop_ids: vec![],
+            function_calls: vec![],
+        }
+    }
+
+    fn add_report_entry(
         &mut self,
+        source_unit_path: String,
         contract_definition: &ContractDefinition,
         definition_node: &ContractDefinitionNode,
         source_line: usize,
         expression: &dyn std::fmt::Display
     ) {
-        println!(
-            "\t{} makes an external call inside a loop: `{}`",
-            contract_definition.definition_node_location(source_line, definition_node),
-            expression
+        self.report.borrow_mut().add_entry(
+            source_unit_path,
+            Some(source_line),
+            format!(
+                "{} makes an external call inside a loop: `{}`",
+                contract_definition.definition_node_location(definition_node),
+                expression
+            ),
         );
     }
 }
@@ -97,7 +111,8 @@ impl AstVisitor for ExternalCallsInLoopVisitor {
             };
 
             if let Visibility::External = called_function_definition.visibility {
-                self.print_message(
+                self.add_report_entry(
+                    context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
                     context.contract_definition,
                     context.definition_node,
                     context.current_source_unit.source_line(context.identifier.src.as_str())?,
@@ -123,7 +138,8 @@ impl AstVisitor for ExternalCallsInLoopVisitor {
                     source_unit.function_definition(referenced_declaration)
                 {
                     if let Visibility::External = function_definition.visibility {
-                        self.print_message(
+                        self.add_report_entry(
+                            context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
                             context.contract_definition,
                             context.definition_node,
                             context.current_source_unit.source_line(context.member_access.src.as_str())?,

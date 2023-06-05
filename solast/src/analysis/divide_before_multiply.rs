@@ -1,19 +1,14 @@
+use crate::report::Report;
 use solidity::ast::*;
-use std::io;
+use std::{cell::RefCell, io, rc::Rc};
 
-pub struct DivideBeforeMultiplyVisitor;
+pub struct DivideBeforeMultiplyVisitor {
+    report: Rc<RefCell<Report>>,
+}
 
 impl DivideBeforeMultiplyVisitor {
-    fn print_message(
-        &mut self,
-        contract_definition: &ContractDefinition,
-        definition_node: &ContractDefinitionNode,
-        source_line: usize,
-    ) {
-        println!(
-            "\t{} performs a multiplication on the result of a division",
-            contract_definition.definition_node_location(source_line, definition_node),
-        );
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self { report }
     }
 }
 
@@ -31,10 +26,13 @@ impl AstVisitor for DivideBeforeMultiplyVisitor {
 
         if let Expression::BinaryOperation(left_operation) = context.binary_operation.left_expression.as_ref() {
             if left_operation.contains_operation("/") {
-                self.print_message(
-                    context.contract_definition,
-                    context.definition_node,
-                    context.current_source_unit.source_line(context.binary_operation.src.as_str())?,
+                self.report.borrow_mut().add_entry(
+                    context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
+                    Some(context.current_source_unit.source_line(context.binary_operation.src.as_str())?),
+                    format!(
+                        "{} performs a multiplication on the result of a division",
+                        context.contract_definition.definition_node_location(context.definition_node),
+                    ),
                 );
             }
         }

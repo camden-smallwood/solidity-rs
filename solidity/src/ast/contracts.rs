@@ -357,12 +357,10 @@ impl ContractDefinition {
         ids
     }
 
-    pub fn definition_node_location(&self, source_line: usize, definition_node: &ContractDefinitionNode) -> String {
+    pub fn definition_node_location(&self, definition_node: &ContractDefinitionNode) -> String {
         format!(
-            "L{}: The {}",
-
-            source_line,
-
+            "The {}",
+            
             match definition_node {
                 ContractDefinitionNode::FunctionDefinition(function_definition) => format!(
                     "{} {} in the `{}` {}",

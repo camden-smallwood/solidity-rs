@@ -1,6 +1,7 @@
+use crate::report::Report;
 use eth_lang_utils::ast::*;
 use solidity::ast::*;
-use std::{collections::{HashMap, HashSet}, io};
+use std::{cell::RefCell, collections::{HashMap, HashSet}, io, rc::Rc};
 
 struct VariableInfo {
     assigned: bool,
@@ -12,9 +13,18 @@ struct ContractInfo {
     variable_aliases: HashMap<NodeID, HashSet<NodeID>>,
 }
 
-#[derive(Default)]
 pub struct StateVariableMutabilityVisitor {
+    report: Rc<RefCell<Report>>,
     contract_info: HashMap<NodeID, ContractInfo>,
+}
+
+impl StateVariableMutabilityVisitor {
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self {
+            report,
+            contract_info: HashMap::new(),
+        }
+    }
 }
 
 //
@@ -56,16 +66,17 @@ impl AstVisitor for StateVariableMutabilityVisitor {
                     }
                     
                     if !variable_info.assigned {
-                        println!(
-                            "\tL{}: The {} `{}.{}` {} state variable can be declared `{}`",
-
-                            context.current_source_unit.source_line(variable_declaration.src.as_str())?,
-
-                            variable_declaration.visibility,
-                            context.contract_definition.name,
-                            variable_declaration.name,
-                            variable_declaration.type_name.as_ref().unwrap(),
-                            if variable_info.constant { "constant" } else { "immutable" }
+                        self.report.borrow_mut().add_entry(
+                            context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
+                            Some(context.current_source_unit.source_line(variable_declaration.src.as_str())?),
+                            format!(
+                                "The {} `{}.{}` {} state variable can be declared `{}`",
+                                variable_declaration.visibility,
+                                context.contract_definition.name,
+                                variable_declaration.name,
+                                variable_declaration.type_name.as_ref().unwrap(),
+                                if variable_info.constant { "constant" } else { "immutable" }
+                            ),
                         );
                     }
                 }

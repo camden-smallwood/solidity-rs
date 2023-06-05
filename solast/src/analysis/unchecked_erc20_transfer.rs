@@ -1,6 +1,7 @@
+use crate::report::Report;
 use eth_lang_utils::ast::*;
 use solidity::ast::*;
-use std::{collections::{HashMap, HashSet}, io};
+use std::{cell::RefCell, collections::{HashMap, HashSet}, io, rc::Rc};
 
 struct BlockInfo {
     verified_declarations: HashSet<NodeID>,
@@ -10,10 +11,20 @@ struct FunctionInfo {
     occurance_count: usize,
 }
 
-#[derive(Default)]
 pub struct UncheckedERC20TransferVisitor {
+    report: Rc<RefCell<Report>>,
     block_info: HashMap<NodeID, BlockInfo>,
     function_info: HashMap<NodeID, FunctionInfo>,
+}
+
+impl UncheckedERC20TransferVisitor {
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self {
+            report,
+            block_info: HashMap::new(),
+            function_info: HashMap::new(),
+        }
+    }
 }
 
 impl AstVisitor for UncheckedERC20TransferVisitor {
@@ -37,72 +48,51 @@ impl AstVisitor for UncheckedERC20TransferVisitor {
         let function_info = self.function_info.get(&context.function_definition.id).unwrap();
 
         if function_info.occurance_count > 0 {
-            match context.definition_node {
-                ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                    "\tL{}: The {} {} in the `{}` {} makes {} without checking the {}, which can revert {} zero",
-
-                    context.current_source_unit.source_line(context.function_definition.src.as_str())?,
-
-                    function_definition.visibility,
-
+            let name = match context.definition_node {
+                ContractDefinitionNode::FunctionDefinition(function_definition) => Some(
                     if let FunctionKind::Constructor = function_definition.kind {
-                        "constructor".to_string()
+                        format!("{} constructor", function_definition.visibility)
                     } else {
-                        format!("`{}` {}", function_definition.name, function_definition.kind)
-                    },
-        
-                    context.contract_definition.name,
-                    context.contract_definition.kind,
-
-                    if function_info.occurance_count == 1 {
-                        "an ERC-20 transfer"
-                    } else {
-                        "ERC-20 transfers"
-                    },
-
-                    if function_info.occurance_count == 1 {
-                        "amount"
-                    } else {
-                        "amounts"
-                    },
-                    
-                    if function_info.occurance_count == 1 {
-                        "if"
-                    } else {
-                        "if any are"
-                    },
+                        format!("{} `{}` {}", function_definition.visibility, function_definition.name, function_definition.kind)
+                    }
                 ),
                 
-                ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                    "\tL{}: The `{}` modifier in the `{}` {} makes {} without checking the {}, which can revert {} zero",
-
-                    context.current_source_unit.source_line(context.function_definition.src.as_str())?,
-
-                    modifier_definition.name,
-        
-                    context.contract_definition.name,
-                    context.contract_definition.kind,
-
-                    if function_info.occurance_count == 1 {
-                        "an ERC-20 transfer"
-                    } else {
-                        "ERC-20 transfers"
-                    },
-
-                    if function_info.occurance_count == 1 {
-                        "amount"
-                    } else {
-                        "amounts"
-                    },
-                    
-                    if function_info.occurance_count == 1 {
-                        "if"
-                    } else {
-                        "if any are"
-                    },
+                ContractDefinitionNode::ModifierDefinition(modifier_definition) => Some(
+                    format!("`{}` modifier", modifier_definition.name)
                 ),
                 
-                _ => ()
+                _ => None
+            };
+
+            if let Some(name) = name {
+                self.report.borrow_mut().add_entry(
+                    context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
+                    Some(context.current_source_unit.source_line(context.function_definition.src.as_str())?),
+                    format!(
+                        "The {name} in the `{}` {} makes {} without checking the {}, which can revert {} zero",
+    
+                        context.contract_definition.name,
+                        context.contract_definition.kind,
+    
+                        if function_info.occurance_count == 1 {
+                            "an ERC-20 transfer"
+                        } else {
+                            "ERC-20 transfers"
+                        },
+    
+                        if function_info.occurance_count == 1 {
+                            "amount"
+                        } else {
+                            "amounts"
+                        },
+                        
+                        if function_info.occurance_count == 1 {
+                            "if"
+                        } else {
+                            "if any are"
+                        },
+                    ),
+                );
             }
         }
 

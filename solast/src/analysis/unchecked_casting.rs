@@ -1,7 +1,16 @@
+use crate::report::Report;
 use solidity::ast::*;
-use std::io;
+use std::{cell::RefCell, io, rc::Rc};
 
-pub struct UncheckedCastingVisitor;
+pub struct UncheckedCastingVisitor {
+    report: Rc<RefCell<Report>>,
+}
+
+impl UncheckedCastingVisitor {
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self { report }
+    }
+}
 
 impl AstVisitor for UncheckedCastingVisitor {
     fn visit_function_call<'a, 'b>(&mut self, context: &mut FunctionCallContext<'a, 'b>) -> io::Result<()> {
@@ -30,46 +39,39 @@ impl AstVisitor for UncheckedCastingVisitor {
         // Check for redundant cast (i.e: casting uint256 to uint256)
         //
 
-        if let Some(argument_expression) = context.function_call.arguments.first() {
-            if let Some(argument_type_descriptions) = argument_expression.type_descriptions() {
-                if type_descriptions == argument_type_descriptions {
-                    match context.definition_node {
-                        ContractDefinitionNode::FunctionDefinition(function_definition) => println!(
-                            "\tL{}: The {} {} in the `{}` {} contains a redundant cast: `{}`",
+        let Some(argument_expression) = context.function_call.arguments.first() else { return Ok(()) };
+        let Some(argument_type_descriptions) = argument_expression.type_descriptions() else { return Ok(()) };
+        
+        if type_descriptions == argument_type_descriptions {
+            let name = match context.definition_node {
+                ContractDefinitionNode::FunctionDefinition(function_definition) => format!(
+                    "{} {}",
+                    function_definition.visibility,
+                    if let FunctionKind::Constructor = function_definition.kind {
+                        "constructor".to_string()
+                    } else {
+                        format!("`{}` {}", function_definition.name, function_definition.kind)
+                    },
+                ),
 
-                            context.current_source_unit.source_line(context.function_call.src.as_str())?,
+                ContractDefinitionNode::ModifierDefinition(modifier_definition) => format!(
+                    "`{}` modifier",
+                    modifier_definition.name,
+                ),
 
-                            function_definition.visibility,
+                _ => return Ok(()),
+            };
 
-                            if let FunctionKind::Constructor = function_definition.kind {
-                                "constructor".to_string()
-                            } else {
-                                format!("`{}` {}", function_definition.name, function_definition.kind)
-                            },
-
-                            context.contract_definition.name,
-                            context.contract_definition.kind,
-
-                            context.function_call
-                        ),
-
-                        ContractDefinitionNode::ModifierDefinition(modifier_definition) => println!(
-                            "\tL{}: The `{}` modifier in the `{}` {} contains a redundant cast: `{}`",
-
-                            context.current_source_unit.source_line(context.function_call.src.as_str())?,
-
-                            modifier_definition.name,
-
-                            context.contract_definition.name,
-                            context.contract_definition.kind,
-
-                            context.function_call
-                        ),
-
-                        _ => ()
-                    }
-                }
-            }
+            self.report.borrow_mut().add_entry(
+                context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
+                Some(context.current_source_unit.source_line(context.function_call.src.as_str())?),
+                format!(
+                    "The {name} in the `{}` {} contains a redundant cast: `{}`",
+                    context.contract_definition.name,
+                    context.contract_definition.kind,
+                    context.function_call
+                ),
+            );
         }
 
         Ok(())

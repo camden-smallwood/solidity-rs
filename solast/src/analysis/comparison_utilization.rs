@@ -1,7 +1,16 @@
+use crate::report::Report;
 use solidity::ast::*;
-use std::io;
+use std::{cell::RefCell, io, rc::Rc};
 
-pub struct ComparisonUtilizationVisitor;
+pub struct ComparisonUtilizationVisitor {
+    report: Rc<RefCell<Report>>,
+}
+
+impl ComparisonUtilizationVisitor {
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self { report }
+    }
+}
 
 impl AstVisitor for ComparisonUtilizationVisitor {
     fn visit_if_statement<'a, 'b>(&mut self, _context: &mut IfStatementContext<'a, 'b>) -> io::Result<()> {

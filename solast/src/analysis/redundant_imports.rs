@@ -1,14 +1,24 @@
+use crate::report::Report;
 use eth_lang_utils::ast::*;
 use solidity::ast::*;
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 struct SourceUnitInfo {
     imported_paths: HashMap<String, bool>,
 }
 
-#[derive(Default)]
 pub struct RedundantImportsVisitor {
+    report: Rc<RefCell<Report>>,
     source_unit_info: HashMap<NodeID, SourceUnitInfo>,
+}
+
+impl RedundantImportsVisitor {
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self {
+            report,
+            source_unit_info: HashMap::new(),
+        }
+    }
 }
 
 impl AstVisitor for RedundantImportsVisitor {
@@ -25,10 +35,10 @@ impl AstVisitor for RedundantImportsVisitor {
 
         match source_unit_info.imported_paths.get_mut(&context.import_directive.file) {
             Some(reported) => if !*reported {
-                println!(
-                    "\tL{}: Redundant import specified: `{}`",
-                    context.current_source_unit.source_line(context.import_directive.src.as_str())?,
-                    context.import_directive.file
+                self.report.borrow_mut().add_entry(
+                    context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
+                    Some(context.current_source_unit.source_line(context.import_directive.src.as_str())?),
+                    format!("Redundant import specified: `{}`", context.import_directive.file),
                 );
                 *reported = true;
             }

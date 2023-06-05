@@ -1,26 +1,39 @@
+use crate::report::Report;
 use eth_lang_utils::ast::*;
 use solidity::ast::*;
-use std::{collections::{HashMap, HashSet}, io};
+use std::{cell::RefCell, collections::{HashMap, HashSet}, io, rc::Rc};
 
 struct FunctionInfo {
     assigned_return_variables: HashSet<NodeID>,
 }
 
-#[derive(Default)]
 pub struct MissingReturnVisitor {
+    report: Rc<RefCell<Report>>,
     function_info: HashMap<NodeID, FunctionInfo>,
 }
 
 impl MissingReturnVisitor {
-    fn print_message(
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self {
+            report,
+            function_info: HashMap::new(),
+        }
+    }
+
+    fn add_report_entry(
         &mut self,
+        source_unit_path: String,
         contract_definition: &ContractDefinition,
         definition_node: &ContractDefinitionNode,
         source_line: usize
     ) {
-        println!(
-            "\t{} is missing an explicit return statement",
-            contract_definition.definition_node_location(source_line, definition_node),
+        self.report.borrow_mut().add_entry(
+            source_unit_path,
+            Some(source_line),
+            format!(
+                "{} is missing an explicit return statement",
+                contract_definition.definition_node_location(definition_node),
+            ),
         );
     }
 }
@@ -59,7 +72,8 @@ impl AstVisitor for MissingReturnVisitor {
         }
 
         if assigned.iter().all(|assigned| !assigned) {
-            self.print_message(
+            self.add_report_entry(
+                context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
                 context.contract_definition,
                 context.definition_node,
                 context.current_source_unit.source_line(context.function_definition.src.as_str())?

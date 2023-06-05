@@ -1,14 +1,24 @@
+use crate::report::Report;
 use eth_lang_utils::ast::*;
 use solidity::ast::*;
-use std::{collections::HashMap, io};
+use std::{cell::RefCell, collections::HashMap, io, rc::Rc};
 
 pub struct ContractInfo {
     variable_info: HashMap<NodeID, bool>,
 }
 
-#[derive(Default)]
 pub struct UnusedStateVariablesVisitor {
+    report: Rc<RefCell<Report>>,
     contract_info: HashMap<NodeID, ContractInfo>,
+}
+
+impl UnusedStateVariablesVisitor {
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self {
+            report,
+            contract_info: HashMap::new(),
+        }
+    }
 }
 
 impl AstVisitor for UnusedStateVariablesVisitor {
@@ -29,15 +39,16 @@ impl AstVisitor for UnusedStateVariablesVisitor {
                     }
 
                     if !referenced {
-                        println!(
-                            "\tL{}: The {} `{}.{}` {} state variable is never referenced",
-
-                            context.current_source_unit.source_line(variable_declaration.src.as_str())?,
-
-                            variable_declaration.visibility,
-                            context.contract_definition.name,
-                            variable_declaration.name,
-                            variable_declaration.type_name.as_ref().unwrap(),
+                        self.report.borrow_mut().add_entry(
+                            context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
+                            Some(context.current_source_unit.source_line(variable_declaration.src.as_str())?),
+                            format!(
+                                "The {} `{}.{}` {} state variable is never referenced",
+                                variable_declaration.visibility,
+                                context.contract_definition.name,
+                                variable_declaration.name,
+                                variable_declaration.type_name.as_ref().unwrap(),
+                            ),
                         );
                     }
                 }

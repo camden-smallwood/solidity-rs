@@ -1,10 +1,19 @@
+use crate::report::Report;
 use solidity::ast::*;
+use std::{cell::RefCell, rc::Rc};
 
-pub struct ArrayAssignmentVisitor;
+pub struct ArrayAssignmentVisitor {
+    report: Rc<RefCell<Report>>,
+}
 
 impl ArrayAssignmentVisitor {
-    fn print_message(
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self { report }
+    }
+
+    fn add_report_entry(
         &mut self,
+        source_unit_path: String,
         contract_definition: &ContractDefinition,
         definition_node: &ContractDefinitionNode,
         source_line: usize,
@@ -12,12 +21,16 @@ impl ArrayAssignmentVisitor {
         operator: &str,
         expression: &Expression,
     ) {
-        println!(
-            "\t{} contains an inefficient array assignment which can be optimized to `{} {}= {};`",
-            contract_definition.definition_node_location(source_line, definition_node),
-            index_access,
-            operator,
-            expression,
+        self.report.borrow_mut().add_entry(
+            source_unit_path,
+            Some(source_line),
+            format!(
+                "{} contains an inefficient array assignment which can be optimized to `{} {}= {};`",
+                contract_definition.definition_node_location(definition_node),
+                index_access,
+                operator,
+                expression,
+            ),
         );
     }
 }
@@ -48,7 +61,8 @@ impl AstVisitor for ArrayAssignmentVisitor {
         };
 
         if index_access.base_expression == index_access2.base_expression {
-            self.print_message(
+            self.add_report_entry(
+                context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
                 context.contract_definition,
                 context.definition_node,
                 context.current_source_unit.source_line(context.assignment.src.as_str())?,

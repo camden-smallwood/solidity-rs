@@ -1,22 +1,34 @@
+use crate::report::Report;
 use solidity::ast::*;
-use std::io;
+use std::{cell::RefCell, io, rc::Rc};
 
-pub struct AssignmentComparisonsVisitor;
+pub struct AssignmentComparisonsVisitor {
+    report: Rc<RefCell<Report>>,
+}
 
 impl AssignmentComparisonsVisitor {
-    fn print_message(
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self { report }
+    }
+
+    fn add_report_entry(
         &mut self,
+        source_unit_path: String,
         contract_definition: &ContractDefinition,
         definition_node: &ContractDefinitionNode,
         source_line: usize,
         message: String,
         expression: &dyn std::fmt::Display
     ) {
-        println!(
-            "\t{} contains {} that performs an assignment: `{}`",
-            contract_definition.definition_node_location(source_line, definition_node),
-            message,
-            expression
+        self.report.borrow_mut().add_entry(
+            source_unit_path,
+            Some(source_line),
+            format!(
+                "{} contains {} that performs an assignment: `{}`",
+                contract_definition.definition_node_location(definition_node),
+                message,
+                expression
+            ),
         );
     }
 }
@@ -29,7 +41,8 @@ impl AstVisitor for AssignmentComparisonsVisitor {
         };
 
         if context.function_call.arguments.first().unwrap().contains_operation("=") {
-            self.print_message(
+            self.add_report_entry(
+                context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
                 context.contract_definition,
                 context.definition_node,
                 context.current_source_unit.source_line(context.function_call.src.as_str())?,
@@ -43,7 +56,8 @@ impl AstVisitor for AssignmentComparisonsVisitor {
 
     fn visit_if_statement<'a, 'b>(&mut self, context: &mut IfStatementContext<'a, 'b>) -> io::Result<()> {
         if context.if_statement.condition.contains_operation("=") {
-            self.print_message(
+            self.add_report_entry(
+                context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
                 context.contract_definition,
                 context.definition_node,
                 context.current_source_unit.source_line(context.if_statement.src.as_str())?,
@@ -58,7 +72,8 @@ impl AstVisitor for AssignmentComparisonsVisitor {
     fn visit_for_statement<'a, 'b>(&mut self, context: &mut ForStatementContext<'a, 'b>) -> io::Result<()> {
         if let Some(condition) = context.for_statement.condition.as_ref() {
             if condition.contains_operation("=") {
-                self.print_message(
+                self.add_report_entry(
+                    context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
                     context.contract_definition,
                     context.definition_node,
                     context.current_source_unit.source_line(context.for_statement.src.as_str())?,
@@ -73,7 +88,8 @@ impl AstVisitor for AssignmentComparisonsVisitor {
 
     fn visit_while_statement<'a, 'b>(&mut self, context: &mut WhileStatementContext<'a, 'b>) -> io::Result<()> {
         if context.while_statement.condition.contains_operation("=") {
-            self.print_message(
+            self.add_report_entry(
+                context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
                 context.contract_definition,
                 context.definition_node,
                 context.current_source_unit.source_line(context.while_statement.src.as_str())?,
@@ -87,7 +103,8 @@ impl AstVisitor for AssignmentComparisonsVisitor {
 
     fn visit_conditional<'a, 'b>(&mut self, context: &mut ConditionalContext<'a, 'b>) -> io::Result<()> {
         if context.conditional.condition.contains_operation("=") {
-            self.print_message(
+            self.add_report_entry(
+                context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
                 context.contract_definition,
                 context.definition_node,
                 context.current_source_unit.source_line(context.conditional.src.as_str())?,

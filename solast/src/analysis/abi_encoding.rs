@@ -1,24 +1,37 @@
+use crate::report::Report;
 use eth_lang_utils::ast::*;
 use solidity::ast::*;
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-#[derive(Default)]
 pub struct AbiEncodingVisitor {
+    report: Rc<RefCell<Report>>,
     declaration_type_names: HashMap<NodeID, TypeName>
 }
 
 impl AbiEncodingVisitor {
-    fn print_message(
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self {
+            report,
+            declaration_type_names: HashMap::new(),
+        }
+    }
+
+    fn add_report_entry(
         &mut self,
+        source_unit_path: String,
         contract_definition: &ContractDefinition,
         definition_node: &ContractDefinitionNode,
         source_line: usize,
         expression: &dyn std::fmt::Display,
     ) {
-        println!(
-            "\t{} contains the potential for hash collisions: `{}`",
-            contract_definition.definition_node_location(source_line, definition_node),
-            expression,
+        self.report.borrow_mut().add_entry(
+            source_unit_path,
+            Some(source_line),
+            format!(
+                "{} contains the potential for hash collisions: `{}`",
+                contract_definition.definition_node_location(definition_node),
+                expression,
+            ),
         );
     }
 }
@@ -89,7 +102,8 @@ impl AstVisitor for AbiEncodingVisitor {
         //
 
         if any_arguments_variably_sized {
-            self.print_message(
+            self.add_report_entry(
+                context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
                 context.contract_definition,
                 context.definition_node,
                 context.current_source_unit.source_line(context.function_call.src.as_str())?,

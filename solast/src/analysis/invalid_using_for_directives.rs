@@ -1,20 +1,32 @@
+use crate::report::Report;
 use solidity::ast::*;
-use std::io;
+use std::{cell::RefCell, io, rc::Rc};
 
-pub struct InvalidUsingForDirectivesVisitor;
+pub struct InvalidUsingForDirectivesVisitor {
+    report: Rc<RefCell<Report>>,
+}
 
 impl InvalidUsingForDirectivesVisitor {
-    fn print_message(
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self { report }
+    }
+
+    fn add_report_entry(
         &mut self,
+        source_unit_path: String,
         contract_definition: &ContractDefinition,
         definition_node: &ContractDefinitionNode,
         source_line: usize,
         using_for_directive: &UsingForDirective
     ) {
-        println!(
-            "\t{} contains an invalid using-for directive: `{}`",
-            contract_definition.definition_node_location(source_line, definition_node),
-            using_for_directive,
+        self.report.borrow_mut().add_entry(
+            source_unit_path,
+            Some(source_line),
+            format!(
+                "{} contains an invalid using-for directive: `{}`",
+                contract_definition.definition_node_location(definition_node),
+                using_for_directive,
+            ),
         );
     }
 }
@@ -124,7 +136,8 @@ impl AstVisitor for InvalidUsingForDirectivesVisitor {
         //
 
         if !usable_function_found {
-            self.print_message(
+            self.add_report_entry(
+                context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
                 context.contract_definition,
                 context.definition_node,
                 context.current_source_unit.source_line(context.using_for_directive.src.as_str())?,

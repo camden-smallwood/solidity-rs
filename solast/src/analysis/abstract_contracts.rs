@@ -1,21 +1,14 @@
+use crate::report::Report;
 use solidity::ast::*;
+use std::{cell::RefCell, rc::Rc};
 
-pub struct AbstractContractsVisitor;
+pub struct AbstractContractsVisitor {
+    report: Rc<RefCell<Report>>,
+}
 
 impl AbstractContractsVisitor {
-    fn print_message(
-        &mut self,
-        contract_definition: &ContractDefinition,
-        definition_node: &ContractDefinitionNode,
-        function_definition: &FunctionDefinition,
-        source_line: usize,
-    ) {
-        println!(
-            "\t{} is marked {} instead of marking `{}` as abstract",
-            contract_definition.definition_node_location(source_line, definition_node),
-            function_definition.visibility,
-            contract_definition.name,
-        );
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self { report }
     }
 }
 
@@ -42,11 +35,15 @@ impl AstVisitor for AbstractContractsVisitor {
         //
 
         if let None | Some(false) = context.contract_definition.is_abstract {
-            self.print_message(
-                context.contract_definition,
-                context.definition_node,
-                context.function_definition,
-                context.current_source_unit.source_line(context.function_definition.src.as_str())?,
+            self.report.borrow_mut().add_entry(
+                context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
+                Some(context.current_source_unit.source_line(context.function_definition.src.as_str())?),
+                format!(
+                    "{} is marked {} instead of marking `{}` as abstract",
+                    context.contract_definition.definition_node_location(context.definition_node),
+                    context.function_definition.visibility,
+                    context.contract_definition.name,
+                ),
             );
         }
 

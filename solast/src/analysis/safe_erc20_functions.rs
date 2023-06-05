@@ -1,21 +1,34 @@
+use crate::report::Report;
 use solidity::ast::*;
-use std::io;
-pub struct SafeERC20FunctionsVisitor;
+use std::{cell::RefCell, io, rc::Rc};
+
+pub struct SafeERC20FunctionsVisitor {
+    report: Rc<RefCell<Report>>,
+}
 
 impl SafeERC20FunctionsVisitor {
-    fn print_message(
+    pub fn new(report: Rc<RefCell<Report>>) -> Self {
+        Self { report }
+    }
+
+    fn add_report_entry(
         &mut self,
+        source_unit_path: String,
         contract_definition: &ContractDefinition,
         definition_node: &ContractDefinitionNode,
         source_line: usize,
         unsafe_name: &str,
         safe_name: &str
     ) {
-        println!(
-            "\t{} uses `ERC20.{}` instead of `SafeERC20.{}`",
-            contract_definition.definition_node_location(source_line, definition_node),
-            unsafe_name,
-            safe_name,
+        self.report.borrow_mut().add_entry(
+            source_unit_path,
+            Some(source_line),
+            format!(
+                "{} uses `ERC20.{}` instead of `SafeERC20.{}`",
+                contract_definition.definition_node_location(definition_node),
+                unsafe_name,
+                safe_name,
+            ),
         );
     }
 }
@@ -38,33 +51,21 @@ impl AstVisitor for SafeERC20FunctionsVisitor {
                     _ => return Ok(())
                 }
 
-                match called_function_definition.name.as_str() {
-                    "transfer" => self.print_message(
-                        context.contract_definition,
-                        context.definition_node,
-                        context.current_source_unit.source_line(context.function_call.src.as_str())?,
-                        "transfer",
-                        "safeTransfer"
-                    ),
-
-                    "transferFrom" => self.print_message(
-                        context.contract_definition,
-                        context.definition_node,
-                        context.current_source_unit.source_line(context.function_call.src.as_str())?,
-                        "transferFrom",
-                        "safeTransferFrom"
-                    ),
-
-                    "approve" => self.print_message(
-                        context.contract_definition,
-                        context.definition_node,
-                        context.current_source_unit.source_line(context.function_call.src.as_str())?,
-                        "approve",
-                        "safeApprove"
-                    ),
-
-                    _ => {}
-                }
+                let (unsafe_name, safe_name) = match called_function_definition.name.as_str() {
+                    "transfer" => ("transfer", "safeTransfer"),
+                    "transferFrom" => ("transferFrom", "safeTransferFrom"),
+                    "approve" => ("approve", "safeApprove"),
+                    _ => continue,
+                };
+                
+                self.add_report_entry(
+                    context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
+                    context.contract_definition,
+                    context.definition_node,
+                    context.current_source_unit.source_line(context.function_call.src.as_str())?,
+                    unsafe_name,
+                    safe_name
+                );
 
                 break;
             }

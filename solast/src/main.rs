@@ -1,58 +1,13 @@
 mod analysis;
 mod brownie;
 mod hardhat;
+mod report;
 mod truffle;
 mod todo_list;
 
+use report::Report;
 use solidity::ast::*;
-use std::{collections::HashSet, env, fs::File, io, path::PathBuf};
-
-type VisitorConstructor = fn() -> Box<dyn AstVisitor>;
-type VisitorEntry = (&'static str, VisitorConstructor);
-
-const VISITOR_TYPES: &[VisitorEntry] = &[
-    ("no_spdx_identifier", || Box::new(analysis::NoSpdxIdentifierVisitor)),
-    ("floating_solidity_version", || Box::new(analysis::FloatingSolidityVersionVisitor)),
-    ("node_modules_imports", || Box::new(analysis::NodeModulesImportsVisitor)),
-    ("redundant_imports", || Box::new(analysis::RedundantImportsVisitor::default())),
-    ("abstract_contracts", || Box::new(analysis::AbstractContractsVisitor)),
-    ("large_literals", || Box::new(analysis::LargeLiteralsVisitor)),
-    ("tight_variable_packing", || Box::new(analysis::TightVariablePackingVisitor::default())),
-    ("redundant_getter_function", || Box::new(analysis::RedundantGetterFunctionVisitor)),
-    ("require_without_message", || Box::new(analysis::RequireWithoutMessageVisitor)),
-    ("state_variable_shadowing", || Box::new(analysis::StateVariableShadowingVisitor)),
-    ("explicit_variable_return", || Box::new(analysis::ExplicitVariableReturnVisitor::default())),
-    ("unused_return", || Box::new(analysis::UnusedReturnVisitor)),
-    ("storage_array_loop", || Box::new(analysis::StorageArrayLoopVisitor::default())),
-    ("external_calls_in_loop", || Box::new(analysis::ExternalCallsInLoopVisitor::default())),
-    ("check_effects_interactions", || Box::new(analysis::CheckEffectsInteractionsVisitor::default())),
-    ("secure_ether_transfer", || Box::new(analysis::SecureEtherTransferVisitor)),
-    ("safe_erc20_functions", || Box::new(analysis::SafeERC20FunctionsVisitor)),
-    ("unchecked_erc20_transfer", || Box::new(analysis::UncheckedERC20TransferVisitor::default())),
-    ("unpaid_payable_functions", || Box::new(analysis::UnpaidPayableFunctionsVisitor)),
-    ("divide_before_multiply", || Box::new(analysis::DivideBeforeMultiplyVisitor)),
-    ("comparison_utilization", || Box::new(analysis::ComparisonUtilizationVisitor)),
-    ("assignment_comparisons", || Box::new(analysis::AssignmentComparisonsVisitor)),
-    ("state_variable_mutability", || Box::new(analysis::StateVariableMutabilityVisitor::default())),
-    ("unused_state_variables", || Box::new(analysis::UnusedStateVariablesVisitor::default())),
-    ("ineffectual_statements", || Box::new(analysis::IneffectualStatementsVisitor)),
-    ("inline_assembly", || Box::new(analysis::InlineAssemblyVisitor)),
-    ("unchecked_casting", || Box::new(analysis::UncheckedCastingVisitor)),
-    ("unnecessary_pragmas", || Box::new(analysis::UnnecessaryPragmasVisitor)),
-    ("missing_return", || Box::new(analysis::MissingReturnVisitor::default())),
-    ("redundant_state_variable_access", || Box::new(analysis::RedundantStateVariableAccessVisitor)),
-    ("redundant_comparisons", || Box::new(analysis::RedundantComparisonsVisitor)),
-    ("assert_usage", || Box::new(analysis::AssertUsageVisitor::default())),
-    ("selfdestruct_usage", || Box::new(analysis::SelfdestructUsageVisitor)),
-    ("unrestricted_setter_functions", || Box::new(analysis::UnrestrictedSetterFunctionsVisitor)),
-    ("manipulatable_balance_usage", || Box::new(analysis::ManipulatableBalanceUsageVisitor)),
-    ("redundant_assignments", || Box::new(analysis::RedundantAssignmentsVisitor)),
-    ("invalid_using_for_directives", || Box::new(analysis::InvalidUsingForDirectivesVisitor)),
-    ("abi_encoding", || Box::new(analysis::AbiEncodingVisitor::default())),
-    ("address_balance", || Box::new(analysis::AddressBalanceVisitor)),
-    ("address_zero", || Box::new(analysis::AddressZeroVisitor)),
-    ("array_assignment", || Box::new(analysis::ArrayAssignmentVisitor)),
-];
+use std::{cell::RefCell, collections::HashSet, env, fs::File, io, path::PathBuf, rc::Rc};
 
 fn main() -> io::Result<()> {
     let mut args = env::args();
@@ -78,7 +33,7 @@ fn main() -> io::Result<()> {
                     contract_name = Some(s.trim_start_matches("contract=").into());
                 }
 
-                s if VISITOR_TYPES.iter().any(|visitor| visitor.0 == s) => {
+                s if analysis::VISITOR_TYPES.iter().any(|visitor| visitor.0 == s) => {
                     if !visitor_names.contains(s) {
                         visitor_names.insert(s.into());
                     }
@@ -249,13 +204,12 @@ fn main() -> io::Result<()> {
         todo_list::print(source_units.as_slice());
     }
 
-    let mut visitors: Vec<Box<dyn AstVisitor>> = vec![
-        Box::new(analysis::SourceUnitVisitor::default()),
-    ];
+    let mut report = Rc::new(RefCell::new(Report::default()));
+    let mut visitors: Vec<Box<dyn AstVisitor>> = vec![];
 
-    for &(visitor_name, create_visitor) in VISITOR_TYPES {
+    for &(visitor_name, create_visitor) in analysis::VISITOR_TYPES {
         if visitor_names.is_empty() || visitor_names.contains(visitor_name) {
-            visitors.push(create_visitor());
+            visitors.push(create_visitor(report.clone()));
         }
     }
 
@@ -297,6 +251,14 @@ fn main() -> io::Result<()> {
         data.visit_source_unit(&mut context)?;
         data.leave_source_unit(&mut context)?;
     }
+
+    //
+    // TODO: check for report format
+    //
+
+    report.borrow_mut().sort_entries();
+
+    println!("{}", report.borrow());
 
     Ok(())
 }
