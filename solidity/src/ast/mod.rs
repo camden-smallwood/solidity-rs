@@ -1,4 +1,5 @@
 mod blocks;
+mod builder;
 mod contracts;
 mod documentation;
 mod enumerations;
@@ -21,7 +22,7 @@ mod variables;
 mod visitor;
 
 pub use self::{
-    blocks::*, contracts::*, documentation::*, enumerations::*, errors::*, events::*,
+    blocks::*, builder::*, contracts::*, documentation::*, enumerations::*, errors::*, events::*,
     expressions::*, functions::*, identifiers::*, import_directives::*, literals::*, modifiers::*,
     pragma_directives::*, source_units::*, statements::*, structures::*, types::*,
     user_defined_value_types::*, using_for_directives::*, variables::*, visitor::*,
