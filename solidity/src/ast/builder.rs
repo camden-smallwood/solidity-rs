@@ -137,21 +137,55 @@ impl AstBuilder {
     }
 
     pub fn build_contract_definition(&mut self, scope: i64, input: &solang_parser::pt::ContractDefinition) -> ContractDefinition {
+        let contract_scope = self.next_scope();
+
         ContractDefinition {
-            name: todo!(),
-            name_location: todo!(),
-            documentation: todo!(),
-            kind: todo!(),
-            is_abstract: todo!(),
-            base_contracts: todo!(),
-            contract_dependencies: todo!(),
-            used_events: todo!(),
-            used_errors: todo!(),
-            nodes: todo!(),
+            name: input.name.as_ref().map(|x| x.name.clone()).unwrap(),
+            name_location: Some(self.loc_to_src(&input.name.as_ref().map(|x| x.loc).unwrap())),
+            documentation: None,
+            kind: match input.ty {
+                solang_parser::pt::ContractTy::Abstract(_) => ContractKind::Contract,
+                solang_parser::pt::ContractTy::Contract(_) => ContractKind::Contract,
+                solang_parser::pt::ContractTy::Interface(_) => ContractKind::Interface,
+                solang_parser::pt::ContractTy::Library(_) => ContractKind::Library,
+            },
+            is_abstract: Some(matches!(input.ty, solang_parser::pt::ContractTy::Abstract(_))),
+            base_contracts: input.base.iter().map(|base| InheritanceSpecifier {
+                base_name: IdentifierPath {
+                    name: base.name.identifiers.iter().map(|x| x.name.clone()).collect::<Vec<_>>().join("."),
+                    referenced_declaration: None,
+                    src: self.loc_to_src(&base.name.loc),
+                    id: self.next_node_id(),
+                },
+                arguments: base.args.as_ref().map(|args| args.iter().map(|x| self.build_expression(x)).collect()),
+                src: self.loc_to_src(&base.loc),
+                id: self.next_node_id(),
+            }).collect(),
+            contract_dependencies: vec![], // TODO
+            used_events: None, // TODO
+            used_errors: None, // TODO
+            nodes: input.parts.iter()
+                .map(|part| {
+                    match part {
+                        solang_parser::pt::ContractPart::StructDefinition(x) => Some(ContractDefinitionNode::StructDefinition(self.build_struct_definition(contract_scope, x))),
+                        solang_parser::pt::ContractPart::EventDefinition(x) => Some(ContractDefinitionNode::EventDefinition(self.build_event_definition(x))),
+                        solang_parser::pt::ContractPart::EnumDefinition(x) => Some(ContractDefinitionNode::EnumDefinition(self.build_enum_definition(x))),
+                        solang_parser::pt::ContractPart::ErrorDefinition(x) => Some(ContractDefinitionNode::ErrorDefinition(self.build_error_definition(x))),
+                        solang_parser::pt::ContractPart::VariableDefinition(x) => Some(ContractDefinitionNode::VariableDeclaration(self.build_variable_declaration(contract_scope, x))),
+                        solang_parser::pt::ContractPart::FunctionDefinition(x) => Some(ContractDefinitionNode::FunctionDefinition(self.build_function_definition(contract_scope, x))),
+                        solang_parser::pt::ContractPart::TypeDefinition(x) => Some(ContractDefinitionNode::UserDefinedValueTypeDefinition(self.build_user_defined_value_type_definition(x))),
+                        solang_parser::pt::ContractPart::Annotation(_) => None,
+                        solang_parser::pt::ContractPart::Using(x) => Some(ContractDefinitionNode::UsingForDirective(self.build_using_for_directive(x))),
+                        solang_parser::pt::ContractPart::StraySemicolon(_) => None,
+                    }
+                })
+                .filter(|x| x.is_some())
+                .map(|x| x.unwrap())
+                .collect(),
             scope,
-            fully_implemented: todo!(),
-            linearized_base_contracts: todo!(),
-            internal_function_ids: todo!(),
+            fully_implemented: None, // TODO
+            linearized_base_contracts: None, // TODO
+            internal_function_ids: None, // TODO
             src: self.loc_to_src(&input.loc),
             id: self.next_node_id(),
         }
@@ -259,6 +293,79 @@ impl AstBuilder {
             canonical_name: todo!(),
             src: self.loc_to_src(&input.loc),
             id: self.next_node_id(),
+        }
+    }
+
+    pub fn build_using_for_directive(&mut self, input: &solang_parser::pt::Using) -> UsingForDirective {
+        UsingForDirective {
+            library_name: todo!(),
+            type_name: todo!(),
+            src: self.loc_to_src(&input.loc),
+            id: self.next_node_id(),
+        }
+    }
+
+    pub fn build_expression(&mut self, input: &solang_parser::pt::Expression) -> Expression {
+        match input {
+            solang_parser::pt::Expression::PostIncrement(_, _) => todo!(),
+            solang_parser::pt::Expression::PostDecrement(_, _) => todo!(),
+            solang_parser::pt::Expression::New(_, _) => todo!(),
+            solang_parser::pt::Expression::ArraySubscript(_, _, _) => todo!(),
+            solang_parser::pt::Expression::ArraySlice(_, _, _, _) => todo!(),
+            solang_parser::pt::Expression::Parenthesis(_, _) => todo!(),
+            solang_parser::pt::Expression::MemberAccess(_, _, _) => todo!(),
+            solang_parser::pt::Expression::FunctionCall(_, _, _) => todo!(),
+            solang_parser::pt::Expression::FunctionCallBlock(_, _, _) => todo!(),
+            solang_parser::pt::Expression::NamedFunctionCall(_, _, _) => todo!(),
+            solang_parser::pt::Expression::Not(_, _) => todo!(),
+            solang_parser::pt::Expression::BitwiseNot(_, _) => todo!(),
+            solang_parser::pt::Expression::Delete(_, _) => todo!(),
+            solang_parser::pt::Expression::PreIncrement(_, _) => todo!(),
+            solang_parser::pt::Expression::PreDecrement(_, _) => todo!(),
+            solang_parser::pt::Expression::UnaryPlus(_, _) => todo!(),
+            solang_parser::pt::Expression::Negate(_, _) => todo!(),
+            solang_parser::pt::Expression::Power(_, _, _) => todo!(),
+            solang_parser::pt::Expression::Multiply(_, _, _) => todo!(),
+            solang_parser::pt::Expression::Divide(_, _, _) => todo!(),
+            solang_parser::pt::Expression::Modulo(_, _, _) => todo!(),
+            solang_parser::pt::Expression::Add(_, _, _) => todo!(),
+            solang_parser::pt::Expression::Subtract(_, _, _) => todo!(),
+            solang_parser::pt::Expression::ShiftLeft(_, _, _) => todo!(),
+            solang_parser::pt::Expression::ShiftRight(_, _, _) => todo!(),
+            solang_parser::pt::Expression::BitwiseAnd(_, _, _) => todo!(),
+            solang_parser::pt::Expression::BitwiseXor(_, _, _) => todo!(),
+            solang_parser::pt::Expression::BitwiseOr(_, _, _) => todo!(),
+            solang_parser::pt::Expression::Less(_, _, _) => todo!(),
+            solang_parser::pt::Expression::More(_, _, _) => todo!(),
+            solang_parser::pt::Expression::LessEqual(_, _, _) => todo!(),
+            solang_parser::pt::Expression::MoreEqual(_, _, _) => todo!(),
+            solang_parser::pt::Expression::Equal(_, _, _) => todo!(),
+            solang_parser::pt::Expression::NotEqual(_, _, _) => todo!(),
+            solang_parser::pt::Expression::And(_, _, _) => todo!(),
+            solang_parser::pt::Expression::Or(_, _, _) => todo!(),
+            solang_parser::pt::Expression::ConditionalOperator(_, _, _, _) => todo!(),
+            solang_parser::pt::Expression::Assign(_, _, _) => todo!(),
+            solang_parser::pt::Expression::AssignOr(_, _, _) => todo!(),
+            solang_parser::pt::Expression::AssignAnd(_, _, _) => todo!(),
+            solang_parser::pt::Expression::AssignXor(_, _, _) => todo!(),
+            solang_parser::pt::Expression::AssignShiftLeft(_, _, _) => todo!(),
+            solang_parser::pt::Expression::AssignShiftRight(_, _, _) => todo!(),
+            solang_parser::pt::Expression::AssignAdd(_, _, _) => todo!(),
+            solang_parser::pt::Expression::AssignSubtract(_, _, _) => todo!(),
+            solang_parser::pt::Expression::AssignMultiply(_, _, _) => todo!(),
+            solang_parser::pt::Expression::AssignDivide(_, _, _) => todo!(),
+            solang_parser::pt::Expression::AssignModulo(_, _, _) => todo!(),
+            solang_parser::pt::Expression::BoolLiteral(_, _) => todo!(),
+            solang_parser::pt::Expression::NumberLiteral(_, _, _, _) => todo!(),
+            solang_parser::pt::Expression::RationalNumberLiteral(_, _, _, _, _) => todo!(),
+            solang_parser::pt::Expression::HexNumberLiteral(_, _, _) => todo!(),
+            solang_parser::pt::Expression::StringLiteral(_) => todo!(),
+            solang_parser::pt::Expression::Type(_, _) => todo!(),
+            solang_parser::pt::Expression::HexLiteral(_) => todo!(),
+            solang_parser::pt::Expression::AddressLiteral(_, _) => todo!(),
+            solang_parser::pt::Expression::Variable(_) => todo!(),
+            solang_parser::pt::Expression::List(_, _) => todo!(),
+            solang_parser::pt::Expression::ArrayLiteral(_, _) => todo!(),
         }
     }
 }
