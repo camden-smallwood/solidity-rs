@@ -3,7 +3,7 @@ use eth_lang_utils::ast::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Write};
 
-#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
+#[derive(Clone, Debug, Eq, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum Expression {
     Literal(Literal),
@@ -20,13 +20,31 @@ pub enum Expression {
     ElementaryTypeNameExpression(ElementaryTypeNameExpression),
     TupleExpression(TupleExpression),
     NewExpression(NewExpression),
+}
 
-    #[serde(rename_all = "camelCase")]
-    UnhandledExpression {
-        node_type: NodeType,
-        src: Option<String>,
-        id: Option<NodeID>,
-    },
+impl<'de> Deserialize<'de> for Expression {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let json = serde_json::Value::deserialize(deserializer)?;
+        let node_type = json.get("nodeType").unwrap().as_str().unwrap();
+
+        match node_type {
+            "Literal" => Ok(Expression::Literal(serde_json::from_value(json).unwrap())),
+            "Identifier" => Ok(Expression::Identifier(serde_json::from_value(json).unwrap())),
+            "UnaryOperation" => Ok(Expression::UnaryOperation(serde_json::from_value(json).unwrap())),
+            "BinaryOperation" => Ok(Expression::BinaryOperation(serde_json::from_value(json).unwrap())),
+            "Conditional" => Ok(Expression::Conditional(serde_json::from_value(json).unwrap())),
+            "Assignment" => Ok(Expression::Assignment(serde_json::from_value(json).unwrap())),
+            "FunctionCall" => Ok(Expression::FunctionCall(serde_json::from_value(json).unwrap())),
+            "FunctionCallOptions" => Ok(Expression::FunctionCallOptions(serde_json::from_value(json).unwrap())),
+            "IndexAccess" => Ok(Expression::IndexAccess(serde_json::from_value(json).unwrap())),
+            "IndexRangeAccess" => Ok(Expression::IndexRangeAccess(serde_json::from_value(json).unwrap())),
+            "MemberAccess" => Ok(Expression::MemberAccess(serde_json::from_value(json).unwrap())),
+            "ElementaryTypeNameExpression" => Ok(Expression::ElementaryTypeNameExpression(serde_json::from_value(json).unwrap())),
+            "TupleExpression" => Ok(Expression::TupleExpression(serde_json::from_value(json).unwrap())),
+            "NewExpression" => Ok(Expression::NewExpression(serde_json::from_value(json).unwrap())),
+            _ => panic!("Invalid expression node type: {node_type:?}"),
+        }
+    }
 }
 
 impl Expression {
@@ -123,7 +141,6 @@ impl Expression {
             Expression::ElementaryTypeNameExpression(ElementaryTypeNameExpression { type_descriptions, .. }) => Some(type_descriptions),
             Expression::TupleExpression(TupleExpression { type_descriptions, .. }) => Some(type_descriptions),
             Expression::NewExpression(NewExpression { type_descriptions, .. }) => Some(type_descriptions),
-            Expression::UnhandledExpression { .. } => None
         }
     }
 
@@ -143,8 +160,6 @@ impl Expression {
             Expression::ElementaryTypeNameExpression(ElementaryTypeNameExpression { src, .. }) => src.as_str(),
             Expression::TupleExpression(TupleExpression { src, .. }) => src.as_str(),
             Expression::NewExpression(NewExpression { src, .. }) => src.as_str(),
-            Expression::UnhandledExpression { src: Some(src), .. } => src.as_str(),
-            _ => return Err(std::io::Error::from(std::io::ErrorKind::NotFound))
         })
     }
 }

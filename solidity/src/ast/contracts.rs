@@ -17,7 +17,7 @@ impl Display for ContractKind {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
+#[derive(Clone, Debug, Eq, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum ContractDefinitionNode {
     UsingForDirective(UsingForDirective),
@@ -29,6 +29,26 @@ pub enum ContractDefinitionNode {
     ModifierDefinition(ModifierDefinition),
     ErrorDefinition(ErrorDefinition),
     UserDefinedValueTypeDefinition(UserDefinedValueTypeDefinition),
+}
+
+impl<'de> Deserialize<'de> for ContractDefinitionNode {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let json = serde_json::Value::deserialize(deserializer)?;
+        let node_type = json.get("nodeType").unwrap().as_str().unwrap();
+
+        match node_type {
+            "UsingForDirective" => Ok(ContractDefinitionNode::UsingForDirective(serde_json::from_value(json).unwrap())),
+            "StructDefinition" => Ok(ContractDefinitionNode::StructDefinition(serde_json::from_value(json).unwrap())),
+            "EnumDefinition" => Ok(ContractDefinitionNode::EnumDefinition(serde_json::from_value(json).unwrap())),
+            "VariableDeclaration" => Ok(ContractDefinitionNode::VariableDeclaration(serde_json::from_value(json).unwrap())),
+            "EventDefinition" => Ok(ContractDefinitionNode::EventDefinition(serde_json::from_value(json).unwrap())),
+            "FunctionDefinition" => Ok(ContractDefinitionNode::FunctionDefinition(serde_json::from_value(json).unwrap())),
+            "ModifierDefinition" => Ok(ContractDefinitionNode::ModifierDefinition(serde_json::from_value(json).unwrap())),
+            "ErrorDefinition" => Ok(ContractDefinitionNode::ErrorDefinition(serde_json::from_value(json).unwrap())),
+            "UserDefinedValueTypeDefinition" => Ok(ContractDefinitionNode::UserDefinedValueTypeDefinition(serde_json::from_value(json).unwrap())),
+            _ => panic!("Invalid contract definition node type: {node_type}"),
+        }
+    }
 }
 
 impl Display for ContractDefinitionNode {

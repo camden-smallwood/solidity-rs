@@ -3,7 +3,7 @@ use eth_lang_utils::ast::*;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, io};
 
-#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
+#[derive(Clone, Debug, Eq, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum SourceUnitNode {
     PragmaDirective(PragmaDirective),
@@ -14,6 +14,25 @@ pub enum SourceUnitNode {
     ErrorDefinition(ErrorDefinition),
     VariableDeclaration(VariableDeclaration),
     UserDefinedValueTypeDefinition(UserDefinedValueTypeDefinition),
+}
+
+impl<'de> Deserialize<'de> for SourceUnitNode {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let json = serde_json::Value::deserialize(deserializer)?;
+        let node_type = json.get("nodeType").unwrap().as_str().unwrap();
+
+        match node_type {
+            "PragmaDirective" => Ok(SourceUnitNode::PragmaDirective(serde_json::from_value(json).unwrap())),
+            "ImportDirective" => Ok(SourceUnitNode::ImportDirective(serde_json::from_value(json).unwrap())),
+            "ContractDefinition" => Ok(SourceUnitNode::ContractDefinition(serde_json::from_value(json).unwrap())),
+            "StructDefinition" => Ok(SourceUnitNode::StructDefinition(serde_json::from_value(json).unwrap())),
+            "EnumDefinition" => Ok(SourceUnitNode::EnumDefinition(serde_json::from_value(json).unwrap())),
+            "ErrorDefinition" => Ok(SourceUnitNode::ErrorDefinition(serde_json::from_value(json).unwrap())),
+            "VariableDeclaration" => Ok(SourceUnitNode::VariableDeclaration(serde_json::from_value(json).unwrap())),
+            "UserDefinedValueTypeDefinition" => Ok(SourceUnitNode::UserDefinedValueTypeDefinition(serde_json::from_value(json).unwrap())),
+            _ => panic!("Invalid source unit node type: {node_type}"),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

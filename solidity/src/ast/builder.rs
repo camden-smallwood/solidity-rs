@@ -1,3 +1,4 @@
+use eth_lang_utils::ast::*;
 use super::*;
 
 #[derive(Default)]
@@ -403,19 +404,7 @@ impl AstBuilder {
 
         FunctionDefinition {
             base_functions: None, // TODO
-            body: input.body.as_ref()
-                .map(|body| {
-                    match body {
-                        solang_parser::pt::Statement::Block { loc, statements, .. } => Block {
-                            statements: statements.iter()
-                                .map(|stmt| self.build_statement(stmt))
-                                .collect(),
-                            src: self.loc_to_src(loc),
-                            id: self.next_node_id(),
-                        },
-                        stmt => panic!("Invalid function body statement: {stmt:?}"),
-                    }
-                }),
+            body: input.body.as_ref().map(|body| self.build_block(function_scope, body)),
             documentation: None, // TODO
             function_selector: None, // TODO
             implemented: input.body.is_some(), // TODO: is this correct?
@@ -446,15 +435,7 @@ impl AstBuilder {
                             scope: function_scope,
                             state_variable: false,
                             storage_location: parameter.as_ref()
-                                .map(|x| {
-                                    x.storage.as_ref()
-                                        .map(|x| match x {
-                                            solang_parser::pt::StorageLocation::Memory(_) => StorageLocation::Memory,
-                                            solang_parser::pt::StorageLocation::Storage(_) => StorageLocation::Storage,
-                                            solang_parser::pt::StorageLocation::Calldata(_) => StorageLocation::Calldata,
-                                        })
-                                        .unwrap_or_else(|| StorageLocation::Default)
-                                })
+                                .map(|x| self.build_storage_location(&x.storage))
                                 .unwrap(),
                             type_descriptions: TypeDescriptions {
                                 type_identifier: None, // TODO
@@ -487,15 +468,7 @@ impl AstBuilder {
                             scope: function_scope,
                             state_variable: false,
                             storage_location: parameter.as_ref()
-                                .map(|x| {
-                                    x.storage.as_ref()
-                                        .map(|x| match x {
-                                            solang_parser::pt::StorageLocation::Memory(_) => StorageLocation::Memory,
-                                            solang_parser::pt::StorageLocation::Storage(_) => StorageLocation::Storage,
-                                            solang_parser::pt::StorageLocation::Calldata(_) => StorageLocation::Calldata,
-                                        })
-                                        .unwrap_or_else(|| StorageLocation::Default)
-                                })
+                                .map(|x| self.build_storage_location(&x.storage))
                                 .unwrap(),
                             type_descriptions: TypeDescriptions {
                                 type_identifier: None, // TODO
@@ -601,6 +574,16 @@ impl AstBuilder {
             src: self.loc_to_src(&input.loc),
             id: self.next_node_id(),
         }
+    }
+
+    pub fn build_storage_location(&mut self, input: &Option<solang_parser::pt::StorageLocation>) -> StorageLocation {
+        input.as_ref()
+            .map(|x| match x {
+                solang_parser::pt::StorageLocation::Memory(_) => StorageLocation::Memory,
+                solang_parser::pt::StorageLocation::Storage(_) => StorageLocation::Storage,
+                solang_parser::pt::StorageLocation::Calldata(_) => StorageLocation::Calldata,
+            })
+            .unwrap_or_else(|| StorageLocation::Default)
     }
 
     pub fn build_type_name(&mut self, input: &solang_parser::pt::Expression) -> TypeName {
@@ -781,15 +764,7 @@ impl AstBuilder {
                                         scope: -1, // TODO
                                         state_variable: false,
                                         storage_location: parameter.as_ref()
-                                            .map(|x| {
-                                                x.storage.as_ref()
-                                                    .map(|x| match x {
-                                                        solang_parser::pt::StorageLocation::Memory(_) => StorageLocation::Memory,
-                                                        solang_parser::pt::StorageLocation::Storage(_) => StorageLocation::Storage,
-                                                        solang_parser::pt::StorageLocation::Calldata(_) => StorageLocation::Calldata,
-                                                    })
-                                                    .unwrap_or_else(|| StorageLocation::Default)
-                                            })
+                                            .map(|x| self.build_storage_location(&x.storage))
                                             .unwrap(),
                                         type_descriptions: TypeDescriptions {
                                             type_identifier: None, // TODO
@@ -824,15 +799,7 @@ impl AstBuilder {
                                                 scope: -1, // TODO
                                                 state_variable: false,
                                                 storage_location: parameter.as_ref()
-                                                    .map(|x| {
-                                                        x.storage.as_ref()
-                                                            .map(|x| match x {
-                                                                solang_parser::pt::StorageLocation::Memory(_) => StorageLocation::Memory,
-                                                                solang_parser::pt::StorageLocation::Storage(_) => StorageLocation::Storage,
-                                                                solang_parser::pt::StorageLocation::Calldata(_) => StorageLocation::Calldata,
-                                                            })
-                                                            .unwrap_or_else(|| StorageLocation::Default)
-                                                    })
+                                                    .map(|x| self.build_storage_location(&x.storage))
                                                     .unwrap(),
                                                 type_descriptions: TypeDescriptions {
                                                     type_identifier: None, // TODO
@@ -872,8 +839,144 @@ impl AstBuilder {
         }
     }
 
-    pub fn build_statement(&mut self, input: &solang_parser::pt::Statement) -> Statement {
-        todo!()
+    pub fn build_block(&mut self, scope: i64, input: &solang_parser::pt::Statement) -> Block {
+        match input {
+            solang_parser::pt::Statement::Block { loc, statements, .. } => Block {
+                statements: statements.iter()
+                    .map(|stmt| self.build_statement(scope, stmt))
+                    .collect(),
+                src: self.loc_to_src(loc),
+                id: self.next_node_id(),
+            },
+            stmt => panic!("Invalid block statement: {stmt:?}"),
+        }
+    }
+
+    pub fn build_block_or_statement(&mut self, scope: i64, input: &solang_parser::pt::Statement) -> BlockOrStatement {
+        match input {
+            solang_parser::pt::Statement::Block { .. } => BlockOrStatement::Block(Box::new(self.build_block(scope, input))),
+            _ => BlockOrStatement::Statement(Box::new(self.build_statement(scope, input))),
+        }
+    }
+
+    pub fn build_statement(&mut self, scope: i64, input: &solang_parser::pt::Statement) -> Statement {
+        match input {
+            solang_parser::pt::Statement::Block { unchecked, .. } => {
+                if !*unchecked {
+                    panic!("Generic block passed as statement: {input:#?}");
+                }
+
+                let unchecked_scope = self.next_scope();
+
+                Statement::UncheckedBlock(self.build_block(unchecked_scope, input))
+            }
+
+            solang_parser::pt::Statement::Assembly { loc, dialect, flags, block } => todo!(),
+            
+            solang_parser::pt::Statement::Args(_, _) => todo!(),
+
+            solang_parser::pt::Statement::If(loc, condition, true_body, false_body) => {
+                let if_true_scope = self.next_scope();
+                let if_false_scope = self.next_scope();
+
+                Statement::IfStatement(IfStatement {
+                    condition: self.build_expression(condition),
+                    true_body: self.build_block_or_statement(if_true_scope, true_body),
+                    false_body: false_body.as_ref().map(|x| self.build_block_or_statement(if_false_scope, x)),
+                    src: self.loc_to_src(loc),
+                    id: self.next_node_id(),
+                })
+            }
+
+            solang_parser::pt::Statement::While(loc, condition, body) => {
+                let while_scope = self.next_scope();
+
+                Statement::WhileStatement(WhileStatement {
+                    condition: self.build_expression(condition),
+                    body: self.build_block_or_statement(while_scope, body),
+                    src: self.loc_to_src(loc),
+                    id: self.next_node_id(),
+                })
+            }
+
+            solang_parser::pt::Statement::Expression(_loc, x) => {
+                Statement::ExpressionStatement(ExpressionStatement {
+                    expression: self.build_expression(x),
+                })
+            }
+
+            solang_parser::pt::Statement::VariableDefinition(loc, variable, value) => {
+                Statement::VariableDeclarationStatement(VariableDeclarationStatement {
+                    assignments: vec![], // TODO
+                    declarations: vec![
+                        Some(VariableDeclaration {
+                            base_functions: None, // TODO
+                            constant: false,
+                            documentation: None,
+                            function_selector: None, // TODO
+                            indexed: None,
+                            mutability: None, // TODO
+                            name: variable.name.as_ref().map(|x| x.name.clone()).unwrap(),
+                            name_location: variable.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
+                            overrides: None, // TODO
+                            scope,
+                            state_variable: false, // TODO
+                            storage_location: self.build_storage_location(&variable.storage),
+                            type_descriptions: TypeDescriptions {
+                                type_identifier: None, // TODO
+                                type_string: None, // TODO
+                            },
+                            type_name: Some(self.build_type_name(&variable.ty)),
+                            value: None,
+                            visibility: Visibility::Public, // TODO
+                            src: self.loc_to_src(&variable.loc),
+                            id: self.next_node_id(),
+                        })
+                    ],
+                    initial_value: value.as_ref().map(|x| self.build_expression(x)),
+                    src: self.loc_to_src(loc),
+                    id: self.next_node_id(),
+                })
+            }
+
+            solang_parser::pt::Statement::For(loc, init, condition, update, body) => {
+                let for_scope = self.next_scope();
+
+                Statement::ForStatement(ForStatement {
+                    initialization_expression: init.as_ref().map(|x| Box::new(self.build_statement(for_scope, x))),
+                    condition: condition.as_ref().map(|x| self.build_expression(x)),
+                    loop_expression: update.as_ref().map(|x| Box::new(Statement::ExpressionStatement(ExpressionStatement {
+                        expression: self.build_expression(x),
+                    }))),
+                    body: body.as_ref().map(|x| self.build_block_or_statement(for_scope, x)).unwrap(),
+                    src: self.loc_to_src(loc),
+                    id: self.next_node_id(),
+                })
+            }
+
+            solang_parser::pt::Statement::DoWhile(_loc, _body, _condition) => todo!(),
+
+            solang_parser::pt::Statement::Continue(loc) => {
+                Statement::Continue {
+                    src: self.loc_to_src(loc),
+                    id: self.next_node_id(),
+                }
+            }
+
+            solang_parser::pt::Statement::Break(loc) => {
+                Statement::Break {
+                    src: self.loc_to_src(loc),
+                    id: self.next_node_id(),
+                }
+            }
+
+            solang_parser::pt::Statement::Return(_, _) => todo!(),
+            solang_parser::pt::Statement::Revert(_, _, _) => todo!(),
+            solang_parser::pt::Statement::RevertNamedArgs(_, _, _) => todo!(),
+            solang_parser::pt::Statement::Emit(_, _) => todo!(),
+            solang_parser::pt::Statement::Try(_, _, _, _) => todo!(),
+            solang_parser::pt::Statement::Error(_) => todo!(),
+        }
     }
 
     pub fn build_literal(&mut self, input: &solang_parser::pt::Expression) -> Literal {

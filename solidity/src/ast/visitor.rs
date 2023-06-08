@@ -223,6 +223,9 @@ pub trait AstVisitor {
     fn visit_while_statement<'a, 'b>(&mut self, context: &mut WhileStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
     fn leave_while_statement<'a, 'b>(&mut self, context: &mut WhileStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
+    fn visit_do_while_statement<'a, 'b>(&mut self, context: &mut DoWhileStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_do_while_statement<'a, 'b>(&mut self, context: &mut DoWhileStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+
     fn visit_emit_statement<'a, 'b>(&mut self, context: &mut EmitStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
     fn leave_emit_statement<'a, 'b>(&mut self, context: &mut EmitStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
@@ -231,6 +234,15 @@ pub trait AstVisitor {
 
     fn visit_revert_statement<'a, 'b>(&mut self, context: &mut RevertStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
     fn leave_revert_statement<'a, 'b>(&mut self, context: &mut RevertStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+
+    fn visit_continue_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_continue_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+
+    fn visit_break_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_break_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+
+    fn visit_placeholder_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
+    fn leave_placeholder_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
 
     fn visit_block_or_statement<'a, 'b>(&mut self, context: &mut BlockOrStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
     fn leave_block_or_statement<'a, 'b>(&mut self, context: &mut BlockOrStatementContext<'a, 'b>) -> io::Result<()> { Ok(()) }
@@ -321,26 +333,6 @@ pub trait AstVisitor {
 
     fn visit_yul_function_call<'a, 'b, 'c>(&mut self, context: &mut YulFunctionCallContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
     fn leave_yul_function_call<'a, 'b, 'c>(&mut self, context: &mut YulFunctionCallContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
-
-    fn visit_unhandled_statement(
-        &mut self,
-        source_unit: &SourceUnit,
-        node_type: &NodeType,
-        src: &Option<String>,
-        id: &Option<NodeID>,
-    ) -> io::Result<()> {
-        Ok(())
-    }
-
-    fn visit_unhandled_expression(
-        &mut self,
-        source_unit: &SourceUnit,
-        node_type: &NodeType,
-        src: &Option<String>,
-        id: &Option<NodeID>,
-    ) -> io::Result<()> {
-        Ok(())
-    }
 }
 
 pub struct AstVisitorData<'a> {
@@ -852,6 +844,20 @@ impl AstVisitor for AstVisitorData<'_> {
                 self.leave_while_statement(&mut context)?;
             }
 
+            Statement::DoWhileStatement(do_while_statement) => {
+                let mut context = DoWhileStatementContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    do_while_statement,
+                };
+
+                self.visit_do_while_statement(&mut context)?;
+                self.leave_do_while_statement(&mut context)?;
+            }
+
             Statement::EmitStatement(emit_statement) => {
                 let mut context = EmitStatementContext {
                     source_units: context.source_units,
@@ -953,8 +959,19 @@ impl AstVisitor for AstVisitorData<'_> {
                 self.leave_inline_assembly(&mut context)?;
             }
 
-            Statement::UnhandledStatement { node_type, src, id } => {
-                self.visit_unhandled_statement(context.current_source_unit, node_type, src, id)?;
+            Statement::Continue { .. } => {
+                self.visit_continue_statement(context)?;
+                self.leave_continue_statement(context)?;
+            }
+
+            Statement::Break { .. } => {
+                self.visit_break_statement(context)?;
+                self.leave_break_statement(context)?;
+            }
+
+            Statement::PlaceholderStatement { .. } => {
+                self.visit_placeholder_statement(context)?;
+                self.leave_placeholder_statement(context)?;
             }
         }
 
@@ -1168,6 +1185,47 @@ impl AstVisitor for AstVisitorData<'_> {
         Ok(())
     }
 
+    fn visit_do_while_statement<'a, 'b>(&mut self, context: &mut DoWhileStatementContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_do_while_statement(context)?;
+        }
+
+        let mut body_context = BlockOrStatementContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            block_or_statement: &context.do_while_statement.body,
+        };
+
+        self.visit_block_or_statement(&mut body_context)?;
+        self.leave_block_or_statement(&mut body_context)?;
+
+        let mut condition_context = ExpressionContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: None,
+            expression: &context.do_while_statement.condition,
+        };
+
+        self.visit_expression(&mut condition_context)?;
+        self.leave_expression(&mut condition_context)?;
+
+        Ok(())
+    }
+
+    fn leave_do_while_statement<'a, 'b>(&mut self, context: &mut DoWhileStatementContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_do_while_statement(context)?;
+        }
+
+        Ok(())
+    }
+
     fn visit_emit_statement<'a, 'b>(&mut self, context: &mut EmitStatementContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.visit_emit_statement(context)?;
@@ -1225,6 +1283,54 @@ impl AstVisitor for AstVisitorData<'_> {
     fn leave_revert_statement<'a, 'b>(&mut self, context: &mut RevertStatementContext<'a, 'b>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.leave_revert_statement(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_continue_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_continue_statement(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn leave_continue_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_continue_statement(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_break_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_break_statement(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn leave_break_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_break_statement(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_placeholder_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_placeholder_statement(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn leave_placeholder_statement<'a, 'b>(&mut self, context: &mut StatementContext<'a, 'b>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_placeholder_statement(context)?;
         }
 
         Ok(())
@@ -1513,10 +1619,6 @@ impl AstVisitor for AstVisitorData<'_> {
 
                 self.visit_new_expression(&mut context)?;
                 self.leave_new_expression(&mut context)?;
-            }
-
-            Expression::UnhandledExpression { node_type, src, id } => {
-                self.visit_unhandled_expression(context.current_source_unit, node_type, src, id)?;
             }
         }
 
@@ -2002,54 +2104,6 @@ impl AstVisitor for AstVisitorData<'_> {
         }
 
         Ok(())
-    }
-
-    fn visit_unhandled_statement(
-        &mut self,
-        source_unit: &SourceUnit,
-        node_type: &NodeType,
-        src: &Option<String>,
-        id: &Option<NodeID>,
-    ) -> io::Result<()> {
-        for visitor in self.visitors.iter_mut() {
-            visitor.visit_unhandled_statement(source_unit, node_type, src, id)?;
-        }
-
-        match node_type {
-            NodeType::Break | NodeType::Continue | NodeType::PlaceholderStatement => Ok(()),
-
-            _ => {
-                println!(
-                    "WARNING: Unhandled statement: {:?} {:?} {:?}",
-                    node_type, src, id
-                );
-                Ok(())
-            }
-        }
-    }
-
-    fn visit_unhandled_expression(
-        &mut self,
-        source_unit: &SourceUnit,
-        node_type: &NodeType,
-        src: &Option<String>,
-        id: &Option<NodeID>,
-    ) -> io::Result<()> {
-        for visitor in self.visitors.iter_mut() {
-            visitor.visit_unhandled_expression(source_unit, node_type, src, id)?;
-        }
-
-        match node_type {
-            NodeType::PlaceholderStatement => Ok(()),
-
-            _ => {
-                println!(
-                    "WARNING: Unhandled expression: {:?} {:?} {:?}",
-                    node_type, src, id
-                );
-                Ok(())
-            }
-        }
     }
 
     fn visit_inline_assembly<'a, 'b>(&mut self, context: &mut InlineAssemblyContext<'a, 'b>) -> io::Result<()> {

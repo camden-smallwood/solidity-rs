@@ -4,13 +4,14 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use yul::ast::*;
 
-#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
+#[derive(Clone, Debug, Eq, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum Statement {
     VariableDeclarationStatement(VariableDeclarationStatement),
     IfStatement(IfStatement),
     ForStatement(ForStatement),
     WhileStatement(WhileStatement),
+    DoWhileStatement(DoWhileStatement),
     EmitStatement(EmitStatement),
     TryStatement(TryStatement),
     UncheckedBlock(Block),
@@ -18,13 +19,53 @@ pub enum Statement {
     RevertStatement(RevertStatement),
     ExpressionStatement(ExpressionStatement),
     InlineAssembly(InlineAssembly),
-
-    #[serde(rename_all = "camelCase")]
-    UnhandledStatement {
-        node_type: NodeType,
-        src: Option<String>,
-        id: Option<NodeID>,
+    Continue {
+        src: String,
+        id: NodeID,
     },
+    Break {
+        src: String,
+        id: NodeID,
+    },
+    PlaceholderStatement {
+        src: String,
+        id: NodeID,
+    },
+}
+
+impl<'de> Deserialize<'de> for Statement {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let json = serde_json::Value::deserialize(deserializer)?;
+        let node_type = json.get("nodeType").unwrap().as_str().unwrap();
+
+        match node_type {
+            "VariableDeclarationStatement" => Ok(Statement::VariableDeclarationStatement(serde_json::from_value(json).unwrap())),
+            "IfStatement" => Ok(Statement::IfStatement(serde_json::from_value(json).unwrap())),
+            "ForStatement" => Ok(Statement::ForStatement(serde_json::from_value(json).unwrap())),
+            "WhileStatement" => Ok(Statement::WhileStatement(serde_json::from_value(json).unwrap())),
+            "DoWhileStatement" => Ok(Statement::DoWhileStatement(serde_json::from_value(json).unwrap())),
+            "EmitStatement" => Ok(Statement::EmitStatement(serde_json::from_value(json).unwrap())),
+            "TryStatement" => Ok(Statement::TryStatement(serde_json::from_value(json).unwrap())),
+            "UncheckedBlock" => Ok(Statement::UncheckedBlock(serde_json::from_value(json).unwrap())),
+            "Return" => Ok(Statement::Return(serde_json::from_value(json).unwrap())),
+            "RevertStatement" => Ok(Statement::RevertStatement(serde_json::from_value(json).unwrap())),
+            "ExpressionStatement" => Ok(Statement::ExpressionStatement(serde_json::from_value(json).unwrap())),
+            "InlineAssembly" => Ok(Statement::InlineAssembly(serde_json::from_value(json).unwrap())),
+            "Continue" => Ok(Statement::Continue {
+                src: json.get("src").unwrap().as_str().unwrap().to_string(),
+                id: json.get("id").unwrap().as_i64().unwrap(),
+            }),
+            "Break" => Ok(Statement::Continue {
+                src: json.get("src").unwrap().as_str().unwrap().to_string(),
+                id: json.get("id").unwrap().as_i64().unwrap(),
+            }),
+            "PlaceholderStatement" => Ok(Statement::Continue {
+                src: json.get("src").unwrap().as_str().unwrap().to_string(),
+                id: json.get("id").unwrap().as_i64().unwrap(),
+            }),
+            _ => panic!("Invalid statement node type: {node_type:?}"),
+        }
+    }
 }
 
 impl Statement {
@@ -40,21 +81,17 @@ impl Display for Statement {
             Statement::IfStatement(stmt) => stmt.fmt(f),
             Statement::ForStatement(stmt) => stmt.fmt(f),
             Statement::WhileStatement(stmt) => stmt.fmt(f),
+            Statement::DoWhileStatement(stmt) => stmt.fmt(f),
             Statement::EmitStatement(stmt) => stmt.fmt(f),
             Statement::TryStatement(stmt) => stmt.fmt(f),
             Statement::RevertStatement(stmt) => stmt.fmt(f),
             Statement::UncheckedBlock(stmt) => stmt.fmt(f),
             Statement::Return(stmt) => stmt.fmt(f),
             Statement::ExpressionStatement(stmt) => stmt.fmt(f),
-            Statement::InlineAssembly(_) => {
-                f.write_str("assembly { /* WARNING: not implemented */ }")
-            }
-            Statement::UnhandledStatement { node_type, .. } => match node_type {
-                NodeType::PlaceholderStatement => f.write_str("_"),
-                NodeType::Break => f.write_str("break"),
-                NodeType::Continue => f.write_str("continue"),
-                _ => unimplemented!("{:?}", node_type),
-            },
+            Statement::InlineAssembly(_) => write!(f, "assembly {{ /* WARNING: not implemented */ }}"),
+            Statement::Continue { .. } => write!(f, "continue"),
+            Statement::Break { .. } => write!(f, "break"),
+            Statement::PlaceholderStatement { .. } => write!(f, "_"),
         }
     }
 }
@@ -290,6 +327,30 @@ pub struct WhileStatementContext<'a, 'b> {
     pub definition_node: &'a ContractDefinitionNode,
     pub blocks: &'b mut Vec<&'a Block>,
     pub while_statement: &'a WhileStatement,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct DoWhileStatement {
+    pub body: BlockOrStatement,
+    pub condition: Expression,
+    pub src: String,
+    pub id: NodeID,
+}
+
+impl Display for DoWhileStatement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("do {} while ({})", self.body, self.condition))
+    }
+}
+
+pub struct DoWhileStatementContext<'a, 'b> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub do_while_statement: &'a DoWhileStatement,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
