@@ -954,7 +954,16 @@ impl AstBuilder {
                 })
             }
 
-            solang_parser::pt::Statement::DoWhile(_loc, _body, _condition) => todo!(),
+            solang_parser::pt::Statement::DoWhile(loc, body, condition) => {
+                let do_while_scope = self.next_scope();
+
+                Statement::DoWhileStatement(DoWhileStatement {
+                    body: self.build_block_or_statement(do_while_scope, body),
+                    condition: self.build_expression(condition),
+                    src: self.loc_to_src(loc),
+                    id: self.next_node_id(),
+                })
+            }
 
             solang_parser::pt::Statement::Continue(loc) => {
                 Statement::Continue {
@@ -970,78 +979,454 @@ impl AstBuilder {
                 }
             }
 
-            solang_parser::pt::Statement::Return(_, _) => todo!(),
+            solang_parser::pt::Statement::Return(loc, value) => {
+                Statement::Return(Return {
+                    function_return_parameters: -1, // TODO
+                    expression: value.as_ref().map(|x| self.build_expression(x)),
+                    src: self.loc_to_src(loc),
+                    id: self.next_node_id(),
+                })
+            }
+
             solang_parser::pt::Statement::Revert(_, _, _) => todo!(),
             solang_parser::pt::Statement::RevertNamedArgs(_, _, _) => todo!(),
-            solang_parser::pt::Statement::Emit(_, _) => todo!(),
+
+            solang_parser::pt::Statement::Emit(_loc, x) => {
+                Statement::EmitStatement(EmitStatement {
+                    event_call: self.build_expression(x),
+                })
+            }
+
             solang_parser::pt::Statement::Try(_, _, _, _) => todo!(),
             solang_parser::pt::Statement::Error(_) => todo!(),
         }
     }
 
     pub fn build_literal(&mut self, input: &solang_parser::pt::Expression) -> Literal {
-        todo!()
+        match input {
+            solang_parser::pt::Expression::BoolLiteral(loc, x) => Literal {
+                hex_value: None, // TODO
+                value: Some(format!("{x}")),
+                subdenomination: None,
+                kind: LiteralKind::Bool,
+                argument_types: None,
+                is_constant: false, // TODO
+                is_l_value: false, // TODO
+                is_pure: false, // TODO
+                l_value_requested: false, // TODO
+                type_descriptions: TypeDescriptions {
+                    type_identifier: None, // TODO
+                    type_string: None, // TODO
+                },
+                src: self.loc_to_src(loc),
+                id: self.next_node_id(),
+            },
+
+            solang_parser::pt::Expression::NumberLiteral(loc, x, _, _) => Literal {
+                hex_value: None, // TODO
+                value: Some(format!("{x}")),
+                subdenomination: None,
+                kind: LiteralKind::Number,
+                argument_types: None,
+                is_constant: false, // TODO
+                is_l_value: false, // TODO
+                is_pure: false, // TODO
+                l_value_requested: false, // TODO
+                type_descriptions: TypeDescriptions {
+                    type_identifier: None, // TODO
+                    type_string: None, // TODO
+                },
+                src: self.loc_to_src(loc),
+                id: self.next_node_id(),
+            },
+
+            solang_parser::pt::Expression::StringLiteral(x) => Literal {
+                hex_value: None, // TODO
+                value: Some(x.iter().map(|x| x.string.clone()).collect::<Vec<_>>().join("")), // TODO: why is it a vec?
+                subdenomination: None,
+                kind: LiteralKind::String,
+                argument_types: None,
+                is_constant: false, // TODO
+                is_l_value: false, // TODO
+                is_pure: false, // TODO
+                l_value_requested: false, // TODO
+                type_descriptions: TypeDescriptions {
+                    type_identifier: None, // TODO
+                    type_string: None, // TODO
+                },
+                src: "-1:-1:-1".to_string(), // TODO
+                id: self.next_node_id(),
+            },
+
+            solang_parser::pt::Expression::AddressLiteral(loc, x)=> Literal {
+                hex_value: None, // TODO
+                value: Some(x.clone()),
+                subdenomination: None,
+                kind: LiteralKind::Address,
+                argument_types: None,
+                is_constant: false, // TODO
+                is_l_value: false, // TODO
+                is_pure: false, // TODO
+                l_value_requested: false, // TODO
+                type_descriptions: TypeDescriptions {
+                    type_identifier: None, // TODO
+                    type_string: None, // TODO
+                },
+                src: self.loc_to_src(loc),
+                id: self.next_node_id(),
+            },
+
+            _ => panic!("Invalid literal expression: {input}"),
+        }
+    }
+
+    pub fn build_unary_operation(
+        &mut self,
+        loc: &solang_parser::pt::Loc,
+        value: &solang_parser::pt::Expression,
+        operator: &str,
+        prefix: bool
+    ) -> UnaryOperation {
+        UnaryOperation {
+            prefix,
+            sub_expression: Box::new(self.build_expression(value)),
+            operator: operator.to_string(),
+            argument_types: None, // TODO
+            is_constant: false, // TODO
+            is_l_value: false, // TODO
+            is_pure: false, // TODO
+            l_value_requested: false, // TODO
+            type_descriptions: TypeDescriptions {
+                type_identifier: None, // TODO
+                type_string: None, // TODO
+            },
+            src: self.loc_to_src(loc),
+            id: self.next_node_id(),
+        }
+    }
+
+    pub fn build_binary_operation(
+        &mut self,
+        loc: &solang_parser::pt::Loc,
+        lhs: &solang_parser::pt::Expression,
+        operator: &str,
+        rhs: &solang_parser::pt::Expression
+    ) -> BinaryOperation {
+        BinaryOperation {
+            common_type: TypeDescriptions {
+                type_identifier: None, // TODO
+                type_string: None, // TODO
+            },
+            left_expression: Box::new(self.build_expression(lhs)),
+            right_expression: Box::new(self.build_expression(rhs)),
+            operator: operator.to_string(),
+            argument_types: None, // TODO
+            is_constant: false,
+            is_l_value: false,
+            is_pure: false,
+            l_value_requested: false,
+            type_descriptions: TypeDescriptions {
+                type_identifier: None, // TODO
+                type_string: None, // TODO
+            },
+            src: self.loc_to_src(loc),
+            id: self.next_node_id(),
+        }
+    }
+
+    pub fn build_assignment(
+        &mut self,
+        loc: &solang_parser::pt::Loc,
+        lhs: &solang_parser::pt::Expression,
+        operator: &str,
+        rhs: &solang_parser::pt::Expression
+    ) -> Assignment {
+        Assignment {
+            left_hand_side: Box::new(self.build_expression(lhs)),
+            right_hand_side: Box::new(self.build_expression(rhs)),
+            operator: operator.to_string(),
+            argument_types: None, // TODO
+            is_constant: false, // TODO
+            is_l_value: false, // TODO
+            is_pure: false, // TODO
+            l_value_requested: false, // TODO
+            type_descriptions: TypeDescriptions {
+                type_identifier: None, // TODO
+                type_string: None, // TODO
+            },
+            src: self.loc_to_src(loc),
+            id: self.next_node_id(),
+        }
+    }
+
+    pub fn build_conditional(
+        &mut self,
+        loc: &solang_parser::pt::Loc,
+        condition: &solang_parser::pt::Expression,
+        true_expression: &solang_parser::pt::Expression,
+        false_expression: &solang_parser::pt::Expression,
+    ) -> Conditional {
+        Conditional {
+            condition: Box::new(self.build_expression(condition)),
+            true_expression: Box::new(self.build_expression(true_expression)),
+            false_expression: Box::new(self.build_expression(false_expression)),
+            argument_types: None, // TODO
+            is_constant: false, // TODO
+            is_l_value: false, // TODO
+            is_pure: false, // TODO
+            l_value_requested: false, // TODO
+            type_descriptions: TypeDescriptions {
+                type_identifier: None, // TODO
+                type_string: None, // TODO
+            },
+            src: self.loc_to_src(loc),
+            id: self.next_node_id(),
+        }
+    }
+
+    pub fn build_new_expression(
+        &mut self,
+        loc: &solang_parser::pt::Loc,
+        expression: &solang_parser::pt::Expression,
+    ) -> NewExpression {
+        NewExpression {
+            argument_types: None, // TODO
+            type_descriptions: TypeDescriptions {
+                type_identifier: None, // TODO
+                type_string: None, // TODO
+            },
+            type_name: self.build_type_name(expression),
+            is_constant: false,
+            is_l_value: false,
+            is_pure: false,
+            l_value_requested: false,
+            src: self.loc_to_src(loc),
+            id: self.next_node_id(),
+        }
     }
 
     pub fn build_expression(&mut self, input: &solang_parser::pt::Expression) -> Expression {
         match input {
-            solang_parser::pt::Expression::PostIncrement(_, _) => todo!(),
-            solang_parser::pt::Expression::PostDecrement(_, _) => todo!(),
-            solang_parser::pt::Expression::New(_, _) => todo!(),
+            solang_parser::pt::Expression::PostIncrement(loc, x) => {
+                Expression::UnaryOperation(self.build_unary_operation(loc, x, "++", false))
+            }
+
+            solang_parser::pt::Expression::PostDecrement(loc, x) => {
+                Expression::UnaryOperation(self.build_unary_operation(loc,x, "--", false))
+            }
+
+            solang_parser::pt::Expression::New(loc, x) => {
+                Expression::NewExpression(self.build_new_expression(loc, x))
+            }
+
             solang_parser::pt::Expression::ArraySubscript(_, _, _) => todo!(),
             solang_parser::pt::Expression::ArraySlice(_, _, _, _) => todo!(),
             solang_parser::pt::Expression::Parenthesis(_, _) => todo!(),
             solang_parser::pt::Expression::MemberAccess(_, _, _) => todo!(),
-            solang_parser::pt::Expression::FunctionCall(_, _, _) => todo!(),
+
+            solang_parser::pt::Expression::FunctionCall(loc, expression, arguments) => {
+                Expression::FunctionCall(FunctionCall {
+                    kind: FunctionCallKind::FunctionCall,
+                    try_call: None, // TODO
+                    names: vec![], // TODO
+                    arguments: arguments.iter()
+                        .map(|x| self.build_expression(x))
+                        .collect(),
+                    expression: Box::new(self.build_expression(expression.as_ref())),
+                    argument_types: None, // TODO
+                    is_constant: false, // TODO
+                    is_l_value: false, // TODO
+                    is_pure: false, // TODO
+                    l_value_requested: false, // TODO
+                    type_descriptions: TypeDescriptions {
+                        type_identifier: None, // TODO
+                        type_string: None, // TODO
+                    },
+                    src: self.loc_to_src(loc),
+                    id: self.next_node_id(),
+                })
+            }
+
             solang_parser::pt::Expression::FunctionCallBlock(_, _, _) => todo!(),
             solang_parser::pt::Expression::NamedFunctionCall(_, _, _) => todo!(),
-            solang_parser::pt::Expression::Not(_, _) => todo!(),
-            solang_parser::pt::Expression::BitwiseNot(_, _) => todo!(),
+
+            solang_parser::pt::Expression::Not(loc, x) => {
+                Expression::UnaryOperation(self.build_unary_operation(loc, x, "!", true))
+            }
+
+            solang_parser::pt::Expression::BitwiseNot(loc, x) => {
+                Expression::UnaryOperation(self.build_unary_operation(loc, x, "~", true))
+            }
+
             solang_parser::pt::Expression::Delete(_, _) => todo!(),
-            solang_parser::pt::Expression::PreIncrement(_, _) => todo!(),
-            solang_parser::pt::Expression::PreDecrement(_, _) => todo!(),
-            solang_parser::pt::Expression::UnaryPlus(_, _) => todo!(),
-            solang_parser::pt::Expression::Negate(_, _) => todo!(),
-            solang_parser::pt::Expression::Power(_, _, _) => todo!(),
-            solang_parser::pt::Expression::Multiply(_, _, _) => todo!(),
-            solang_parser::pt::Expression::Divide(_, _, _) => todo!(),
-            solang_parser::pt::Expression::Modulo(_, _, _) => todo!(),
-            solang_parser::pt::Expression::Add(_, _, _) => todo!(),
-            solang_parser::pt::Expression::Subtract(_, _, _) => todo!(),
-            solang_parser::pt::Expression::ShiftLeft(_, _, _) => todo!(),
-            solang_parser::pt::Expression::ShiftRight(_, _, _) => todo!(),
-            solang_parser::pt::Expression::BitwiseAnd(_, _, _) => todo!(),
-            solang_parser::pt::Expression::BitwiseXor(_, _, _) => todo!(),
-            solang_parser::pt::Expression::BitwiseOr(_, _, _) => todo!(),
-            solang_parser::pt::Expression::Less(_, _, _) => todo!(),
-            solang_parser::pt::Expression::More(_, _, _) => todo!(),
-            solang_parser::pt::Expression::LessEqual(_, _, _) => todo!(),
-            solang_parser::pt::Expression::MoreEqual(_, _, _) => todo!(),
-            solang_parser::pt::Expression::Equal(_, _, _) => todo!(),
-            solang_parser::pt::Expression::NotEqual(_, _, _) => todo!(),
-            solang_parser::pt::Expression::And(_, _, _) => todo!(),
-            solang_parser::pt::Expression::Or(_, _, _) => todo!(),
-            solang_parser::pt::Expression::ConditionalOperator(_, _, _, _) => todo!(),
-            solang_parser::pt::Expression::Assign(_, _, _) => todo!(),
-            solang_parser::pt::Expression::AssignOr(_, _, _) => todo!(),
-            solang_parser::pt::Expression::AssignAnd(_, _, _) => todo!(),
-            solang_parser::pt::Expression::AssignXor(_, _, _) => todo!(),
-            solang_parser::pt::Expression::AssignShiftLeft(_, _, _) => todo!(),
-            solang_parser::pt::Expression::AssignShiftRight(_, _, _) => todo!(),
-            solang_parser::pt::Expression::AssignAdd(_, _, _) => todo!(),
-            solang_parser::pt::Expression::AssignSubtract(_, _, _) => todo!(),
-            solang_parser::pt::Expression::AssignMultiply(_, _, _) => todo!(),
-            solang_parser::pt::Expression::AssignDivide(_, _, _) => todo!(),
-            solang_parser::pt::Expression::AssignModulo(_, _, _) => todo!(),
-            solang_parser::pt::Expression::BoolLiteral(_, _) => todo!(),
-            solang_parser::pt::Expression::NumberLiteral(_, _, _, _) => todo!(),
-            solang_parser::pt::Expression::RationalNumberLiteral(_, _, _, _, _) => todo!(),
-            solang_parser::pt::Expression::HexNumberLiteral(_, _, _) => todo!(),
-            solang_parser::pt::Expression::StringLiteral(_) => todo!(),
+            
+            solang_parser::pt::Expression::PreIncrement(loc, x) => {
+                Expression::UnaryOperation(self.build_unary_operation(loc, x, "++", true))
+            }
+
+            solang_parser::pt::Expression::PreDecrement(loc, x) => {
+                Expression::UnaryOperation(self.build_unary_operation(loc, x, "--", true))
+            }
+
+            solang_parser::pt::Expression::UnaryPlus(loc, x) => {
+                Expression::UnaryOperation(self.build_unary_operation(loc, x, "+", true))
+            }
+
+            solang_parser::pt::Expression::Negate(loc, x) => {
+                Expression::UnaryOperation(self.build_unary_operation(loc, x, "-", true))
+            }
+
+            solang_parser::pt::Expression::Power(loc, lhs, rhs) => {
+                Expression::BinaryOperation(self.build_binary_operation(loc, lhs, "**", rhs))
+            }
+
+            solang_parser::pt::Expression::Multiply(loc, lhs, rhs) => {
+                Expression::BinaryOperation(self.build_binary_operation(loc, lhs, "*", rhs))
+            }
+
+            solang_parser::pt::Expression::Divide(loc, lhs, rhs) => {
+                Expression::BinaryOperation(self.build_binary_operation(loc, lhs, "/", rhs))
+            }
+
+            solang_parser::pt::Expression::Modulo(loc, lhs, rhs) => {
+                Expression::BinaryOperation(self.build_binary_operation(loc, lhs, "%", rhs))
+            }
+
+            solang_parser::pt::Expression::Add(loc, lhs, rhs) => {
+                Expression::BinaryOperation(self.build_binary_operation(loc, lhs, "+", rhs))
+            }
+
+            solang_parser::pt::Expression::Subtract(loc, lhs, rhs) => {
+                Expression::BinaryOperation(self.build_binary_operation(loc, lhs, "-", rhs))
+            }
+
+            solang_parser::pt::Expression::ShiftLeft(loc, lhs, rhs) => {
+                Expression::BinaryOperation(self.build_binary_operation(loc, lhs, "<<", rhs))
+            }
+
+            solang_parser::pt::Expression::ShiftRight(loc, lhs, rhs) => {
+                Expression::BinaryOperation(self.build_binary_operation(loc, lhs, ">>", rhs))
+            }
+
+            solang_parser::pt::Expression::BitwiseAnd(loc, lhs, rhs) => {
+                Expression::BinaryOperation(self.build_binary_operation(loc, lhs, "&", rhs))
+            }
+
+            solang_parser::pt::Expression::BitwiseXor(loc, lhs, rhs) => {
+                Expression::BinaryOperation(self.build_binary_operation(loc, lhs, "^", rhs))
+            }
+
+            solang_parser::pt::Expression::BitwiseOr(loc, lhs, rhs) => {
+                Expression::BinaryOperation(self.build_binary_operation(loc, lhs, "|", rhs))
+            }
+            
+            solang_parser::pt::Expression::Less(loc, lhs, rhs) => {
+                Expression::BinaryOperation(self.build_binary_operation(loc, lhs, "<", rhs,))
+            }
+
+            solang_parser::pt::Expression::More(loc, lhs, rhs) => {
+                Expression::BinaryOperation(self.build_binary_operation(loc, lhs, ">", rhs))
+            }
+
+            solang_parser::pt::Expression::LessEqual(loc, lhs, rhs) => {
+                Expression::BinaryOperation(self.build_binary_operation(loc, lhs, "<=", rhs))
+            }
+
+            solang_parser::pt::Expression::MoreEqual(loc, lhs, rhs) => {
+                Expression::BinaryOperation(self.build_binary_operation(loc, lhs, ">=", rhs))
+            }
+
+            solang_parser::pt::Expression::Equal(loc, lhs, rhs) => {
+                Expression::BinaryOperation(self.build_binary_operation(loc, lhs, "==", rhs))
+            }
+
+            solang_parser::pt::Expression::NotEqual(loc, lhs, rhs) => {
+                Expression::BinaryOperation(self.build_binary_operation(loc, lhs, "!=", rhs))
+            }
+
+            solang_parser::pt::Expression::And(loc, lhs, rhs) => {
+                Expression::BinaryOperation(self.build_binary_operation(loc, lhs, "&&", rhs))
+            }
+
+            solang_parser::pt::Expression::Or(loc, lhs, rhs) => {
+                Expression::BinaryOperation(self.build_binary_operation(loc, lhs, "||", rhs))
+            }
+
+            solang_parser::pt::Expression::ConditionalOperator(loc, condition, true_expression, false_expression) => {
+                Expression::Conditional(self.build_conditional(loc, condition, true_expression, false_expression))
+            }
+
+            solang_parser::pt::Expression::Assign(loc, lhs, rhs) => {
+                Expression::Assignment(self.build_assignment(loc, lhs, "=", rhs))
+            }
+
+            solang_parser::pt::Expression::AssignOr(loc, lhs, rhs) => {
+                Expression::Assignment(self.build_assignment(loc, lhs, "|=", rhs))
+            }
+
+            solang_parser::pt::Expression::AssignAnd(loc, lhs, rhs) => {
+                Expression::Assignment(self.build_assignment(loc, lhs, "&=", rhs))
+            }
+
+            solang_parser::pt::Expression::AssignXor(loc, lhs, rhs) => {
+                Expression::Assignment(self.build_assignment(loc, lhs, "^=", rhs))
+            }
+
+            solang_parser::pt::Expression::AssignShiftLeft(loc, lhs, rhs) => {
+                Expression::Assignment(self.build_assignment(loc, lhs, "<<=", rhs))
+            }
+
+            solang_parser::pt::Expression::AssignShiftRight(loc, lhs, rhs) => {
+                Expression::Assignment(self.build_assignment(loc, lhs, ">>=", rhs))
+            }
+
+            solang_parser::pt::Expression::AssignAdd(loc, lhs, rhs) => {
+                Expression::Assignment(self.build_assignment(loc, lhs, "+=", rhs))
+            }
+
+            solang_parser::pt::Expression::AssignSubtract(loc, lhs, rhs) => {
+                Expression::Assignment(self.build_assignment(loc, lhs, "-=", rhs))
+            }
+
+            solang_parser::pt::Expression::AssignMultiply(loc, lhs, rhs) => {
+                Expression::Assignment(self.build_assignment(loc, lhs, "*=", rhs))
+            }
+
+            solang_parser::pt::Expression::AssignDivide(loc, lhs, rhs) => {
+                Expression::Assignment(self.build_assignment(loc, lhs, "/=", rhs))
+            }
+
+            solang_parser::pt::Expression::AssignModulo(loc, lhs, rhs) => {
+                Expression::Assignment(self.build_assignment(loc, lhs, "%=", rhs))
+            }
+            
+            solang_parser::pt::Expression::BoolLiteral(_, _) |
+            solang_parser::pt::Expression::NumberLiteral(_, _, _, _) |
+            solang_parser::pt::Expression::RationalNumberLiteral(_, _, _, _, _) |
+            solang_parser::pt::Expression::HexNumberLiteral(_, _, _) |
+            solang_parser::pt::Expression::StringLiteral(_) |
+            solang_parser::pt::Expression::HexLiteral(_) |
+            solang_parser::pt::Expression::AddressLiteral(_, _) => {
+                Expression::Literal(self.build_literal(input))
+            }
+
             solang_parser::pt::Expression::Type(_, _) => todo!(),
-            solang_parser::pt::Expression::HexLiteral(_) => todo!(),
-            solang_parser::pt::Expression::AddressLiteral(_, _) => todo!(),
-            solang_parser::pt::Expression::Variable(_) => todo!(),
+            
+            solang_parser::pt::Expression::Variable(identifier) => {
+                Expression::Identifier(Identifier {
+                    argument_types: None, // TODO
+                    name: identifier.name.clone(),
+                    overloaded_declarations: vec![], // TODO
+                    referenced_declaration: -1, // TODO
+                    type_descriptions: TypeDescriptions {
+                        type_identifier: None, // TODO
+                        type_string: None, // TODO
+                    },
+                    src: self.loc_to_src(&identifier.loc),
+                    id: self.next_node_id(),
+                })
+            }
+
             solang_parser::pt::Expression::List(_, _) => todo!(),
             solang_parser::pt::Expression::ArrayLiteral(_, _) => todo!(),
         }
