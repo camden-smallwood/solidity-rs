@@ -102,7 +102,7 @@ pub fn print(source_units: &[SourceUnit]) {
                         line.push_str(format!("{} {}", modifier_definition.parameters, modifier_definition.visibility).as_str());
                     }
                     
-                    if let Some(true) = modifier_definition.r#virtual {
+                    if let Some(true) = modifier_definition.is_virtual {
                         line.push_str(" virtual");
                     }
             
@@ -151,7 +151,7 @@ pub fn print(source_units: &[SourceUnit]) {
                         line.push_str(format!(" {}", function_definition.state_mutability).as_str());
                     }
             
-                    if let Some(true) = function_definition.r#virtual {
+                    if let Some(true) = function_definition.is_virtual {
                         line.push_str(" virtual");
                     }
             

@@ -90,7 +90,8 @@ pub struct FunctionDefinition {
     pub scope: NodeID,
     pub state_mutability: StateMutability,
     pub super_function: Option<NodeID>,
-    pub r#virtual: Option<bool>,
+    #[serde(rename = "virtual")]
+    pub is_virtual: Option<bool>,
     pub visibility: Visibility,
     pub src: String,
     pub id: NodeID,
@@ -153,7 +154,7 @@ impl Display for FunctionDefinition {
             f.write_fmt(format_args!(" {}", self.state_mutability))?;
         }
 
-        if let Some(true) = self.r#virtual {
+        if let Some(true) = self.is_virtual {
             f.write_str(" virtual")?;
         }
 

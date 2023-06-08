@@ -124,7 +124,7 @@ impl AstBuilder {
                     scope,
                     absolute_path: Some(file.string.clone()),
                     unit_alias: String::new(),
-                    name_location: Some("-1:-1:-1".to_string()), // TODO: is this important?
+                    name_location: Some("-1:-1:-1".to_string()), // TODO
                     symbol_aliases: vec![],
                     src: self.loc_to_src(loc),
                     id: self.next_node_id(),
@@ -193,10 +193,17 @@ impl AstBuilder {
 
     pub fn build_enum_definition(&mut self, input: &solang_parser::pt::EnumDefinition) -> EnumDefinition {
         EnumDefinition {
-            name: todo!(),
-            name_location: todo!(),
-            members: todo!(),
-            canonical_name: todo!(),
+            name: input.name.as_ref().map(|x| x.name.clone()).unwrap(),
+            name_location: input.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
+            members: input.values.iter().map(|value| {
+                EnumValue {
+                    name: value.as_ref().map(|x| x.name.clone()).unwrap(),
+                    name_location: None, // TODO
+                    src: value.as_ref().map(|x| self.loc_to_src(&x.loc)).unwrap(),
+                    id: self.next_node_id(),
+                }
+            }).collect(),
+            canonical_name: None, // TODO
             src: self.loc_to_src(&input.loc),
             id: self.next_node_id(),
         }
@@ -204,59 +211,292 @@ impl AstBuilder {
 
     pub fn build_struct_definition(&mut self, scope: i64, input: &solang_parser::pt::StructDefinition) -> StructDefinition {
         StructDefinition {
-            name: todo!(),
-            name_location: todo!(),
-            visibility: todo!(),
-            members: todo!(),
+            name: input.name.as_ref().map(|x| x.name.clone()).unwrap(),
+            name_location: input.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
+            visibility: Visibility::Public,
+            members: input.fields.iter()
+                .map(|field| {
+                    VariableDeclaration {
+                        base_functions: None,
+                        constant: false,
+                        documentation: None,
+                        function_selector: None,
+                        indexed: None,
+                        mutability: None, // TODO
+                        name: field.name.as_ref().map(|x| x.name.clone()).unwrap(),
+                        name_location: field.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
+                        overrides: None,
+                        scope,
+                        state_variable: false,
+                        storage_location: StorageLocation::Default,
+                        type_descriptions: TypeDescriptions {
+                            type_identifier: None, // TODO
+                            type_string: None, // TODO
+                        },
+                        type_name: Some(self.build_type_name(&field.ty)),
+                        value: None,
+                        visibility: Visibility::Public,
+                        src: self.loc_to_src(&field.loc),
+                        id: self.next_node_id(),
+                    }
+                })
+                .collect(),
             scope,
-            canonical_name: todo!(),
+            canonical_name: None, // TODO
             src: self.loc_to_src(&input.loc),
             id: self.next_node_id(),
         }
     }
 
     pub fn build_event_definition(&mut self, input: &solang_parser::pt::EventDefinition) -> EventDefinition {
+        let event_scope = self.next_scope();
+
         EventDefinition {
-            anonymous: todo!(),
-            documentation: todo!(),
-            name: todo!(),
-            name_location: todo!(),
-            parameters: todo!(),
+            anonymous: input.anonymous,
+            documentation: None,
+            name: input.name.as_ref().map(|x| x.name.clone()).unwrap(),
+            name_location: input.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
+            parameters: ParameterList {
+                parameters: input.fields.iter()
+                    .map(|field| {
+                        VariableDeclaration {
+                            base_functions: None,
+                            constant: false,
+                            documentation: None,
+                            function_selector: None,
+                            indexed: Some(field.indexed),
+                            mutability: None,
+                            name: field.name.as_ref().map(|x| x.name.clone()).unwrap(),
+                            name_location: field.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
+                            overrides: None,
+                            scope: event_scope,
+                            state_variable: false,
+                            storage_location: StorageLocation::Default,
+                            type_descriptions: TypeDescriptions {
+                                type_identifier: None,
+                                type_string: None,
+                            },
+                            type_name: Some(self.build_type_name(&field.ty)),
+                            value: None,
+                            visibility: Visibility::Public,
+                            src: self.loc_to_src(&field.loc),
+                            id: self.next_node_id(),
+                        }
+                    })
+                    .collect(),
+                src: self.loc_to_src(&input.loc),
+                id: self.next_node_id(),
+            },
             src: self.loc_to_src(&input.loc),
             id: self.next_node_id(),
         }
     }
 
     pub fn build_error_definition(&mut self, input: &solang_parser::pt::ErrorDefinition) -> ErrorDefinition {
+        let error_scope = self.next_scope();
+
         ErrorDefinition {
-            documentation: todo!(),
-            name: todo!(),
-            name_location: todo!(),
-            parameters: todo!(),
+            documentation: None,
+            name: input.name.as_ref().map(|x| x.name.clone()).unwrap(),
+            name_location: input.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
+            parameters: ParameterList {
+                parameters: input.fields.iter()
+                    .map(|field| {
+                        VariableDeclaration {
+                            base_functions: None,
+                            constant: false,
+                            documentation: None,
+                            function_selector: None,
+                            indexed: None,
+                            mutability: None,
+                            name: field.name.as_ref().map(|x| x.name.clone()).unwrap(),
+                            name_location: field.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
+                            overrides: None,
+                            scope: error_scope,
+                            state_variable: false,
+                            storage_location: StorageLocation::Default,
+                            type_descriptions: TypeDescriptions {
+                                type_identifier: None,
+                                type_string: None,
+                            },
+                            type_name: Some(self.build_type_name(&field.ty)),
+                            value: None,
+                            visibility: Visibility::Public,
+                            src: self.loc_to_src(&field.loc),
+                            id: self.next_node_id(),
+                        }
+                    })
+                    .collect(),
+                src: self.loc_to_src(&input.loc),
+                id: self.next_node_id(),
+            },
             src: self.loc_to_src(&input.loc),
             id: self.next_node_id(),
         }
     }
 
     pub fn build_function_definition(&mut self, scope: i64, input: &solang_parser::pt::FunctionDefinition) -> FunctionDefinition {
+        let mut visibility = Visibility::Internal;
+        let mut state_mutability = StateMutability::NonPayable;
+        let mut is_virtual = None;
+        let mut overrides = None;
+        let mut modifiers = vec![];
+
+        for attr in input.attributes.iter() {
+            match attr {
+                solang_parser::pt::FunctionAttribute::Visibility(x) => match x {
+                    solang_parser::pt::Visibility::External(_) => visibility = Visibility::External,
+                    solang_parser::pt::Visibility::Public(_) => visibility = Visibility::Public,
+                    solang_parser::pt::Visibility::Internal(_) => visibility = Visibility::Internal,
+                    solang_parser::pt::Visibility::Private(_) => visibility = Visibility::Private,
+                },
+
+                solang_parser::pt::FunctionAttribute::Mutability(x) => match x {
+                    solang_parser::pt::Mutability::Pure(_) => state_mutability = StateMutability::Pure,
+                    solang_parser::pt::Mutability::View(_) => state_mutability = StateMutability::View,
+                    solang_parser::pt::Mutability::Constant(_) => panic!("Invalid function state mutability: Constant"),
+                    solang_parser::pt::Mutability::Payable(_) => state_mutability = StateMutability::Payable,
+                },
+
+                solang_parser::pt::FunctionAttribute::Virtual(_) => is_virtual = Some(true),
+
+                solang_parser::pt::FunctionAttribute::Immutable(_) => panic!("Invalid function attribute: Immutable"),
+
+                solang_parser::pt::FunctionAttribute::Override(loc, x) => overrides = Some(OverrideSpecifier {
+                    overrides: x.iter()
+                        .map(|x| {
+                            IdentifierPath {
+                                name: x.identifiers.iter().map(|x| x.name.clone()).collect::<Vec<_>>().join("."), // TODO
+                                referenced_declaration: None, // TODO
+                                src: self.loc_to_src(&x.loc),
+                                id: self.next_node_id(),
+                            }
+                        })
+                        .collect(),
+                    src: self.loc_to_src(loc),
+                    id: self.next_node_id(),
+                }),
+
+                solang_parser::pt::FunctionAttribute::BaseOrModifier(loc, x) => modifiers.push(ModifierInvocation {
+                    arguments: x.args.as_ref()
+                        .map(|args| {
+                            args.iter()
+                                .map(|arg| self.build_expression(arg))
+                                .collect()
+                        }),
+                    modifier_name: IdentifierPath {
+                        name: x.name.identifiers.iter().map(|x| x.name.clone()).collect::<Vec<_>>().join("."), // TODO
+                        referenced_declaration: None, // TODO
+                        src: self.loc_to_src(&x.name.loc),
+                        id: self.next_node_id(),
+                    },
+                    src: self.loc_to_src(loc),
+                    id: self.next_node_id(),
+                    kind: None, // TODO
+                }),
+
+                solang_parser::pt::FunctionAttribute::Error(_) => {}
+            }
+        }
+
+        let function_scope = self.next_scope();
+
         FunctionDefinition {
-            base_functions: todo!(),
-            body: todo!(),
-            documentation: todo!(),
-            function_selector: todo!(),
-            implemented: todo!(),
-            kind: todo!(),
-            modifiers: todo!(),
-            name: todo!(),
-            name_location: todo!(),
-            overrides: todo!(),
-            parameters: todo!(),
-            return_parameters: todo!(),
+            base_functions: None, // TODO
+            body: input.body.as_ref()
+                .map(|body| {
+                    match body {
+                        solang_parser::pt::Statement::Block { loc, statements, .. } => Block {
+                            statements: statements.iter()
+                                .map(|stmt| self.build_statement(stmt))
+                                .collect(),
+                            src: self.loc_to_src(loc),
+                            id: self.next_node_id(),
+                        },
+                        stmt => panic!("Invalid function body statement: {stmt:?}"),
+                    }
+                }),
+            documentation: None, // TODO
+            function_selector: None, // TODO
+            implemented: input.body.is_some(), // TODO: is this correct?
+            kind: match input.ty {
+                solang_parser::pt::FunctionTy::Constructor => FunctionKind::Constructor,
+                solang_parser::pt::FunctionTy::Function => FunctionKind::Function,
+                solang_parser::pt::FunctionTy::Fallback => FunctionKind::Fallback,
+                solang_parser::pt::FunctionTy::Receive => FunctionKind::Receive,
+                solang_parser::pt::FunctionTy::Modifier => panic!("Invalid function kind: Modifier"), // TODO: handle ahead of time?
+            },
+            modifiers,
+            name: input.name.as_ref().map(|x| x.name.clone()).unwrap_or_else(String::new),
+            name_location: input.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
+            overrides,
+            parameters: ParameterList {
+                parameters: input.params.iter()
+                    .map(|(loc, parameter)| {
+                        VariableDeclaration {
+                            base_functions: None,
+                            constant: false,
+                            documentation: None,
+                            function_selector: None,
+                            indexed: None,
+                            mutability: None,
+                            name: parameter.as_ref().map(|x| x.name.as_ref().map(|x| x.name.clone()).unwrap()).unwrap(),
+                            name_location: parameter.as_ref().map(|x| x.name.as_ref().map(|x| self.loc_to_src(&x.loc))).unwrap(),
+                            overrides: None,
+                            scope: function_scope,
+                            state_variable: false,
+                            storage_location: StorageLocation::Default,
+                            type_descriptions: TypeDescriptions {
+                                type_identifier: None, // TODO
+                                type_string: None, // TODO
+                            },
+                            type_name: Some(parameter.as_ref().map(|x| self.build_type_name(&x.ty)).unwrap()),
+                            value: None,
+                            visibility,
+                            src: self.loc_to_src(loc),
+                            id: self.next_node_id(),
+                        }
+                    })
+                    .collect(),
+                src: self.loc_to_src(&input.loc),
+                id: self.next_node_id(),
+            },
+            return_parameters: ParameterList {
+                parameters: input.returns.iter()
+                    .map(|(loc, parameter)| {
+                        VariableDeclaration {
+                            base_functions: None,
+                            constant: false,
+                            documentation: None,
+                            function_selector: None,
+                            indexed: None,
+                            mutability: None,
+                            name: parameter.as_ref().map(|x| x.name.as_ref().map(|x| x.name.clone()).unwrap()).unwrap(),
+                            name_location: parameter.as_ref().map(|x| x.name.as_ref().map(|x| self.loc_to_src(&x.loc))).unwrap(),
+                            overrides: None,
+                            scope: function_scope,
+                            state_variable: false,
+                            storage_location: StorageLocation::Default,
+                            type_descriptions: TypeDescriptions {
+                                type_identifier: None, // TODO
+                                type_string: None, // TODO
+                            },
+                            type_name: Some(parameter.as_ref().map(|x| self.build_type_name(&x.ty)).unwrap()),
+                            value: None,
+                            visibility,
+                            src: self.loc_to_src(loc),
+                            id: self.next_node_id(),
+                        }
+                    })
+                    .collect(),
+                src: self.loc_to_src(&input.loc),
+                id: self.next_node_id(),
+            },
             scope,
-            state_mutability: todo!(),
-            super_function: todo!(),
-            r#virtual: todo!(),
-            visibility: todo!(),
+            state_mutability,
+            super_function: None, // TODO
+            is_virtual,
+            visibility,
             src: self.loc_to_src(&input.loc),
             id: self.next_node_id(),
         }
@@ -303,6 +543,14 @@ impl AstBuilder {
             src: self.loc_to_src(&input.loc),
             id: self.next_node_id(),
         }
+    }
+
+    pub fn build_type_name(&mut self, input: &solang_parser::pt::Expression) -> TypeName {
+        todo!()
+    }
+
+    pub fn build_statement(&mut self, input: &solang_parser::pt::Statement) -> Statement {
+        todo!()
     }
 
     pub fn build_expression(&mut self, input: &solang_parser::pt::Expression) -> Expression {
@@ -367,5 +615,15 @@ impl AstBuilder {
             solang_parser::pt::Expression::List(_, _) => todo!(),
             solang_parser::pt::Expression::ArrayLiteral(_, _) => todo!(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_ast_builder() {
+        let src = std::fs::read_to_string("/Users/camden/Source/solidity-test/contracts/Blah.sol").unwrap();
+        let source_unit = solang_parser::parse(src.as_str(), 0).unwrap();
+        println!("{:#?}", source_unit);
     }
 }

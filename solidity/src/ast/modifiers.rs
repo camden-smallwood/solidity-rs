@@ -12,7 +12,8 @@ pub struct ModifierDefinition {
     pub name: String,
     pub name_location: Option<String>,
     pub parameters: ParameterList,
-    pub r#virtual: Option<bool>,
+    #[serde(rename = "virtual")]
+    pub is_virtual: Option<bool>,
     pub visibility: Visibility,
     pub src: String,
     pub id: NodeID,
@@ -32,7 +33,7 @@ impl Display for ModifierDefinition {
             f.write_fmt(format_args!("{} {}", self.parameters, self.visibility))?;
         }
         
-        if let Some(true) = self.r#virtual {
+        if let Some(true) = self.is_virtual {
             f.write_fmt(format_args!(" virtual"))?;
         }
 

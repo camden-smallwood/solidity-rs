@@ -1,5 +1,5 @@
 [workspace]
-members = ["solast"]
+members = ["eth-lang-utils", "solast", "solidity", "yul"]
 
 [profile.release.package.solast]
 opt-level = "s"
