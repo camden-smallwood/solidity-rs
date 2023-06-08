@@ -445,7 +445,17 @@ impl AstBuilder {
                             overrides: None,
                             scope: function_scope,
                             state_variable: false,
-                            storage_location: StorageLocation::Default,
+                            storage_location: parameter.as_ref()
+                                .map(|x| {
+                                    x.storage.as_ref()
+                                        .map(|x| match x {
+                                            solang_parser::pt::StorageLocation::Memory(_) => StorageLocation::Memory,
+                                            solang_parser::pt::StorageLocation::Storage(_) => StorageLocation::Storage,
+                                            solang_parser::pt::StorageLocation::Calldata(_) => StorageLocation::Calldata,
+                                        })
+                                        .unwrap_or_else(|| StorageLocation::Default)
+                                })
+                                .unwrap(),
                             type_descriptions: TypeDescriptions {
                                 type_identifier: None, // TODO
                                 type_string: None, // TODO
@@ -476,7 +486,17 @@ impl AstBuilder {
                             overrides: None,
                             scope: function_scope,
                             state_variable: false,
-                            storage_location: StorageLocation::Default,
+                            storage_location: parameter.as_ref()
+                                .map(|x| {
+                                    x.storage.as_ref()
+                                        .map(|x| match x {
+                                            solang_parser::pt::StorageLocation::Memory(_) => StorageLocation::Memory,
+                                            solang_parser::pt::StorageLocation::Storage(_) => StorageLocation::Storage,
+                                            solang_parser::pt::StorageLocation::Calldata(_) => StorageLocation::Calldata,
+                                        })
+                                        .unwrap_or_else(|| StorageLocation::Default)
+                                })
+                                .unwrap(),
                             type_descriptions: TypeDescriptions {
                                 type_identifier: None, // TODO
                                 type_string: None, // TODO
@@ -503,23 +523,61 @@ impl AstBuilder {
     }
 
     pub fn build_variable_declaration(&mut self, scope: i64, input: &solang_parser::pt::VariableDefinition) -> VariableDeclaration {
+        let mut visibility = Visibility::Public;
+        let mut mutability = None;
+        let mut constant = false;
+        let mut overrides = None;
+
+        for attr in input.attrs.iter() {
+            match attr {
+                solang_parser::pt::VariableAttribute::Visibility(x) => match x {
+                    solang_parser::pt::Visibility::External(_) => visibility = Visibility::External,
+                    solang_parser::pt::Visibility::Public(_) => visibility = Visibility::Public,
+                    solang_parser::pt::Visibility::Internal(_) => visibility = Visibility::Internal,
+                    solang_parser::pt::Visibility::Private(_) => visibility = Visibility::Private,
+                },
+
+                solang_parser::pt::VariableAttribute::Constant(_) => constant = true,
+
+                solang_parser::pt::VariableAttribute::Immutable(_) => mutability = Some(Mutability::Immutable),
+
+                solang_parser::pt::VariableAttribute::Override(loc, x) => overrides = Some(OverrideSpecifier {
+                    overrides: x.iter()
+                        .map(|x| {
+                            IdentifierPath {
+                                name: x.identifiers.iter().map(|x| x.name.clone()).collect::<Vec<_>>().join("."), // TODO
+                                referenced_declaration: None, // TODO
+                                src: self.loc_to_src(&x.loc),
+                                id: self.next_node_id(),
+                            }
+                        })
+                        .collect(),
+                    src: self.loc_to_src(loc),
+                    id: self.next_node_id(),
+                }),
+            }
+        }
+
         VariableDeclaration {
-            base_functions: todo!(),
-            constant: todo!(),
-            documentation: todo!(),
-            function_selector: todo!(),
-            indexed: todo!(),
-            mutability: todo!(),
-            name: todo!(),
-            name_location: todo!(),
-            overrides: todo!(),
+            base_functions: None,
+            constant,
+            documentation: None,
+            function_selector: None,
+            indexed: None,
+            mutability,
+            name: input.name.as_ref().map(|x| x.name.clone()).unwrap(),
+            name_location: input.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
+            overrides,
             scope,
-            state_variable: todo!(),
-            storage_location: todo!(),
-            type_descriptions: todo!(),
-            type_name: todo!(),
-            value: todo!(),
-            visibility: todo!(),
+            state_variable: false, // TODO: is this in the type expression?
+            storage_location: StorageLocation::Default, // TODO: is this in the type expression?
+            type_descriptions: TypeDescriptions {
+                type_identifier: None, // TODO
+                type_string: None, // TODO
+            },
+            type_name: Some(self.build_type_name(&input.ty)),
+            value: input.initializer.as_ref().map(|x| self.build_expression(x)),
+            visibility,
             src: self.loc_to_src(&input.loc),
             id: self.next_node_id(),
         }
@@ -546,10 +604,279 @@ impl AstBuilder {
     }
 
     pub fn build_type_name(&mut self, input: &solang_parser::pt::Expression) -> TypeName {
-        todo!()
+        match input {
+            solang_parser::pt::Expression::Type(_loc, ty) => match ty {
+                solang_parser::pt::Type::Address => TypeName::ElementaryTypeName(ElementaryTypeName {
+                    state_mutability: None, // TODO
+                    name: "address".to_string(),
+                    type_descriptions: TypeDescriptions {
+                        type_identifier: None, // TODO
+                        type_string: None, // TODO
+                    },
+                }),
+    
+                solang_parser::pt::Type::AddressPayable => TypeName::ElementaryTypeName(ElementaryTypeName {
+                    state_mutability: None, // TODO
+                    name: "address payable".to_string(),
+                    type_descriptions: TypeDescriptions {
+                        type_identifier: None, // TODO
+                        type_string: None, // TODO
+                    },
+                }),
+    
+                solang_parser::pt::Type::Payable => TypeName::ElementaryTypeName(ElementaryTypeName {
+                    state_mutability: None, // TODO
+                    name: "payable".to_string(),
+                    type_descriptions: TypeDescriptions {
+                        type_identifier: None, // TODO
+                        type_string: None, // TODO
+                    },
+                }),
+    
+                solang_parser::pt::Type::Bool => TypeName::ElementaryTypeName(ElementaryTypeName {
+                    state_mutability: None, // TODO
+                    name: "bool".to_string(),
+                    type_descriptions: TypeDescriptions {
+                        type_identifier: None, // TODO
+                        type_string: None, // TODO
+                    },
+                }),
+    
+                solang_parser::pt::Type::String => TypeName::ElementaryTypeName(ElementaryTypeName {
+                    state_mutability: None, // TODO
+                    name: "string".to_string(),
+                    type_descriptions: TypeDescriptions {
+                        type_identifier: None, // TODO
+                        type_string: None, // TODO
+                    },
+                }),
+    
+                solang_parser::pt::Type::Int(bits) => TypeName::ElementaryTypeName(ElementaryTypeName {
+                    state_mutability: None, // TODO
+                    name: format!("int{bits}"),
+                    type_descriptions: TypeDescriptions {
+                        type_identifier: None, // TODO
+                        type_string: None, // TODO
+                    },
+                }),
+    
+                solang_parser::pt::Type::Uint(bits) => TypeName::ElementaryTypeName(ElementaryTypeName {
+                    state_mutability: None, // TODO
+                    name: format!("uint{bits}"),
+                    type_descriptions: TypeDescriptions {
+                        type_identifier: None, // TODO
+                        type_string: None, // TODO
+                    },
+                }),
+    
+                solang_parser::pt::Type::Bytes(bytes) => TypeName::ElementaryTypeName(ElementaryTypeName {
+                    state_mutability: None, // TODO
+                    name: format!("bytes{bytes}"),
+                    type_descriptions: TypeDescriptions {
+                        type_identifier: None, // TODO
+                        type_string: None, // TODO
+                    },
+                }),
+    
+                solang_parser::pt::Type::Rational => todo!(),
+    
+                solang_parser::pt::Type::DynamicBytes => TypeName::ElementaryTypeName(ElementaryTypeName {
+                    state_mutability: None, // TODO
+                    name: "bytes".to_string(),
+                    type_descriptions: TypeDescriptions {
+                        type_identifier: None, // TODO
+                        type_string: None, // TODO
+                    },
+                }),
+    
+                solang_parser::pt::Type::Mapping { loc, key, key_name, value, value_name } => TypeName::Mapping(Mapping {
+                    key_type: Box::new(self.build_type_name(key.as_ref())),
+                    value_type: Box::new(self.build_type_name(value.as_ref())),
+                    type_descriptions: TypeDescriptions {
+                        type_identifier: None, // TODO
+                        type_string: None, // TODO
+                    },
+                }),
+    
+                solang_parser::pt::Type::Function { params, attributes, returns } => {
+                    let mut visibility = Visibility::Internal;
+                    let mut state_mutability = StateMutability::NonPayable;
+                    let mut is_virtual = None;
+                    let mut overrides = None;
+                    let mut modifiers = vec![];
+            
+                    for attr in attributes.iter() {
+                        match attr {
+                            solang_parser::pt::FunctionAttribute::Visibility(x) => match x {
+                                solang_parser::pt::Visibility::External(_) => visibility = Visibility::External,
+                                solang_parser::pt::Visibility::Public(_) => visibility = Visibility::Public,
+                                solang_parser::pt::Visibility::Internal(_) => visibility = Visibility::Internal,
+                                solang_parser::pt::Visibility::Private(_) => visibility = Visibility::Private,
+                            },
+            
+                            solang_parser::pt::FunctionAttribute::Mutability(x) => match x {
+                                solang_parser::pt::Mutability::Pure(_) => state_mutability = StateMutability::Pure,
+                                solang_parser::pt::Mutability::View(_) => state_mutability = StateMutability::View,
+                                solang_parser::pt::Mutability::Constant(_) => panic!("Invalid function state mutability: Constant"),
+                                solang_parser::pt::Mutability::Payable(_) => state_mutability = StateMutability::Payable,
+                            },
+            
+                            solang_parser::pt::FunctionAttribute::Virtual(_) => is_virtual = Some(true),
+            
+                            solang_parser::pt::FunctionAttribute::Immutable(_) => panic!("Invalid function attribute: Immutable"),
+            
+                            solang_parser::pt::FunctionAttribute::Override(loc, x) => overrides = Some(OverrideSpecifier {
+                                overrides: x.iter()
+                                    .map(|x| {
+                                        IdentifierPath {
+                                            name: x.identifiers.iter().map(|x| x.name.clone()).collect::<Vec<_>>().join("."), // TODO
+                                            referenced_declaration: None, // TODO
+                                            src: self.loc_to_src(&x.loc),
+                                            id: self.next_node_id(),
+                                        }
+                                    })
+                                    .collect(),
+                                src: self.loc_to_src(loc),
+                                id: self.next_node_id(),
+                            }),
+            
+                            solang_parser::pt::FunctionAttribute::BaseOrModifier(loc, x) => modifiers.push(ModifierInvocation {
+                                arguments: x.args.as_ref()
+                                    .map(|args| {
+                                        args.iter()
+                                            .map(|arg| self.build_expression(arg))
+                                            .collect()
+                                    }),
+                                modifier_name: IdentifierPath {
+                                    name: x.name.identifiers.iter().map(|x| x.name.clone()).collect::<Vec<_>>().join("."), // TODO
+                                    referenced_declaration: None, // TODO
+                                    src: self.loc_to_src(&x.name.loc),
+                                    id: self.next_node_id(),
+                                },
+                                src: self.loc_to_src(loc),
+                                id: self.next_node_id(),
+                                kind: None, // TODO
+                            }),
+            
+                            solang_parser::pt::FunctionAttribute::Error(_) => {}
+                        }
+                    }
+    
+                    TypeName::FunctionTypeName(FunctionTypeName {
+                        visibility,
+                        state_mutability,
+                        parameter_types: ParameterList {
+                            parameters: params.iter()
+                                .map(|(loc, parameter)| {
+                                    VariableDeclaration {
+                                        base_functions: None,
+                                        constant: false,
+                                        documentation: None,
+                                        function_selector: None,
+                                        indexed: None,
+                                        mutability: None,
+                                        name: parameter.as_ref().map(|x| x.name.as_ref().map(|x| x.name.clone()).unwrap()).unwrap(),
+                                        name_location: parameter.as_ref().map(|x| x.name.as_ref().map(|x| self.loc_to_src(&x.loc))).unwrap(),
+                                        overrides: None,
+                                        scope: -1, // TODO
+                                        state_variable: false,
+                                        storage_location: parameter.as_ref()
+                                            .map(|x| {
+                                                x.storage.as_ref()
+                                                    .map(|x| match x {
+                                                        solang_parser::pt::StorageLocation::Memory(_) => StorageLocation::Memory,
+                                                        solang_parser::pt::StorageLocation::Storage(_) => StorageLocation::Storage,
+                                                        solang_parser::pt::StorageLocation::Calldata(_) => StorageLocation::Calldata,
+                                                    })
+                                                    .unwrap_or_else(|| StorageLocation::Default)
+                                            })
+                                            .unwrap(),
+                                        type_descriptions: TypeDescriptions {
+                                            type_identifier: None, // TODO
+                                            type_string: None, // TODO
+                                        },
+                                        type_name: Some(parameter.as_ref().map(|x| self.build_type_name(&x.ty)).unwrap()),
+                                        value: None,
+                                        visibility,
+                                        src: self.loc_to_src(loc),
+                                        id: self.next_node_id(),
+                                    }
+                                })
+                                .collect(),
+                            src: "-1:-1:-1".to_string(), // TODO
+                            id: self.next_node_id(),
+                        },
+                        return_parameter_types: ParameterList {
+                            parameters: returns.as_ref()
+                                .map(|(returns, _attrs)| {
+                                    returns.iter()
+                                        .map(|(loc, parameter)| {
+                                            VariableDeclaration {
+                                                base_functions: None,
+                                                constant: false,
+                                                documentation: None,
+                                                function_selector: None,
+                                                indexed: None,
+                                                mutability: None,
+                                                name: parameter.as_ref().map(|x| x.name.as_ref().map(|x| x.name.clone()).unwrap()).unwrap(),
+                                                name_location: parameter.as_ref().map(|x| x.name.as_ref().map(|x| self.loc_to_src(&x.loc))).unwrap(),
+                                                overrides: None,
+                                                scope: -1, // TODO
+                                                state_variable: false,
+                                                storage_location: parameter.as_ref()
+                                                    .map(|x| {
+                                                        x.storage.as_ref()
+                                                            .map(|x| match x {
+                                                                solang_parser::pt::StorageLocation::Memory(_) => StorageLocation::Memory,
+                                                                solang_parser::pt::StorageLocation::Storage(_) => StorageLocation::Storage,
+                                                                solang_parser::pt::StorageLocation::Calldata(_) => StorageLocation::Calldata,
+                                                            })
+                                                            .unwrap_or_else(|| StorageLocation::Default)
+                                                    })
+                                                    .unwrap(),
+                                                type_descriptions: TypeDescriptions {
+                                                    type_identifier: None, // TODO
+                                                    type_string: None, // TODO
+                                                },
+                                                type_name: Some(parameter.as_ref().map(|x| self.build_type_name(&x.ty)).unwrap()),
+                                                value: None,
+                                                visibility,
+                                                src: self.loc_to_src(loc),
+                                                id: self.next_node_id(),
+                                            }
+                                        })
+                                        .collect()
+                                })
+                                .unwrap_or_else(|| vec![]),
+                            src: "-1:-1:-1".to_string(), // TODO
+                            id: self.next_node_id(),
+                        },
+                        type_descriptions: TypeDescriptions {
+                            type_identifier: None, // TODO
+                            type_string: None, // TODO
+                        },
+                    })
+                }
+            },
+
+            solang_parser::pt::Expression::ArraySubscript(_loc, ty, len) => TypeName::ArrayTypeName(ArrayTypeName {
+                base_type: Box::new(self.build_type_name(ty)),
+                length: len.as_ref().map(|x| self.build_literal(x)),
+                type_descriptions: TypeDescriptions {
+                    type_identifier: None, // TODO
+                    type_string: None, // TODO
+                },
+            }),
+
+            _ => panic!("Unhandled type name expression: {input:#?}"),
+        }
     }
 
     pub fn build_statement(&mut self, input: &solang_parser::pt::Statement) -> Statement {
+        todo!()
+    }
+
+    pub fn build_literal(&mut self, input: &solang_parser::pt::Expression) -> Literal {
         todo!()
     }
 
@@ -620,10 +947,16 @@ impl AstBuilder {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
     fn test_ast_builder() {
         let src = std::fs::read_to_string("/Users/camden/Source/solidity-test/contracts/Blah.sol").unwrap();
-        let source_unit = solang_parser::parse(src.as_str(), 0).unwrap();
+        let (input, _comments) = solang_parser::parse(src.as_str(), 0).unwrap();
+        
+        let mut builder = AstBuilder::default();
+        let source_unit = builder.build_source_unit(&input);
+
         println!("{:#?}", source_unit);
     }
 }
