@@ -1016,10 +1016,25 @@ impl AstBuilder {
                 })
             }
 
-            solang_parser::pt::Statement::Expression(_loc, x) => {
-                Statement::ExpressionStatement(ExpressionStatement {
-                    expression: self.build_expression(x),
-                })
+            solang_parser::pt::Statement::Expression(loc, x) => {
+                match x {
+                    solang_parser::pt::Expression::Variable(identifier) => {
+                        match identifier.name.as_str() {
+                            "_" => Statement::PlaceholderStatement {
+                                src: self.loc_to_src(loc),
+                                id: self.next_node_id(),
+                            },
+
+                            _ => Statement::ExpressionStatement(ExpressionStatement {
+                                expression: self.build_expression(x),
+                            })
+                        }
+                    }
+                    
+                    _ => Statement::ExpressionStatement(ExpressionStatement {
+                        expression: self.build_expression(x),
+                    })
+                }
             }
 
             solang_parser::pt::Statement::VariableDefinition(loc, variable, value) => {
