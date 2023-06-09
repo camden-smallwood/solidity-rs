@@ -76,21 +76,32 @@ pub struct YulBlockContext<'a, 'b> {
     pub yul_block: &'a YulBlock,
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
+#[derive(Clone, Debug, Eq, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum YulStatement {
     YulIf(YulIf),
     YulSwitch(YulSwitch),
+    YulForLoop(YulForLoop),
     YulAssignment(YulAssignment),
     YulVariableDeclaration(YulVariableDeclaration),
     YulExpressionStatement(YulExpressionStatement),
+}
 
-    #[serde(rename_all = "camelCase")]
-    UnhandledYulStatement {
-        node_type: String,
-        src: Option<String>,
-        id: Option<NodeID>,
-    },
+impl<'de> Deserialize<'de> for YulStatement {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let json = serde_json::Value::deserialize(deserializer)?;
+        let node_type = json.get("nodeType").unwrap().as_str().unwrap();
+
+        match node_type {
+            "YulIf" => Ok(YulStatement::YulIf(serde_json::from_value(json).unwrap())),
+            "YulSwitch" => Ok(YulStatement::YulSwitch(serde_json::from_value(json).unwrap())),
+            "YulForLoop" => Ok(YulStatement::YulForLoop(serde_json::from_value(json).unwrap())),
+            "YulAssignment" => Ok(YulStatement::YulAssignment(serde_json::from_value(json).unwrap())),
+            "YulVariableDeclaration" => Ok(YulStatement::YulVariableDeclaration(serde_json::from_value(json).unwrap())),
+            "YulExpressionStatement" => Ok(YulStatement::YulExpressionStatement(serde_json::from_value(json).unwrap())),
+            _ => panic!("Invalid yul statement node type: {node_type}"),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
@@ -112,6 +123,15 @@ pub struct YulSwitch {
 pub struct YulCase {
     pub body: YulBlock,
     pub value: YulExpression,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct YulForLoop {
+    pub pre: YulBlock,
+    pub condition: YulExpression,
+    pub post: YulBlock,
+    pub body: YulBlock,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]

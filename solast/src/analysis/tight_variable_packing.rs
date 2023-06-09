@@ -241,7 +241,7 @@ impl AstVisitor for TightVariablePackingVisitor {
 
         if has_loose_variable_packing {
             // TODO: only print when this works...
-            // println!("\t{:?} {} has loose variable packing", context.contract_definition.kind, context.contract_definition.name);
+            // println!("{:?} {} has loose variable packing", context.contract_definition.kind, context.contract_definition.name);
         }
 
         Ok(())

@@ -24,7 +24,7 @@ impl IneffectualStatementsVisitor {
             source_unit_path,
             Some(source_line),
             format!(
-                "\t{} contains an ineffectual {} statement: `{}`",
+                "{} contains an ineffectual {} statement: `{}`",
                 contract_definition.definition_node_location(definition_node),
                 description,
                 expression

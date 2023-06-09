@@ -1,5 +1,4 @@
 use super::*;
-use eth_lang_utils::ast::*;
 use std::{collections::HashSet, io};
 use yul::ast::*;
 
@@ -51,6 +50,19 @@ pub struct YulSwitchContext<'a, 'b, 'c> {
     pub yul_blocks: &'c mut Vec<&'a YulBlock>,
     pub yul_statement: &'a YulStatement,
     pub yul_switch: &'a YulSwitch,
+}
+
+pub struct YulForLoopContext<'a, 'b, 'c> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: &'a Statement,
+    pub inline_assembly: &'a InlineAssembly,
+    pub yul_blocks: &'c mut Vec<&'a YulBlock>,
+    pub yul_statement: &'a YulStatement,
+    pub yul_for_loop: &'a YulForLoop,
 }
 
 pub struct YulCaseContext<'a, 'b, 'c> {
@@ -309,6 +321,9 @@ pub trait AstVisitor {
 
     fn visit_yul_switch<'a, 'b, 'c>(&mut self, context: &mut YulSwitchContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
     fn leave_yul_switch<'a, 'b, 'c>(&mut self, context: &mut YulSwitchContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+
+    fn visit_yul_for_loop<'a, 'b, 'c>(&mut self, context: &mut YulForLoopContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+    fn leave_yul_for_loop<'a, 'b, 'c>(&mut self, context: &mut YulForLoopContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
 
     fn visit_yul_case<'a, 'b, 'c>(&mut self, context: &mut YulCaseContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
     fn leave_yul_case<'a, 'b, 'c>(&mut self, context: &mut YulCaseContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
@@ -2220,6 +2235,24 @@ impl AstVisitor for AstVisitorData<'_> {
                 self.leave_yul_switch(&mut context)?;
             }
 
+            YulStatement::YulForLoop(yul_for_loop) => {
+                let mut context = YulForLoopContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
+                    inline_assembly: context.inline_assembly,
+                    yul_blocks: context.yul_blocks,
+                    yul_statement: context.yul_statement,
+                    yul_for_loop,
+                };
+
+                self.visit_yul_for_loop(&mut context)?;
+                self.leave_yul_for_loop(&mut context)?;
+            }
+
             YulStatement::YulAssignment(yul_assignment) => {
                 let mut context = YulAssignmentContext {
                     source_units: context.source_units,
@@ -2272,13 +2305,6 @@ impl AstVisitor for AstVisitorData<'_> {
 
                 self.visit_yul_expression_statement(&mut context)?;
                 self.leave_yul_expression_statement(&mut context)?;
-            }
-
-            YulStatement::UnhandledYulStatement { node_type, src, id } => {
-                println!(
-                    "WARNING: Unhandled yul statement: {:?} {:?} {:?}",
-                    node_type, src, id
-                );
             }
         }
 
@@ -2386,6 +2412,83 @@ impl AstVisitor for AstVisitorData<'_> {
     fn leave_yul_switch<'a, 'b, 'c>(&mut self, context: &mut YulSwitchContext<'a, 'b, 'c>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.leave_yul_switch(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_yul_for_loop<'a, 'b, 'c>(&mut self, context: &mut YulForLoopContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_yul_for_loop(context)?;
+        }
+
+        let mut pre_context = YulBlockContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            inline_assembly: context.inline_assembly,
+            yul_blocks: context.yul_blocks,
+            yul_block: &context.yul_for_loop.pre,
+        };
+
+        self.visit_yul_block(&mut pre_context)?;
+        self.leave_yul_block(&mut pre_context)?;
+
+        let mut condition_context = YulExpressionContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            inline_assembly: context.inline_assembly,
+            yul_blocks: context.yul_blocks,
+            yul_statement: Some(context.yul_statement),
+            yul_expression: &context.yul_for_loop.condition,
+        };
+
+        self.visit_yul_expression(&mut condition_context)?;
+        self.leave_yul_expression(&mut condition_context)?;
+
+        let mut post_context = YulBlockContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            inline_assembly: context.inline_assembly,
+            yul_blocks: context.yul_blocks,
+            yul_block: &context.yul_for_loop.post,
+        };
+
+        self.visit_yul_block(&mut post_context)?;
+        self.leave_yul_block(&mut post_context)?;
+
+        let mut body_context = YulBlockContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            inline_assembly: context.inline_assembly,
+            yul_blocks: context.yul_blocks,
+            yul_block: &context.yul_for_loop.body,
+        };
+
+        self.visit_yul_block(&mut body_context)?;
+        self.leave_yul_block(&mut body_context)?;
+
+        Ok(())
+    }
+
+    fn leave_yul_for_loop<'a, 'b, 'c>(&mut self, context: &mut YulForLoopContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_yul_for_loop(context)?;
         }
 
         Ok(())

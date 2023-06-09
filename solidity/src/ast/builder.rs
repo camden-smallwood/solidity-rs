@@ -1,4 +1,4 @@
-use eth_lang_utils::ast::*;
+use yul::ast::*;
 use super::*;
 
 #[derive(Default)]
@@ -141,7 +141,7 @@ impl AstBuilder {
         let contract_scope = self.next_scope();
 
         ContractDefinition {
-            name: input.name.as_ref().map(|x| x.name.clone()).unwrap(),
+            name: input.name.as_ref().map(|x| x.name.clone()).unwrap_or_else(String::new),
             name_location: Some(self.loc_to_src(&input.name.as_ref().map(|x| x.loc).unwrap())),
             documentation: None,
             kind: match input.ty {
@@ -152,12 +152,7 @@ impl AstBuilder {
             },
             is_abstract: Some(matches!(input.ty, solang_parser::pt::ContractTy::Abstract(_))),
             base_contracts: input.base.iter().map(|base| InheritanceSpecifier {
-                base_name: IdentifierPath {
-                    name: base.name.identifiers.iter().map(|x| x.name.clone()).collect::<Vec<_>>().join("."),
-                    referenced_declaration: None,
-                    src: self.loc_to_src(&base.name.loc),
-                    id: self.next_node_id(),
-                },
+                base_name: self.build_identifier_path(&base.name),
                 arguments: base.args.as_ref().map(|args| args.iter().map(|x| self.build_expression(x)).collect()),
                 src: self.loc_to_src(&base.loc),
                 id: self.next_node_id(),
@@ -168,15 +163,43 @@ impl AstBuilder {
             nodes: input.parts.iter()
                 .map(|part| {
                     match part {
-                        solang_parser::pt::ContractPart::StructDefinition(x) => Some(ContractDefinitionNode::StructDefinition(self.build_struct_definition(contract_scope, x))),
-                        solang_parser::pt::ContractPart::EventDefinition(x) => Some(ContractDefinitionNode::EventDefinition(self.build_event_definition(x))),
-                        solang_parser::pt::ContractPart::EnumDefinition(x) => Some(ContractDefinitionNode::EnumDefinition(self.build_enum_definition(x))),
-                        solang_parser::pt::ContractPart::ErrorDefinition(x) => Some(ContractDefinitionNode::ErrorDefinition(self.build_error_definition(x))),
-                        solang_parser::pt::ContractPart::VariableDefinition(x) => Some(ContractDefinitionNode::VariableDeclaration(self.build_variable_declaration(contract_scope, x))),
-                        solang_parser::pt::ContractPart::FunctionDefinition(x) => Some(ContractDefinitionNode::FunctionDefinition(self.build_function_definition(contract_scope, x))),
-                        solang_parser::pt::ContractPart::TypeDefinition(x) => Some(ContractDefinitionNode::UserDefinedValueTypeDefinition(self.build_user_defined_value_type_definition(x))),
+                        solang_parser::pt::ContractPart::StructDefinition(x) => {
+                            Some(ContractDefinitionNode::StructDefinition(self.build_struct_definition(contract_scope, x)))
+                        }
+
+                        solang_parser::pt::ContractPart::EventDefinition(x) => {
+                            Some(ContractDefinitionNode::EventDefinition(self.build_event_definition(x)))
+                        }
+
+                        solang_parser::pt::ContractPart::EnumDefinition(x) => {
+                            Some(ContractDefinitionNode::EnumDefinition(self.build_enum_definition(x)))
+                        }
+
+                        solang_parser::pt::ContractPart::ErrorDefinition(x) => {
+                            Some(ContractDefinitionNode::ErrorDefinition(self.build_error_definition(x)))
+                        }
+
+                        solang_parser::pt::ContractPart::VariableDefinition(x) => {
+                            Some(ContractDefinitionNode::VariableDeclaration(self.build_variable_declaration(contract_scope, x)))
+                        }
+
+                        solang_parser::pt::ContractPart::FunctionDefinition(x) => {
+                            match x.ty {
+                                solang_parser::pt::FunctionTy::Modifier => Some(ContractDefinitionNode::ModifierDefinition(self.build_modifier_definition(contract_scope, x))),
+                                _ => Some(ContractDefinitionNode::FunctionDefinition(self.build_function_definition(contract_scope, x))),
+                            }
+                        }
+
+                        solang_parser::pt::ContractPart::TypeDefinition(x) => {
+                            Some(ContractDefinitionNode::UserDefinedValueTypeDefinition(self.build_user_defined_value_type_definition(x)))
+                        }
+
                         solang_parser::pt::ContractPart::Annotation(_) => None,
-                        solang_parser::pt::ContractPart::Using(x) => Some(ContractDefinitionNode::UsingForDirective(self.build_using_for_directive(x))),
+
+                        solang_parser::pt::ContractPart::Using(x) => {
+                            Some(ContractDefinitionNode::UsingForDirective(self.build_using_for_directive(x)))
+                        }
+
                         solang_parser::pt::ContractPart::StraySemicolon(_) => None,
                     }
                 })
@@ -194,11 +217,11 @@ impl AstBuilder {
 
     pub fn build_enum_definition(&mut self, input: &solang_parser::pt::EnumDefinition) -> EnumDefinition {
         EnumDefinition {
-            name: input.name.as_ref().map(|x| x.name.clone()).unwrap(),
+            name: input.name.as_ref().map(|x| x.name.clone()).unwrap_or_else(String::new),
             name_location: input.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
             members: input.values.iter().map(|value| {
                 EnumValue {
-                    name: value.as_ref().map(|x| x.name.clone()).unwrap(),
+                    name: value.as_ref().map(|x| x.name.clone()).unwrap_or_else(String::new),
                     name_location: None, // TODO
                     src: value.as_ref().map(|x| self.loc_to_src(&x.loc)).unwrap(),
                     id: self.next_node_id(),
@@ -212,7 +235,7 @@ impl AstBuilder {
 
     pub fn build_struct_definition(&mut self, scope: i64, input: &solang_parser::pt::StructDefinition) -> StructDefinition {
         StructDefinition {
-            name: input.name.as_ref().map(|x| x.name.clone()).unwrap(),
+            name: input.name.as_ref().map(|x| x.name.clone()).unwrap_or_else(String::new),
             name_location: input.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
             visibility: Visibility::Public,
             members: input.fields.iter()
@@ -224,7 +247,7 @@ impl AstBuilder {
                         function_selector: None,
                         indexed: None,
                         mutability: None, // TODO
-                        name: field.name.as_ref().map(|x| x.name.clone()).unwrap(),
+                        name: field.name.as_ref().map(|x| x.name.clone()).unwrap_or_else(String::new),
                         name_location: field.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
                         overrides: None,
                         scope,
@@ -255,7 +278,7 @@ impl AstBuilder {
         EventDefinition {
             anonymous: input.anonymous,
             documentation: None,
-            name: input.name.as_ref().map(|x| x.name.clone()).unwrap(),
+            name: input.name.as_ref().map(|x| x.name.clone()).unwrap_or_else(String::new),
             name_location: input.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
             parameters: ParameterList {
                 parameters: input.fields.iter()
@@ -267,7 +290,7 @@ impl AstBuilder {
                             function_selector: None,
                             indexed: Some(field.indexed),
                             mutability: None,
-                            name: field.name.as_ref().map(|x| x.name.clone()).unwrap(),
+                            name: field.name.as_ref().map(|x| x.name.clone()).unwrap_or_else(String::new),
                             name_location: field.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
                             overrides: None,
                             scope: event_scope,
@@ -298,7 +321,7 @@ impl AstBuilder {
 
         ErrorDefinition {
             documentation: None,
-            name: input.name.as_ref().map(|x| x.name.clone()).unwrap(),
+            name: input.name.as_ref().map(|x| x.name.clone()).unwrap_or_else(String::new),
             name_location: input.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
             parameters: ParameterList {
                 parameters: input.fields.iter()
@@ -310,7 +333,7 @@ impl AstBuilder {
                             function_selector: None,
                             indexed: None,
                             mutability: None,
-                            name: field.name.as_ref().map(|x| x.name.clone()).unwrap(),
+                            name: field.name.as_ref().map(|x| x.name.clone()).unwrap_or_else(String::new),
                             name_location: field.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
                             overrides: None,
                             scope: error_scope,
@@ -365,14 +388,7 @@ impl AstBuilder {
 
                 solang_parser::pt::FunctionAttribute::Override(loc, x) => overrides = Some(OverrideSpecifier {
                     overrides: x.iter()
-                        .map(|x| {
-                            IdentifierPath {
-                                name: x.identifiers.iter().map(|x| x.name.clone()).collect::<Vec<_>>().join("."), // TODO
-                                referenced_declaration: None, // TODO
-                                src: self.loc_to_src(&x.loc),
-                                id: self.next_node_id(),
-                            }
-                        })
+                        .map(|x| self.build_identifier_path(x))
                         .collect(),
                     src: self.loc_to_src(loc),
                     id: self.next_node_id(),
@@ -385,12 +401,7 @@ impl AstBuilder {
                                 .map(|arg| self.build_expression(arg))
                                 .collect()
                         }),
-                    modifier_name: IdentifierPath {
-                        name: x.name.identifiers.iter().map(|x| x.name.clone()).collect::<Vec<_>>().join("."), // TODO
-                        referenced_declaration: None, // TODO
-                        src: self.loc_to_src(&x.name.loc),
-                        id: self.next_node_id(),
-                    },
+                    modifier_name: self.build_identifier_path(&x.name),
                     src: self.loc_to_src(loc),
                     id: self.next_node_id(),
                     kind: None, // TODO
@@ -429,7 +440,7 @@ impl AstBuilder {
                             function_selector: None,
                             indexed: None,
                             mutability: None,
-                            name: parameter.as_ref().map(|x| x.name.as_ref().map(|x| x.name.clone()).unwrap()).unwrap(),
+                            name: parameter.as_ref().map(|x| x.name.as_ref().map(|x| x.name.clone()).unwrap_or_else(String::new)).unwrap(),
                             name_location: parameter.as_ref().map(|x| x.name.as_ref().map(|x| self.loc_to_src(&x.loc))).unwrap(),
                             overrides: None,
                             scope: function_scope,
@@ -462,7 +473,7 @@ impl AstBuilder {
                             function_selector: None,
                             indexed: None,
                             mutability: None,
-                            name: parameter.as_ref().map(|x| x.name.as_ref().map(|x| x.name.clone()).unwrap()).unwrap(),
+                            name: parameter.as_ref().map(|x| x.name.as_ref().map(|x| x.name.clone()).unwrap_or_else(String::new)).unwrap(),
                             name_location: parameter.as_ref().map(|x| x.name.as_ref().map(|x| self.loc_to_src(&x.loc))).unwrap(),
                             overrides: None,
                             scope: function_scope,
@@ -495,6 +506,106 @@ impl AstBuilder {
         }
     }
 
+    pub fn build_modifier_definition(&mut self, scope: i64, input: &solang_parser::pt::FunctionDefinition) -> ModifierDefinition {
+        let mut visibility = Visibility::Internal;
+        let mut state_mutability = StateMutability::NonPayable;
+        let mut is_virtual = None;
+        let mut overrides = None;
+        let mut modifiers = vec![];
+
+        for attr in input.attributes.iter() {
+            match attr {
+                solang_parser::pt::FunctionAttribute::Visibility(x) => match x {
+                    solang_parser::pt::Visibility::External(_) => visibility = Visibility::External,
+                    solang_parser::pt::Visibility::Public(_) => visibility = Visibility::Public,
+                    solang_parser::pt::Visibility::Internal(_) => visibility = Visibility::Internal,
+                    solang_parser::pt::Visibility::Private(_) => visibility = Visibility::Private,
+                },
+
+                solang_parser::pt::FunctionAttribute::Mutability(x) => match x {
+                    solang_parser::pt::Mutability::Pure(_) => state_mutability = StateMutability::Pure,
+                    solang_parser::pt::Mutability::View(_) => state_mutability = StateMutability::View,
+                    solang_parser::pt::Mutability::Constant(_) => panic!("Invalid function state mutability: Constant"),
+                    solang_parser::pt::Mutability::Payable(_) => state_mutability = StateMutability::Payable,
+                },
+
+                solang_parser::pt::FunctionAttribute::Virtual(_) => is_virtual = Some(true),
+
+                solang_parser::pt::FunctionAttribute::Immutable(_) => panic!("Invalid function attribute: Immutable"),
+
+                solang_parser::pt::FunctionAttribute::Override(loc, x) => overrides = Some(OverrideSpecifier {
+                    overrides: x.iter()
+                        .map(|x| self.build_identifier_path(x))
+                        .collect(),
+                    src: self.loc_to_src(loc),
+                    id: self.next_node_id(),
+                }),
+
+                solang_parser::pt::FunctionAttribute::BaseOrModifier(loc, x) => modifiers.push(ModifierInvocation {
+                    arguments: x.args.as_ref()
+                        .map(|args| {
+                            args.iter()
+                                .map(|arg| self.build_expression(arg))
+                                .collect()
+                        }),
+                    modifier_name: self.build_identifier_path(&x.name),
+                    src: self.loc_to_src(loc),
+                    id: self.next_node_id(),
+                    kind: None, // TODO
+                }),
+
+                solang_parser::pt::FunctionAttribute::Error(_) => {}
+            }
+        }
+
+        let modifier_scope = self.next_scope();
+
+        ModifierDefinition {
+            body: input.body.as_ref().map(|body| self.build_block(modifier_scope, body)).unwrap(),
+            overrides,
+            documentation: None,
+            name: input.name.as_ref().map(|x| x.name.clone()).unwrap_or_else(String::new),
+            name_location: input.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
+            parameters: ParameterList {
+                parameters: input.params.iter()
+                    .map(|(loc, parameter)| {
+                        VariableDeclaration {
+                            base_functions: None,
+                            constant: false,
+                            documentation: None,
+                            function_selector: None,
+                            indexed: None,
+                            mutability: None,
+                            name: parameter.as_ref().map(|x| x.name.as_ref().map(|x| x.name.clone()).unwrap_or_else(String::new)).unwrap(),
+                            name_location: parameter.as_ref().map(|x| x.name.as_ref().map(|x| self.loc_to_src(&x.loc))).unwrap(),
+                            overrides: None,
+                            scope: modifier_scope,
+                            state_variable: false,
+                            storage_location: parameter.as_ref()
+                                .map(|x| self.build_storage_location(&x.storage))
+                                .unwrap(),
+                            type_descriptions: TypeDescriptions {
+                                type_identifier: None, // TODO
+                                type_string: None, // TODO
+                            },
+                            type_name: Some(parameter.as_ref().map(|x| self.build_type_name(&x.ty)).unwrap()),
+                            value: None,
+                            visibility,
+                            src: self.loc_to_src(loc),
+                            id: self.next_node_id(),
+                        }
+                    })
+                    .collect(),
+                src: self.loc_to_src(&input.loc),
+                id: self.next_node_id(),
+            },
+            is_virtual,
+            visibility,
+            src: self.loc_to_src(&input.loc),
+            id: self.next_node_id(),
+        }
+    }
+
     pub fn build_variable_declaration(&mut self, scope: i64, input: &solang_parser::pt::VariableDefinition) -> VariableDeclaration {
         let mut visibility = Visibility::Public;
         let mut mutability = None;
@@ -516,14 +627,7 @@ impl AstBuilder {
 
                 solang_parser::pt::VariableAttribute::Override(loc, x) => overrides = Some(OverrideSpecifier {
                     overrides: x.iter()
-                        .map(|x| {
-                            IdentifierPath {
-                                name: x.identifiers.iter().map(|x| x.name.clone()).collect::<Vec<_>>().join("."), // TODO
-                                referenced_declaration: None, // TODO
-                                src: self.loc_to_src(&x.loc),
-                                id: self.next_node_id(),
-                            }
-                        })
+                        .map(|x| self.build_identifier_path(x))
                         .collect(),
                     src: self.loc_to_src(loc),
                     id: self.next_node_id(),
@@ -538,7 +642,7 @@ impl AstBuilder {
             function_selector: None,
             indexed: None,
             mutability,
-            name: input.name.as_ref().map(|x| x.name.clone()).unwrap(),
+            name: input.name.as_ref().map(|x| x.name.clone()).unwrap_or_else(String::new),
             name_location: input.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
             overrides,
             scope,
@@ -569,8 +673,12 @@ impl AstBuilder {
 
     pub fn build_using_for_directive(&mut self, input: &solang_parser::pt::Using) -> UsingForDirective {
         UsingForDirective {
-            library_name: todo!(),
-            type_name: todo!(),
+            library_name: match &input.list {
+                solang_parser::pt::UsingList::Library(path) => self.build_identifier_path(path),
+                solang_parser::pt::UsingList::Functions(_) => todo!(),
+                solang_parser::pt::UsingList::Error => todo!(),
+            },
+            type_name: input.ty.as_ref().map(|x| self.build_type_name(x)),
             src: self.loc_to_src(&input.loc),
             id: self.next_node_id(),
         }
@@ -584,6 +692,15 @@ impl AstBuilder {
                 solang_parser::pt::StorageLocation::Calldata(_) => StorageLocation::Calldata,
             })
             .unwrap_or_else(|| StorageLocation::Default)
+    }
+
+    pub fn build_identifier_path(&mut self, path: &solang_parser::pt::IdentifierPath) -> IdentifierPath {
+        IdentifierPath {
+            name: path.identifiers.iter().map(|x| x.name.clone()).collect::<Vec<_>>().join("."), // TODO
+            referenced_declaration: None, // TODO
+            src: self.loc_to_src(&path.loc),
+            id: self.next_node_id(),
+        }
     }
 
     pub fn build_type_name(&mut self, input: &solang_parser::pt::Expression) -> TypeName {
@@ -710,14 +827,7 @@ impl AstBuilder {
             
                             solang_parser::pt::FunctionAttribute::Override(loc, x) => overrides = Some(OverrideSpecifier {
                                 overrides: x.iter()
-                                    .map(|x| {
-                                        IdentifierPath {
-                                            name: x.identifiers.iter().map(|x| x.name.clone()).collect::<Vec<_>>().join("."), // TODO
-                                            referenced_declaration: None, // TODO
-                                            src: self.loc_to_src(&x.loc),
-                                            id: self.next_node_id(),
-                                        }
-                                    })
+                                    .map(|x| self.build_identifier_path(x))
                                     .collect(),
                                 src: self.loc_to_src(loc),
                                 id: self.next_node_id(),
@@ -730,12 +840,7 @@ impl AstBuilder {
                                             .map(|arg| self.build_expression(arg))
                                             .collect()
                                     }),
-                                modifier_name: IdentifierPath {
-                                    name: x.name.identifiers.iter().map(|x| x.name.clone()).collect::<Vec<_>>().join("."), // TODO
-                                    referenced_declaration: None, // TODO
-                                    src: self.loc_to_src(&x.name.loc),
-                                    id: self.next_node_id(),
-                                },
+                                modifier_name: self.build_identifier_path(&x.name),
                                 src: self.loc_to_src(loc),
                                 id: self.next_node_id(),
                                 kind: None, // TODO
@@ -758,7 +863,7 @@ impl AstBuilder {
                                         function_selector: None,
                                         indexed: None,
                                         mutability: None,
-                                        name: parameter.as_ref().map(|x| x.name.as_ref().map(|x| x.name.clone()).unwrap()).unwrap(),
+                                        name: parameter.as_ref().map(|x| x.name.as_ref().map(|x| x.name.clone()).unwrap_or_else(String::new)).unwrap(),
                                         name_location: parameter.as_ref().map(|x| x.name.as_ref().map(|x| self.loc_to_src(&x.loc))).unwrap(),
                                         overrides: None,
                                         scope: -1, // TODO
@@ -793,7 +898,7 @@ impl AstBuilder {
                                                 function_selector: None,
                                                 indexed: None,
                                                 mutability: None,
-                                                name: parameter.as_ref().map(|x| x.name.as_ref().map(|x| x.name.clone()).unwrap()).unwrap(),
+                                                name: parameter.as_ref().map(|x| x.name.as_ref().map(|x| x.name.clone()).unwrap_or_else(String::new)).unwrap(),
                                                 name_location: parameter.as_ref().map(|x| x.name.as_ref().map(|x| self.loc_to_src(&x.loc))).unwrap(),
                                                 overrides: None,
                                                 scope: -1, // TODO
@@ -829,6 +934,16 @@ impl AstBuilder {
             solang_parser::pt::Expression::ArraySubscript(_loc, ty, len) => TypeName::ArrayTypeName(ArrayTypeName {
                 base_type: Box::new(self.build_type_name(ty)),
                 length: len.as_ref().map(|x| self.build_literal(x)),
+                type_descriptions: TypeDescriptions {
+                    type_identifier: None, // TODO
+                    type_string: None, // TODO
+                },
+            }),
+
+            solang_parser::pt::Expression::Variable(identifier) => TypeName::UserDefinedTypeName(UserDefinedTypeName {
+                path_node: None, // TODO
+                referenced_declaration: -1, // TODO
+                name: Some(identifier.name.clone()),
                 type_descriptions: TypeDescriptions {
                     type_identifier: None, // TODO
                     type_string: None, // TODO
@@ -871,7 +986,9 @@ impl AstBuilder {
                 Statement::UncheckedBlock(self.build_block(unchecked_scope, input))
             }
 
-            solang_parser::pt::Statement::Assembly { loc, dialect, flags, block } => todo!(),
+            solang_parser::pt::Statement::Assembly { loc, dialect, flags, block } => {
+                Statement::InlineAssembly(self.build_inline_assembly(loc, dialect.as_ref(), flags.as_ref().map(|x| x.as_slice()), block))
+            }
             
             solang_parser::pt::Statement::Args(_, _) => todo!(),
 
@@ -916,7 +1033,7 @@ impl AstBuilder {
                             function_selector: None, // TODO
                             indexed: None,
                             mutability: None, // TODO
-                            name: variable.name.as_ref().map(|x| x.name.clone()).unwrap(),
+                            name: variable.name.as_ref().map(|x| x.name.clone()).unwrap_or_else(String::new),
                             name_location: variable.name.as_ref().map(|x| self.loc_to_src(&x.loc)),
                             overrides: None, // TODO
                             scope,
@@ -988,7 +1105,78 @@ impl AstBuilder {
                 })
             }
 
-            solang_parser::pt::Statement::Revert(_, _, _) => todo!(),
+            solang_parser::pt::Statement::Revert(loc, function, arguments) => {
+                match function {
+                    Some(function) => Statement::RevertStatement(RevertStatement {
+                        error_call: FunctionCall {
+                            kind: FunctionCallKind::FunctionCall,
+                            try_call: Some(false),
+                            names: vec![],
+                            arguments: arguments.iter()
+                                .map(|arg| self.build_expression(arg))
+                                .collect(),
+                            expression: Box::new(Expression::Identifier(Identifier {
+                                argument_types: None, // TODO
+                                name: function.identifiers.iter().map(|x| x.name.clone()).collect::<Vec<_>>().join("."), // TODO
+                                overloaded_declarations: vec![], // TODO
+                                referenced_declaration: -1, // TODO
+                                type_descriptions: TypeDescriptions {
+                                    type_identifier: None, // TODO
+                                    type_string: None, // TODO
+                                },
+                                src: self.loc_to_src(&function.loc),
+                                id: self.next_node_id(),
+                            })),
+                            argument_types: None, // TODO
+                            is_constant: false, // TODO
+                            is_l_value: false, // TODO
+                            is_pure: false, // TODO
+                            l_value_requested: false, // TODO
+                            type_descriptions: TypeDescriptions {
+                                type_identifier: None, // TODO
+                                type_string: None, // TODO
+                            },
+                            src: self.loc_to_src(loc),
+                            id: self.next_node_id(),
+                        },
+                    }),
+
+                    None => Statement::ExpressionStatement(ExpressionStatement {
+                        expression: Expression::FunctionCall(FunctionCall {
+                            kind: FunctionCallKind::FunctionCall,
+                            try_call: Some(false),
+                            names: vec![],
+                            arguments: arguments.iter()
+                                .map(|arg| self.build_expression(arg))
+                                .collect(),
+                            expression: Box::new(Expression::Identifier(Identifier {
+                                argument_types: None, // TODO
+                                name: "revert".to_string(),
+                                overloaded_declarations: vec![], // TODO
+                                referenced_declaration: -1, // TODO
+                                type_descriptions: TypeDescriptions {
+                                    type_identifier: None, // TODO
+                                    type_string: None, // TODO
+                                },
+                                src: self.loc_to_src(loc),
+                                id: self.next_node_id(),
+                            })),
+                            argument_types: None, // TODO
+                            is_constant: false, // TODO
+                            is_l_value: false, // TODO
+                            is_pure: false, // TODO
+                            l_value_requested: false, // TODO
+                            type_descriptions: TypeDescriptions {
+                                type_identifier: None, // TODO
+                                type_string: None, // TODO
+                            },
+                            src: self.loc_to_src(loc),
+                            id: self.next_node_id(),
+                        }),
+                    }),
+                }
+            }
+
             solang_parser::pt::Statement::RevertNamedArgs(_, _, _) => todo!(),
 
             solang_parser::pt::Statement::Emit(_loc, x) => {
@@ -1040,6 +1228,24 @@ impl AstBuilder {
                 id: self.next_node_id(),
             },
 
+            solang_parser::pt::Expression::HexNumberLiteral(loc, value, _) => Literal {
+                hex_value: Some(value.clone()), // TODO
+                value: None,
+                subdenomination: None,
+                kind: LiteralKind::String,
+                argument_types: None,
+                is_constant: false, // TODO
+                is_l_value: false, // TODO
+                is_pure: false, // TODO
+                l_value_requested: false, // TODO
+                type_descriptions: TypeDescriptions {
+                    type_identifier: None, // TODO
+                    type_string: None, // TODO
+                },
+                src: self.loc_to_src(loc),
+                id: self.next_node_id(),
+            },
+
             solang_parser::pt::Expression::StringLiteral(x) => Literal {
                 hex_value: None, // TODO
                 value: Some(x.iter().map(|x| x.string.clone()).collect::<Vec<_>>().join("")), // TODO: why is it a vec?
@@ -1076,7 +1282,7 @@ impl AstBuilder {
                 id: self.next_node_id(),
             },
 
-            _ => panic!("Invalid literal expression: {input}"),
+            _ => panic!("Invalid literal expression: {input:#?}"),
         }
     }
 
@@ -1205,6 +1411,114 @@ impl AstBuilder {
         }
     }
 
+    pub fn build_member_access(
+        &mut self,
+        loc: &solang_parser::pt::Loc,
+        expression: &solang_parser::pt::Expression,
+        member: &solang_parser::pt::Identifier,
+    ) -> MemberAccess {
+        MemberAccess {
+            member_name: member.name.clone(),
+            expression: Box::new(self.build_expression(expression)),
+            referenced_declaration: None, // TODO
+            argument_types: None, // TODO
+            is_constant: false,
+            is_l_value: false,
+            is_pure: false,
+            l_value_requested: false,
+            type_descriptions: TypeDescriptions {
+                type_identifier: None, // TODO
+                type_string: None, // TODO
+            },
+            src: self.loc_to_src(loc),
+            id: self.next_node_id(),
+        }
+    }
+
+    pub fn build_function_call(
+        &mut self,
+        loc: &solang_parser::pt::Loc,
+        expression: &solang_parser::pt::Expression,
+        arguments: &[solang_parser::pt::Expression],
+    ) -> FunctionCall {
+        FunctionCall {
+            kind: FunctionCallKind::FunctionCall,
+            try_call: None, // TODO
+            names: vec![], // TODO
+            arguments: arguments.iter()
+                .map(|x| self.build_expression(x))
+                .collect(),
+            expression: Box::new(self.build_expression(expression)),
+            argument_types: None, // TODO
+            is_constant: false, // TODO
+            is_l_value: false, // TODO
+            is_pure: false, // TODO
+            l_value_requested: false, // TODO
+            type_descriptions: TypeDescriptions {
+                type_identifier: None, // TODO
+                type_string: None, // TODO
+            },
+            src: self.loc_to_src(loc),
+            id: self.next_node_id(),
+        }
+    }
+
+    pub fn build_function_call_options(
+        &mut self,
+        loc: &solang_parser::pt::Loc,
+        call: &solang_parser::pt::Expression,
+        options: &solang_parser::pt::Statement,
+    ) -> FunctionCallOptions {
+        let solang_parser::pt::Statement::Args(loc, args) = options else {
+            panic!("Invalid function call options: {options:#?}");
+        };
+
+        FunctionCallOptions {
+            names: args.iter()
+                .map(|arg| arg.name.name.clone())
+                .collect(),
+            options: args.iter()
+                .map(|arg| self.build_expression(&arg.expr))
+                .collect(),
+            arguments: None, // TODO
+            argument_types: None, // TODO
+            expression: Box::new(self.build_expression(call)),
+            is_constant: false, // TODO
+            is_l_value: false, // TODO
+            is_pure: false, // TODO
+            l_value_requested: false, // TODO
+            type_descriptions: TypeDescriptions {
+                type_identifier: None, // TODO
+                type_string: None, // TODO
+            },
+            src: self.loc_to_src(loc),
+            id: self.next_node_id(),
+        }
+    }
+
+    pub fn build_index_access(
+        &mut self,
+        loc: &solang_parser::pt::Loc,
+        array: &solang_parser::pt::Expression,
+        index: &solang_parser::pt::Expression,
+    ) -> IndexAccess {
+        IndexAccess {
+            base_expression: Box::new(self.build_expression(array)),
+            index_expression: Box::new(self.build_expression(index)),
+            argument_types: None, // TODO
+            is_constant: false, // TODO
+            is_l_value: false, // TODO
+            is_pure: false, // TODO
+            l_value_requested: false, // TODO
+            type_descriptions: TypeDescriptions {
+                type_identifier: None, // TODO
+                type_string: None, // TODO
+            },
+            src: self.loc_to_src(loc),
+            id: self.next_node_id(),
+        }
+    }
+
     pub fn build_expression(&mut self, input: &solang_parser::pt::Expression) -> Expression {
         match input {
             solang_parser::pt::Expression::PostIncrement(loc, x) => {
@@ -1219,35 +1533,28 @@ impl AstBuilder {
                 Expression::NewExpression(self.build_new_expression(loc, x))
             }
 
-            solang_parser::pt::Expression::ArraySubscript(_, _, _) => todo!(),
-            solang_parser::pt::Expression::ArraySlice(_, _, _, _) => todo!(),
-            solang_parser::pt::Expression::Parenthesis(_, _) => todo!(),
-            solang_parser::pt::Expression::MemberAccess(_, _, _) => todo!(),
-
-            solang_parser::pt::Expression::FunctionCall(loc, expression, arguments) => {
-                Expression::FunctionCall(FunctionCall {
-                    kind: FunctionCallKind::FunctionCall,
-                    try_call: None, // TODO
-                    names: vec![], // TODO
-                    arguments: arguments.iter()
-                        .map(|x| self.build_expression(x))
-                        .collect(),
-                    expression: Box::new(self.build_expression(expression.as_ref())),
-                    argument_types: None, // TODO
-                    is_constant: false, // TODO
-                    is_l_value: false, // TODO
-                    is_pure: false, // TODO
-                    l_value_requested: false, // TODO
-                    type_descriptions: TypeDescriptions {
-                        type_identifier: None, // TODO
-                        type_string: None, // TODO
-                    },
-                    src: self.loc_to_src(loc),
-                    id: self.next_node_id(),
-                })
+            solang_parser::pt::Expression::ArraySubscript(loc, array, index) => {
+                Expression::IndexAccess(self.build_index_access(loc, array, index.as_ref().unwrap()))
             }
 
-            solang_parser::pt::Expression::FunctionCallBlock(_, _, _) => todo!(),
+            solang_parser::pt::Expression::ArraySlice(_, _, _, _) => todo!(),
+
+            solang_parser::pt::Expression::Parenthesis(_, expression) => {
+                self.build_expression(expression)
+            }
+
+            solang_parser::pt::Expression::MemberAccess(loc, expression, member) => {
+                Expression::MemberAccess(self.build_member_access(loc, expression, member))
+            }
+
+            solang_parser::pt::Expression::FunctionCall(loc, expression, arguments) => {
+                Expression::FunctionCall(self.build_function_call(loc, expression, arguments))
+            }
+
+            solang_parser::pt::Expression::FunctionCallBlock(loc, call, options) => {
+                Expression::FunctionCallOptions(self.build_function_call_options(loc, call, options))
+            }
+
             solang_parser::pt::Expression::NamedFunctionCall(_, _, _) => todo!(),
 
             solang_parser::pt::Expression::Not(loc, x) => {
@@ -1410,7 +1717,22 @@ impl AstBuilder {
                 Expression::Literal(self.build_literal(input))
             }
 
-            solang_parser::pt::Expression::Type(_, _) => todo!(),
+            solang_parser::pt::Expression::Type(loc, _) => {
+                Expression::ElementaryTypeNameExpression(ElementaryTypeNameExpression {
+                    type_name: self.build_type_name(input),
+                    argument_types: None, // TODO
+                    is_constant: false, // TODO
+                    is_l_value: false, // TODO
+                    is_pure: false, // TODO
+                    l_value_requested: false, // TODO
+                    type_descriptions: TypeDescriptions {
+                        type_identifier: None, // TODO
+                        type_string: None, // TODO
+                    },
+                    src: self.loc_to_src(loc),
+                    id: self.next_node_id(),
+                })
+            }
             
             solang_parser::pt::Expression::Variable(identifier) => {
                 Expression::Identifier(Identifier {
@@ -1427,8 +1749,228 @@ impl AstBuilder {
                 })
             }
 
-            solang_parser::pt::Expression::List(_, _) => todo!(),
+            solang_parser::pt::Expression::List(loc, list) => {
+                Expression::TupleExpression(TupleExpression {
+                    components: list.iter()
+                        .map(|(loc, x)| {
+                            x.as_ref().map(|x| {
+                                Expression::Identifier(Identifier {
+                                    argument_types: None, // TODO
+                                    name: x.name.as_ref().map(|x| x.name.clone()).unwrap(),
+                                    overloaded_declarations: vec![], // TODO
+                                    referenced_declaration: -1, // TODO
+                                    type_descriptions: TypeDescriptions {
+                                        type_identifier: None, // TODO
+                                        type_string: None, // TODO
+                                    },
+                                    src: self.loc_to_src(loc),
+                                    id: self.next_node_id(),
+                                })
+                            })
+                        })
+                        .collect(),
+                    argument_types: None, // TODO
+                    is_inline_array: false, // TODO
+                    is_constant: false, // TODO
+                    is_l_value: false, // TODO
+                    is_pure: false, // TODO
+                    l_value_requested: false, // TODO
+                    type_descriptions: TypeDescriptions {
+                        type_identifier: None, // TODO
+                        type_string: None, // TODO
+                    },
+                    src: self.loc_to_src(loc),
+                    id: self.next_node_id(),
+                })
+            }
+
             solang_parser::pt::Expression::ArrayLiteral(_, _) => todo!(),
+        }
+    }
+
+    pub fn build_inline_assembly(
+        &mut self,
+        loc: &solang_parser::pt::Loc,
+        dialect: Option<&solang_parser::pt::StringLiteral>,
+        flags: Option<&[solang_parser::pt::StringLiteral]>,
+        block: &solang_parser::pt::YulBlock,
+    ) -> InlineAssembly {
+        InlineAssembly {
+            ast: Some(self.build_yul_block(block)),
+            evm_version: None, // TODO
+            external_references: vec![], // TODO
+            operations: None, // TODO
+            src: self.loc_to_src(loc),
+            id: self.next_node_id(),
+        }
+    }
+
+    pub fn build_yul_block(&mut self, block: &solang_parser::pt::YulBlock) -> YulBlock {
+        YulBlock {
+            statements: block.statements.iter()
+                .map(|stmt| self.build_yul_statement(stmt))
+                .collect(),
+        }
+    }
+
+    pub fn build_yul_statement(&mut self, stmt: &solang_parser::pt::YulStatement) -> YulStatement {
+        match stmt {
+            solang_parser::pt::YulStatement::Assign(_loc, variable_names, value) => {
+                YulStatement::YulAssignment(YulAssignment {
+                    value: self.build_yul_expression(value),
+                    variable_names: variable_names.iter()
+                        .map(|x| self.build_yul_identifier(x))
+                        .collect(),
+                })
+            }
+
+            solang_parser::pt::YulStatement::VariableDeclaration(_loc, variables, value) => {
+                YulStatement::YulVariableDeclaration(YulVariableDeclaration {
+                    value: value.as_ref()
+                        .map(|x| self.build_yul_expression(x))
+                        .unwrap(),
+                    variables: variables.iter()
+                        .map(|x| self.build_yul_typed_name(x))
+                        .collect(),
+                })
+            }
+
+            solang_parser::pt::YulStatement::If(_loc, condition, body) => {
+                YulStatement::YulIf(self.build_yul_if(condition, body))
+            }
+
+            solang_parser::pt::YulStatement::For(x) => {
+                YulStatement::YulForLoop(self.build_yul_for_loop(x))
+            }
+            
+            solang_parser::pt::YulStatement::Switch(switch) => {
+                YulStatement::YulSwitch(self.build_yul_switch(switch))
+            }
+
+            solang_parser::pt::YulStatement::Leave(_) => todo!(),
+            solang_parser::pt::YulStatement::Break(_) => todo!(),
+            solang_parser::pt::YulStatement::Continue(_) => todo!(),
+            solang_parser::pt::YulStatement::Block(_) => todo!(),
+            solang_parser::pt::YulStatement::FunctionDefinition(_) => todo!(),
+            
+            solang_parser::pt::YulStatement::FunctionCall(call) => {
+                YulStatement::YulExpressionStatement(YulExpressionStatement {
+                    expression: YulExpression::YulFunctionCall(YulFunctionCall {
+                        function_name: YulIdentifier {
+                            name: call.id.name.clone(),
+                        },
+                        arguments: call.arguments.iter()
+                            .map(|arg| self.build_yul_expression(arg))
+                            .collect(),
+                    }),
+                })
+            }
+
+            solang_parser::pt::YulStatement::Error(_) => panic!("Invalid yul statement: {stmt:#?}"),
+        }
+    }
+
+    pub fn build_yul_identifier(&mut self, expression: &solang_parser::pt::YulExpression) -> YulIdentifier {
+        match expression {
+            solang_parser::pt::YulExpression::Variable(identifier) => YulIdentifier {
+                name: identifier.name.clone(),
+            },
+
+            _ => panic!("Invalid yul identifier expression: {expression:#?}"),
+        }
+    }
+
+    pub fn build_yul_typed_name(&mut self, identifier: &solang_parser::pt::YulTypedIdentifier) -> YulTypedName {
+        YulTypedName {
+            r#type: identifier.ty.as_ref()
+                .map(|x| x.name.clone())
+                .unwrap_or_else(String::new),
+            name: identifier.id.name.clone(),
+        }
+    }
+
+    pub fn build_yul_if(
+        &mut self,
+        condition: &solang_parser::pt::YulExpression,
+        body: &solang_parser::pt::YulBlock
+    ) -> YulIf {
+        YulIf {
+            condition: self.build_yul_expression(condition),
+            body: self.build_yul_block(body),
+        }
+    }
+
+    pub fn build_yul_switch(&mut self, switch: &solang_parser::pt::YulSwitch) -> YulSwitch {
+        YulSwitch {
+            cases: switch.cases.iter()
+                .map(|case| self.build_yul_case(case))
+                .collect(),
+            expression: self.build_yul_expression(&switch.condition),
+        }
+    }
+
+    pub fn build_yul_case(&mut self, case: &solang_parser::pt::YulSwitchOptions) -> YulCase {
+        match case {
+            solang_parser::pt::YulSwitchOptions::Case(_loc, expression, body) => YulCase {
+                body: self.build_yul_block(body),
+                value: self.build_yul_expression(expression),
+            },
+
+            solang_parser::pt::YulSwitchOptions::Default(_loc, body) => YulCase {
+                body: self.build_yul_block(body),
+                value: YulExpression::YulIdentifier(YulIdentifier {
+                    name: "default".to_string(),
+                }),
+            },
+        }
+    }
+
+    pub fn build_yul_for_loop(&mut self, input: &solang_parser::pt::YulFor) -> YulForLoop {
+        YulForLoop {
+            pre: self.build_yul_block(&input.init_block),
+            condition: self.build_yul_expression(&input.condition),
+            post: self.build_yul_block(&input.post_block),
+            body: self.build_yul_block(&input.execution_block),
+        }
+    }
+
+    pub fn build_yul_expression(&mut self, expression: &solang_parser::pt::YulExpression) -> YulExpression {
+        match expression {
+            solang_parser::pt::YulExpression::BoolLiteral(_, value, _) => YulExpression::YulLiteral(YulLiteral {
+                kind: YulLiteralKind::Bool,
+                value: Some(format!("{value}")),
+                hex_value: None,
+            }),
+
+            solang_parser::pt::YulExpression::NumberLiteral(_, value, _, _) => YulExpression::YulLiteral(YulLiteral {
+                kind: YulLiteralKind::Number,
+                value: Some(value.clone()),
+                hex_value: None,
+            }),
+
+            solang_parser::pt::YulExpression::HexNumberLiteral(_, _, _) => todo!(),
+            solang_parser::pt::YulExpression::HexStringLiteral(_, _) => todo!(),
+
+            solang_parser::pt::YulExpression::StringLiteral(_, value) => YulExpression::YulLiteral(YulLiteral {
+                kind: YulLiteralKind::String,
+                value: value.as_ref().map(|x| x.name.clone()),
+                hex_value: None,
+            }),
+
+            solang_parser::pt::YulExpression::Variable(identifier) => YulExpression::YulIdentifier(YulIdentifier {
+                name: identifier.name.clone(),
+            }),
+
+            solang_parser::pt::YulExpression::FunctionCall(function_call) => YulExpression::YulFunctionCall(YulFunctionCall {
+                function_name: YulIdentifier {
+                    name: function_call.id.name.clone(),
+                },
+                arguments: function_call.arguments.iter()
+                    .map(|x| self.build_yul_expression(x))
+                    .collect(),
+            }),
+
+            solang_parser::pt::YulExpression::SuffixAccess(_, _, _) => todo!(),
         }
     }
 }
@@ -1439,7 +1981,7 @@ mod tests {
 
     #[test]
     fn test_ast_builder() {
-        let src = std::fs::read_to_string("/Users/camden/Source/solidity-test/contracts/Blah.sol").unwrap();
+        let src = std::fs::read_to_string("/Users/camden/Source/solidity-test/contracts/USDC.sol_").unwrap();
         let (input, _comments) = solang_parser::parse(src.as_str(), 0).unwrap();
         
         let mut builder = AstBuilder::default();

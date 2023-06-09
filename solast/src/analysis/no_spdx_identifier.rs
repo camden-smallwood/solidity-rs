@@ -18,7 +18,7 @@ impl AstVisitor for NoSpdxIdentifierVisitor {
             self.report.borrow_mut().add_entry(
                 context.current_source_unit.absolute_path.clone().unwrap_or_else(String::new),
                 None,
-                "\tSPDX license identifier not provided in source file; Consider adding one before deployment"
+                "SPDX license identifier not provided in source file; Consider adding one before deployment"
             );
         }
 

@@ -13,9 +13,10 @@ Some legacy versions of Solidity are inherently supported (0.5.X-0.7.X), but the
 cargo run --release -- \
   [--todo_list] \
   [--contract=<contract_name>] \
-  [--output_format=<plain_text | json>]
+  [--output_format=<plain_text | json>] \
   [--analyzer_name1] \
   [--analyzer_nameN] \
+  [--contract_path=<Contract.sol>] \
   <project_directory>
 ```
 
