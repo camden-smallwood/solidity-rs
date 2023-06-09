@@ -662,10 +662,10 @@ impl AstBuilder {
 
     pub fn build_user_defined_value_type_definition(&mut self, input: &solang_parser::pt::TypeDefinition) -> UserDefinedValueTypeDefinition {
         UserDefinedValueTypeDefinition {
-            underlying_type: todo!(),
-            name: todo!(),
-            name_location: todo!(),
-            canonical_name: todo!(),
+            underlying_type: self.build_type_name(&input.ty),
+            name: input.name.name.clone(),
+            name_location: Some(self.loc_to_src(&input.name.loc)),
+            canonical_name: None, // TODO
             src: self.loc_to_src(&input.loc),
             id: self.next_node_id(),
         }
@@ -1534,6 +1534,30 @@ impl AstBuilder {
         }
     }
 
+    pub fn build_index_range_access(
+        &mut self,
+        loc: &solang_parser::pt::Loc,
+        array: &solang_parser::pt::Expression,
+        start: Option<&solang_parser::pt::Expression>,
+        end: Option<&solang_parser::pt::Expression>,
+    ) -> IndexRangeAccess {
+        IndexRangeAccess {
+            base_expression: Box::new(self.build_expression(array)),
+            start_expression: start.as_ref().map(|x| Box::new(self.build_expression(x))),
+            end_expression: end.as_ref().map(|x| Box::new(self.build_expression(x))),
+            is_constant: false, // TODO
+            is_l_value: false, // TODO
+            is_pure: false, // TODO
+            l_value_requested: false, // TODO
+            type_descriptions: TypeDescriptions {
+                type_identifier: None, // TODO
+                type_string: None, // TODO
+            },
+            src: self.loc_to_src(loc),
+            id: self.next_node_id(),
+        }
+    }
+
     pub fn build_expression(&mut self, input: &solang_parser::pt::Expression) -> Expression {
         match input {
             solang_parser::pt::Expression::PostIncrement(loc, x) => {
@@ -1552,7 +1576,9 @@ impl AstBuilder {
                 Expression::IndexAccess(self.build_index_access(loc, array, index.as_ref().unwrap()))
             }
 
-            solang_parser::pt::Expression::ArraySlice(_, _, _, _) => todo!(),
+            solang_parser::pt::Expression::ArraySlice(loc, array, start, end) => {
+                Expression::IndexRangeAccess(self.build_index_range_access(loc, array, start.as_ref().map(|x| x.as_ref()), end.as_ref().map(|x| x.as_ref())))
+            }
 
             solang_parser::pt::Expression::Parenthesis(_, expression) => {
                 self.build_expression(expression)
@@ -1862,11 +1888,23 @@ impl AstBuilder {
                 YulStatement::YulSwitch(self.build_yul_switch(switch))
             }
 
-            solang_parser::pt::YulStatement::Leave(_) => todo!(),
-            solang_parser::pt::YulStatement::Break(_) => todo!(),
-            solang_parser::pt::YulStatement::Continue(_) => todo!(),
+            solang_parser::pt::YulStatement::Leave(_) => {
+                YulStatement::YulLeave
+            }
+
+            solang_parser::pt::YulStatement::Break(_) => {
+                YulStatement::YulBreak
+            }
+
+            solang_parser::pt::YulStatement::Continue(_) => {
+                YulStatement::YulContinue
+            }
+
             solang_parser::pt::YulStatement::Block(_) => todo!(),
-            solang_parser::pt::YulStatement::FunctionDefinition(_) => todo!(),
+
+            solang_parser::pt::YulStatement::FunctionDefinition(function) => {
+                YulStatement::YulFunctionDefinition(self.build_yul_function_definition(function))
+            }
             
             solang_parser::pt::YulStatement::FunctionCall(call) => {
                 YulStatement::YulExpressionStatement(YulExpressionStatement {
@@ -1946,6 +1984,19 @@ impl AstBuilder {
             condition: self.build_yul_expression(&input.condition),
             post: self.build_yul_block(&input.post_block),
             body: self.build_yul_block(&input.execution_block),
+        }
+    }
+
+    pub fn build_yul_function_definition(&mut self, function: &solang_parser::pt::YulFunctionDefinition) -> YulFunctionDefinition {
+        YulFunctionDefinition {
+            name: function.id.name.clone(),
+            parameters: function.params.iter()
+                .map(|param| self.build_yul_typed_name(param))
+                .collect(),
+            return_parameters: function.returns.iter()
+                .map(|param| self.build_yul_typed_name(param))
+                .collect(),
+            body: self.build_yul_block(&function.body),
         }
     }
 

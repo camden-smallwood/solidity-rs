@@ -118,6 +118,32 @@ pub struct YulExpressionStatementContext<'a, 'b, 'c> {
     pub yul_expression_statement: &'a YulExpressionStatement,
 }
 
+pub struct YulFunctionDefinitionContext<'a, 'b, 'c> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: &'a Statement,
+    pub inline_assembly: &'a InlineAssembly,
+    pub yul_blocks: &'c mut Vec<&'a YulBlock>,
+    pub yul_statement: &'a YulStatement,
+    pub yul_function_definition: &'a YulFunctionDefinition,
+}
+
+pub struct YulTypedNameContext<'a, 'b, 'c> {
+    pub source_units: &'a [SourceUnit],
+    pub current_source_unit: &'a SourceUnit,
+    pub contract_definition: &'a ContractDefinition,
+    pub definition_node: &'a ContractDefinitionNode,
+    pub blocks: &'b mut Vec<&'a Block>,
+    pub statement: &'a Statement,
+    pub inline_assembly: &'a InlineAssembly,
+    pub yul_blocks: &'c mut Vec<&'a YulBlock>,
+    pub yul_statement: Option<&'a YulStatement>,
+    pub yul_typed_name: &'a YulTypedName,
+}
+
 pub struct YulExpressionContext<'a, 'b, 'c> {
     pub source_units: &'a [SourceUnit],
     pub current_source_unit: &'a SourceUnit,
@@ -336,6 +362,21 @@ pub trait AstVisitor {
 
     fn visit_yul_expression_statement<'a, 'b, 'c>(&mut self, context: &mut YulExpressionStatementContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
     fn leave_yul_expression_statement<'a, 'b, 'c>(&mut self, context: &mut YulExpressionStatementContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+
+    fn visit_yul_function_definition<'a, 'b, 'c>(&mut self, context: &mut YulFunctionDefinitionContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+    fn leave_yul_function_definition<'a, 'b, 'c>(&mut self, context: &mut YulFunctionDefinitionContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+
+    fn visit_yul_leave<'a, 'b, 'c>(&mut self, context: &mut YulStatementContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+    fn leave_yul_leave<'a, 'b, 'c>(&mut self, context: &mut YulStatementContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+
+    fn visit_yul_break<'a, 'b, 'c>(&mut self, context: &mut YulStatementContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+    fn leave_yul_break<'a, 'b, 'c>(&mut self, context: &mut YulStatementContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+
+    fn visit_yul_continue<'a, 'b, 'c>(&mut self, context: &mut YulStatementContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+    fn leave_yul_continue<'a, 'b, 'c>(&mut self, context: &mut YulStatementContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+
+    fn visit_yul_typed_name<'a, 'b, 'c>(&mut self, context: &mut YulTypedNameContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
+    fn leave_yul_typed_name<'a, 'b, 'c>(&mut self, context: &mut YulTypedNameContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
 
     fn visit_yul_expression<'a, 'b, 'c>(&mut self, context: &mut YulExpressionContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
     fn leave_yul_expression<'a, 'b, 'c>(&mut self, context: &mut YulExpressionContext<'a, 'b, 'c>) -> io::Result<()> { Ok(()) }
@@ -2306,6 +2347,39 @@ impl AstVisitor for AstVisitorData<'_> {
                 self.visit_yul_expression_statement(&mut context)?;
                 self.leave_yul_expression_statement(&mut context)?;
             }
+
+            YulStatement::YulFunctionDefinition(yul_function_definition) => {
+                let mut context = YulFunctionDefinitionContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
+                    inline_assembly: context.inline_assembly,
+                    yul_blocks: context.yul_blocks,
+                    yul_statement: context.yul_statement,
+                    yul_function_definition,
+                };
+
+                self.visit_yul_function_definition(&mut context)?;
+                self.leave_yul_function_definition(&mut context)?;
+            }
+
+            YulStatement::YulLeave => {
+                self.visit_yul_leave(context)?;
+                self.leave_yul_leave(context)?;
+            }
+
+            YulStatement::YulBreak => {
+                self.visit_yul_break(context)?;
+                self.leave_yul_break(context)?;
+            }
+
+            YulStatement::YulContinue => {
+                self.visit_yul_continue(context)?;
+                self.leave_yul_continue(context)?;
+            }
         }
 
         Ok(())
@@ -2624,6 +2698,22 @@ impl AstVisitor for AstVisitorData<'_> {
         Ok(())
     }
 
+    fn visit_yul_typed_name<'a, 'b, 'c>(&mut self, context: &mut YulTypedNameContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_yul_typed_name(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn leave_yul_typed_name<'a, 'b, 'c>(&mut self, context: &mut YulTypedNameContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_yul_typed_name(context)?;
+        }
+
+        Ok(())
+    }
+    
     fn visit_yul_expression_statement<'a, 'b, 'c>(&mut self, context: &mut YulExpressionStatementContext<'a, 'b, 'c>) -> io::Result<()> {
         for visitor in self.visitors.iter_mut() {
             visitor.visit_yul_expression_statement(context)?;
@@ -2653,6 +2743,121 @@ impl AstVisitor for AstVisitorData<'_> {
             visitor.leave_yul_expression_statement(context)?;
         }
 
+        Ok(())
+    }
+
+    fn visit_yul_function_definition<'a, 'b, 'c>(&mut self, context: &mut YulFunctionDefinitionContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_yul_function_definition(context)?;
+        }
+
+        for parameter in context.yul_function_definition.parameters.iter() {
+            let mut context = YulTypedNameContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: context.blocks,
+                statement: context.statement,
+                inline_assembly: context.inline_assembly,
+                yul_blocks: context.yul_blocks,
+                yul_statement: Some(context.yul_statement),
+                yul_typed_name: parameter,
+            };
+
+            self.visit_yul_typed_name(&mut context)?;
+            self.leave_yul_typed_name(&mut context)?;
+        }
+
+        for parameter in context.yul_function_definition.return_parameters.iter() {
+            let mut context = YulTypedNameContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: context.blocks,
+                statement: context.statement,
+                inline_assembly: context.inline_assembly,
+                yul_blocks: context.yul_blocks,
+                yul_statement: Some(context.yul_statement),
+                yul_typed_name: parameter,
+            };
+
+            self.visit_yul_typed_name(&mut context)?;
+            self.leave_yul_typed_name(&mut context)?;
+        }
+
+        let mut context = YulBlockContext {
+            source_units: context.source_units,
+            current_source_unit: context.current_source_unit,
+            contract_definition: context.contract_definition,
+            definition_node: context.definition_node,
+            blocks: context.blocks,
+            statement: context.statement,
+            inline_assembly: context.inline_assembly,
+            yul_blocks: context.yul_blocks,
+            yul_block: &context.yul_function_definition.body,
+        };
+
+        self.visit_yul_block(&mut context)?;
+        self.leave_yul_block(&mut context)?;
+
+        Ok(())
+    }
+
+    fn leave_yul_function_definition<'a, 'b, 'c>(&mut self, context: &mut YulFunctionDefinitionContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_yul_function_definition(context)?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_yul_leave<'a, 'b, 'c>(&mut self, context: &mut YulStatementContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_yul_leave(context)?;
+        }
+        
+        Ok(())
+    }
+
+    fn leave_yul_leave<'a, 'b, 'c>(&mut self, context: &mut YulStatementContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_yul_leave(context)?;
+        }
+        
+        Ok(())
+    }
+
+    fn visit_yul_break<'a, 'b, 'c>(&mut self, context: &mut YulStatementContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_yul_break(context)?;
+        }
+        
+        Ok(())
+    }
+
+    fn leave_yul_break<'a, 'b, 'c>(&mut self, context: &mut YulStatementContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_yul_break(context)?;
+        }
+        
+        Ok(())
+    }
+
+    fn visit_yul_continue<'a, 'b, 'c>(&mut self, context: &mut YulStatementContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.visit_yul_continue(context)?;
+        }
+        
+        Ok(())
+    }
+
+    fn leave_yul_continue<'a, 'b, 'c>(&mut self, context: &mut YulStatementContext<'a, 'b, 'c>) -> io::Result<()> {
+        for visitor in self.visitors.iter_mut() {
+            visitor.leave_yul_continue(context)?;
+        }
+        
         Ok(())
     }
 

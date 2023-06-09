@@ -85,6 +85,10 @@ pub enum YulStatement {
     YulAssignment(YulAssignment),
     YulVariableDeclaration(YulVariableDeclaration),
     YulExpressionStatement(YulExpressionStatement),
+    YulFunctionDefinition(YulFunctionDefinition),
+    YulLeave,
+    YulBreak,
+    YulContinue,
 }
 
 impl<'de> Deserialize<'de> for YulStatement {
@@ -99,6 +103,10 @@ impl<'de> Deserialize<'de> for YulStatement {
             "YulAssignment" => Ok(YulStatement::YulAssignment(serde_json::from_value(json).unwrap())),
             "YulVariableDeclaration" => Ok(YulStatement::YulVariableDeclaration(serde_json::from_value(json).unwrap())),
             "YulExpressionStatement" => Ok(YulStatement::YulExpressionStatement(serde_json::from_value(json).unwrap())),
+            "YulFunctionDefinition" => Ok(YulStatement::YulFunctionDefinition(serde_json::from_value(json).unwrap())),
+            "YulLeave" => Ok(YulStatement::YulLeave),
+            "YulBreak" => Ok(YulStatement::YulBreak),
+            "YulContinue" => Ok(YulStatement::YulContinue),
             _ => panic!("Invalid yul statement node type: {node_type}"),
         }
     }
@@ -159,4 +167,13 @@ pub struct YulTypedName {
 #[serde(rename_all = "camelCase")]
 pub struct YulExpressionStatement {
     pub expression: YulExpression,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct YulFunctionDefinition {
+    pub name: String,
+    pub parameters: Vec<YulTypedName>,
+    pub return_parameters: Vec<YulTypedName>,
+    pub body: YulBlock,
 }
