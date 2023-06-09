@@ -11,16 +11,27 @@ Some legacy versions of Solidity are inherently supported (0.5.X-0.7.X), but the
 
 ```
 cargo run --release -- \
-  [--todo_list] \
-  [--contract=<contract_name>] \
-  [--output_format=<plain_text | json>] \
+  [--output_format=<plain_text|json>] \
   [--analyzer_name1] \
   [--analyzer_nameN] \
+  [--todo_list] \
   [--contract_path=<Contract.sol>] \
+  [--contract=<contract_name>] \
   <project_directory>
 ```
 
-Currently, SolAST requires utilization of one of the following build systems:
+| Option | Description |
+|-:|-|
+| `--output_format=<plain_text\|json>` | Specifies the report output format. Can be `plain_text` or `json`. |
+| `--analyzer_name` | Specifies an analyzer to enable (see below). All analyzers are enabled by default. |
+| `--todo_list` | Generates a TODO list for each contract's contents in Markdown format. |
+| `--contract_path=<Contract.sol>` | Specifies a Solidity source file to include in analysis. |
+| `--contract=<contract_name>` | Specifies a specific contract to include in analysis. |
+| `<project_directory>` | Specifies a precompiled project directory to include in analysis. |
+
+SolAST can parse and analyze the AST of individual Solidity contract files and precompiled projects.
+
+For project-based analysis, SolAST requires utilization of one of the following build systems:
 * [Brownie](https://eth-brownie.readthedocs.io/en/stable/)
 * [Hardhat](https://hardhat.org/)
 * [Truffle](https://www.trufflesuite.com/)
