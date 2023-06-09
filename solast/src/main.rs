@@ -31,7 +31,7 @@ fn main() -> io::Result<()> {
     let mut args = env::args();
     args.next().ok_or_else(|| io::Error::from(io::ErrorKind::BrokenPipe))?;
 
-    let mut path: Option<PathBuf> = None;
+    let mut project_path: Option<PathBuf> = None;
     let mut should_print_todo_list = false;
     let mut visitor_names: HashSet<String> = HashSet::new();
     let mut contract_name: Option<String> = None;
@@ -47,7 +47,7 @@ fn main() -> io::Result<()> {
 
                 s if s.starts_with("contract=") => {
                     if contract_name.is_some() {
-                        return Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Multiple contracts specified: {} {}", path.unwrap().to_string_lossy(), arg)));
+                        return Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Multiple contracts specified: {} {}", project_path.unwrap().to_string_lossy(), arg)));
                     }
                     
                     contract_name = Some(s.trim_start_matches("contract=").into());
@@ -73,31 +73,63 @@ fn main() -> io::Result<()> {
             }
 
             _ => {
-                if path.is_some() {
-                    return Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Multiple paths specified: {} {}", path.unwrap().to_string_lossy(), arg)));
+                if project_path.is_some() {
+                    return Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Multiple project paths specified: {} {}", project_path.unwrap().to_string_lossy(), arg)));
                 }
 
-                path = Some(PathBuf::from(arg));
+                project_path = Some(PathBuf::from(arg));
             }
         }
     }
 
+    if contract_paths.is_empty() && project_path.is_none() {
+        return Err(io::Error::new(io::ErrorKind::InvalidInput, "No paths were supplied"));
+    }
+
     let mut source_units: Vec<SourceUnit> = vec![];
 
-    if contract_paths.is_empty() {
-        let path = match path {
-            Some(path) => path,
-            None => return Err(io::Error::new(io::ErrorKind::InvalidInput, "Path not supplied"))
-        };
+    if !contract_paths.is_empty() {
+        let mut file_no = 0;
 
-        if !path.exists() {
-            return Err(io::Error::new(io::ErrorKind::NotFound, path.to_string_lossy()))
+        for contract_path in contract_paths {
+            let src = std::fs::read_to_string(contract_path.clone())?;
+
+            let (source_unit, comments) = solang_parser::parse(src.as_str(), file_no)
+                .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, format!("Failed to parse contract \"{}\"", contract_path.to_string_lossy())))?;
+
+            let mut builder = AstBuilder::default();
+            let mut source_unit = builder.build_source_unit(&source_unit);
+
+            let mut license = None;
+
+            for comment in comments.iter() {
+                if let solang_parser::pt::Comment::Line(_, text) = comment {
+                    let text = text.trim_start_matches("//").trim_start_matches(' ');
+                    if text.starts_with("SPDX-License-Identifier:") {
+                        license = Some(text.trim_start_matches("SPDX-License-Identifier:").trim_start_matches(' ').to_string());
+                    }
+                }
+            }
+
+            source_unit.absolute_path = Some(contract_path.to_string_lossy().to_string());
+            source_unit.source = Some(src);
+            source_unit.license = license;
+
+            source_units.push(source_unit);
+
+            file_no += 1;
+        }
+    }
+
+    if let Some(project_path) = project_path {
+        if !project_path.exists() {
+            return Err(io::Error::new(io::ErrorKind::NotFound, project_path.to_string_lossy()))
         }
         
-        let brownie_config_path = path.join("brownie-config.yaml");
-        let hardhat_config_js_path = path.join("hardhat.config.js");
-        let hardhat_config_ts_path = path.join("hardhat.config.ts");
-        let truffle_config_path = path.join("truffle-config.js");
+        let brownie_config_path = project_path.join("brownie-config.yaml");
+        let hardhat_config_js_path = project_path.join("hardhat.config.js");
+        let hardhat_config_ts_path = project_path.join("hardhat.config.ts");
+        let truffle_config_path = project_path.join("truffle-config.js");
 
         if brownie_config_path.is_file() {
             //
@@ -105,8 +137,8 @@ fn main() -> io::Result<()> {
             //
 
             let build_paths = &[
-                path.join("build").join("contracts"),
-                path.join("build").join("interfaces"),
+                project_path.join("build").join("contracts"),
+                project_path.join("build").join("interfaces"),
             ];
 
             for build_path in build_paths {
@@ -138,7 +170,7 @@ fn main() -> io::Result<()> {
                 }
             }
         } else if hardhat_config_js_path.is_file() || hardhat_config_ts_path.is_file() {
-            let build_path = path.join("artifacts").join("build-info");
+            let build_path = project_path.join("artifacts").join("build-info");
 
             if !build_path.exists() || !build_path.is_dir() {
                 todo!("hardhat project not compiled")
@@ -181,7 +213,7 @@ fn main() -> io::Result<()> {
                 }
             }
         } else if truffle_config_path.is_file() {
-            let build_path = path.join("build").join("contracts");
+            let build_path = project_path.join("build").join("contracts");
 
             if !build_path.exists() || !build_path.is_dir() {
                 todo!("truffle project not compiled")
@@ -220,38 +252,7 @@ fn main() -> io::Result<()> {
                 }
             }
         } else {
-            unimplemented!("no supported project configuration found")
-        }
-    } else {
-        let mut file_no = 0;
-
-        for contract_path in contract_paths {
-            let src = std::fs::read_to_string(contract_path.clone())?;
-
-            let (source_unit, comments) = solang_parser::parse(src.as_str(), file_no)
-                .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, format!("Failed to parse contract \"{}\"", contract_path.to_string_lossy())))?;
-
-            let mut builder = AstBuilder::default();
-            let mut source_unit = builder.build_source_unit(&source_unit);
-
-            let mut license = None;
-
-            for comment in comments.iter() {
-                if let solang_parser::pt::Comment::Line(_, text) = comment {
-                    let text = text.trim_start_matches("//").trim_start_matches(' ');
-                    if text.starts_with("SPDX-License-Identifier:") {
-                        license = Some(text.trim_start_matches("SPDX-License-Identifier:").trim_start_matches(' ').to_string());
-                    }
-                }
-            }
-
-            source_unit.absolute_path = Some(contract_path.to_string_lossy().to_string());
-            source_unit.source = Some(src);
-            source_unit.license = license;
-
-            source_units.push(source_unit);
-
-            file_no += 1;
+            unimplemented!("No supported project configuration found")
         }
     }
 
