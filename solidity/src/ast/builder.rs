@@ -1519,7 +1519,7 @@ impl AstBuilder {
     ) -> IndexAccess {
         IndexAccess {
             base_expression: Box::new(self.build_expression(array)),
-            index_expression: Box::new(self.build_expression(index)),
+            index_expression: Some(Box::new(self.build_expression(index))),
             argument_types: None, // TODO
             is_constant: false, // TODO
             is_l_value: false, // TODO

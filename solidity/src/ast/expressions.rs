@@ -520,7 +520,7 @@ pub struct FunctionCallOptionsContext<'a, 'b> {
 #[serde(rename_all = "camelCase")]
 pub struct IndexAccess {
     pub base_expression: Box<Expression>,
-    pub index_expression: Box<Expression>,
+    pub index_expression: Option<Box<Expression>>,
     pub argument_types: Option<Vec<TypeDescriptions>>,
     pub is_constant: bool,
     pub is_l_value: bool,
@@ -533,13 +533,21 @@ pub struct IndexAccess {
 
 impl IndexAccess {
     pub fn contains_operation(&self, operator: &str) -> bool {
-        self.index_expression.contains_operation(operator)
+        self.index_expression.as_ref().map(|x| x.contains_operation(operator)).unwrap_or(false)
     }
 }
 
 impl Display for IndexAccess {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{}[{}]", self.base_expression, self.index_expression))
+        write!(
+            f,
+            "{}[{}]",
+            self.base_expression,
+            match self.index_expression.as_ref() {
+                Some(x) => format!("{x}"),
+                None => String::new(),
+            }
+        )
     }
 }
 

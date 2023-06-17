@@ -1,9 +1,10 @@
 mod analysis;
 mod brownie;
+mod foundry;
 mod hardhat;
 mod report;
-mod truffle;
 mod todo_list;
+mod truffle;
 
 use report::Report;
 use solidity::ast::*;
@@ -34,9 +35,9 @@ fn main() -> io::Result<()> {
     let mut project_path: Option<PathBuf> = None;
     let mut should_print_todo_list = false;
     let mut visitor_names: HashSet<String> = HashSet::new();
-    let mut contract_name: Option<String> = None;
+    let mut contract_names: Vec<String> = vec![];
+    let mut contract_paths: Vec<PathBuf> = vec![];
     let mut output_format = OutputFormat::PlainText;
-    let mut contract_paths = vec![];
 
     for arg in args {
         match arg {
@@ -46,11 +47,7 @@ fn main() -> io::Result<()> {
                 }
 
                 s if s.starts_with("contract=") => {
-                    if contract_name.is_some() {
-                        return Err(io::Error::new(io::ErrorKind::InvalidInput, format!("Multiple contracts specified: {} {}", project_path.unwrap().to_string_lossy(), arg)));
-                    }
-                    
-                    contract_name = Some(s.trim_start_matches("contract=").into());
+                    contract_names.push(s.trim_start_matches("contract=").into());
                 }
 
                 s if s.starts_with("contract-path=") || s.starts_with("contract_path=") => {
@@ -130,6 +127,7 @@ fn main() -> io::Result<()> {
         let hardhat_config_js_path = project_path.join("hardhat.config.js");
         let hardhat_config_ts_path = project_path.join("hardhat.config.ts");
         let truffle_config_path = project_path.join("truffle-config.js");
+        let foundry_config_path = project_path.join("foundry.toml");
 
         if brownie_config_path.is_file() {
             //
@@ -156,10 +154,8 @@ fn main() -> io::Result<()> {
                     let file: brownie::File = simd_json::from_reader(File::open(path)?)?;
 
                     if let Some(mut source_unit) = file.ast {
-                        if let Some(contract_name) = contract_name.as_deref() {
-                            if !source_unit.contract_definitions().iter().any(|c| c.name == contract_name) {
-                                continue;
-                            }
+                        if !contract_names.is_empty() && !contract_names.iter().any(|contract_name| source_unit.contract_definitions().iter().any(|c| c.name == *contract_name)) {
+                            continue;
                         }
 
                         if !source_units.iter().any(|existing_source_unit| existing_source_unit.absolute_path == source_unit.absolute_path) {
@@ -198,10 +194,8 @@ fn main() -> io::Result<()> {
                         continue;
                     }
                     
-                    if let Some(contract_name) = contract_name.as_deref() {
-                        if !source_unit.contract_definitions().iter().any(|c| c.name == contract_name) {
-                            continue;
-                        }
+                    if !contract_names.is_empty() && !contract_names.iter().any(|contract_name| source_unit.contract_definitions().iter().any(|c| c.name == *contract_name)) {
+                        continue;
                     }
 
                     if !source_units.iter().any(|existing_source_unit| existing_source_unit.absolute_path == source_unit.absolute_path) {
@@ -239,15 +233,52 @@ fn main() -> io::Result<()> {
                         continue;
                     }
                     
-                    if let Some(contract_name) = contract_name.as_deref() {
-                        if !source_unit.contract_definitions().iter().any(|c| c.name == contract_name) {
-                            continue;
-                        }
+                    if !contract_names.is_empty() && !contract_names.iter().any(|contract_name| source_unit.contract_definitions().iter().any(|c| c.name == *contract_name)) {
+                        continue;
                     }
 
                     if !source_units.iter().any(|existing_source_unit| existing_source_unit.absolute_path == source_unit.absolute_path) {
                         source_unit.source = file.source.clone();
                         source_units.push(source_unit);
+                    }
+                }
+            }
+        } else if foundry_config_path.is_file() {
+            //
+            // TODO:
+            //   * load build_path from `foundry.toml`
+            //   * ignore contracts under lib paths from `foundry.toml`
+            //
+
+            let build_path = project_path.join("out");
+
+            if !build_path.exists() || !build_path.is_dir() {
+                todo!("foundry project not compiled")
+            }
+
+            for path in std::fs::read_dir(build_path)? {
+                let path = path?.path();
+
+                if !path.is_dir() {
+                    continue;
+                }
+
+                for path in std::fs::read_dir(path)? {
+                    let path = path?.path();
+
+                    if !path.is_file() || !path.extension().map(|extension| extension == "json").unwrap_or(false) {
+                        continue;
+                    }
+
+                    let mut file: foundry::File = simd_json::from_reader(File::open(path)?)?;
+                    
+                    if !contract_names.is_empty() && !contract_names.iter().any(|contract_name| file.ast.contract_definitions().iter().any(|c| c.name == *contract_name)) {
+                        continue;
+                    }
+
+                    if !source_units.iter().any(|existing_source_unit| existing_source_unit.absolute_path == file.ast.absolute_path) {
+                        file.ast.source = Some(std::fs::read_to_string(project_path.join(file.ast.absolute_path.clone().unwrap()))?);
+                        source_units.push(file.ast);
                     }
                 }
             }

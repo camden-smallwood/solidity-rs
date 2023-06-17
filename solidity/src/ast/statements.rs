@@ -18,6 +18,7 @@ pub enum Statement {
     Return(Return),
     RevertStatement(RevertStatement),
     ExpressionStatement(ExpressionStatement),
+    Block(Block),
     InlineAssembly(InlineAssembly),
     Continue {
         src: String,
@@ -50,6 +51,7 @@ impl<'de> Deserialize<'de> for Statement {
             "Return" => Ok(Statement::Return(serde_json::from_value(json).unwrap())),
             "RevertStatement" => Ok(Statement::RevertStatement(serde_json::from_value(json).unwrap())),
             "ExpressionStatement" => Ok(Statement::ExpressionStatement(serde_json::from_value(json).unwrap())),
+            "Block" => Ok(Statement::Block(serde_json::from_value(json).unwrap())),
             "InlineAssembly" => Ok(Statement::InlineAssembly(serde_json::from_value(json).unwrap())),
             "Continue" => Ok(Statement::Continue {
                 src: json.get("src").unwrap().as_str().unwrap().to_string(),
@@ -88,6 +90,7 @@ impl Display for Statement {
             Statement::UncheckedBlock(stmt) => stmt.fmt(f),
             Statement::Return(stmt) => stmt.fmt(f),
             Statement::ExpressionStatement(stmt) => stmt.fmt(f),
+            Statement::Block(stmt) => stmt.fmt(f),
             Statement::InlineAssembly(_) => write!(f, "assembly {{ /* WARNING: not implemented */ }}"),
             Statement::Continue { .. } => write!(f, "continue"),
             Statement::Break { .. } => write!(f, "break"),

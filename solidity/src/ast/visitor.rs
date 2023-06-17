@@ -1000,6 +1000,20 @@ impl AstVisitor for AstVisitorData<'_> {
                 self.leave_expression(&mut context)?;
             }
 
+            Statement::Block(block) => {
+                let mut context = BlockContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    block,
+                };
+
+                self.visit_block(&mut context)?;
+                self.leave_block(&mut context)?;
+            }
+
             Statement::InlineAssembly(inline_assembly) => {
                 let mut context = InlineAssemblyContext {
                     source_units: context.source_units,
@@ -1987,18 +2001,20 @@ impl AstVisitor for AstVisitorData<'_> {
         self.visit_expression(&mut base_context)?;
         self.leave_expression(&mut base_context)?;
 
-        let mut index_context = ExpressionContext {
-            source_units: context.source_units,
-            current_source_unit: context.current_source_unit,
-            contract_definition: context.contract_definition,
-            definition_node: context.definition_node,
-            blocks: context.blocks,
-            statement: context.statement,
-            expression: context.index_access.index_expression.as_ref(),
-        };
+        if let Some(expression) = context.index_access.index_expression.as_ref() {
+            let mut index_context = ExpressionContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: context.blocks,
+                statement: context.statement,
+                expression,
+            };
 
-        self.visit_expression(&mut index_context)?;
-        self.leave_expression(&mut index_context)?;
+            self.visit_expression(&mut index_context)?;
+            self.leave_expression(&mut index_context)?;
+        }
 
         Ok(())
     }
