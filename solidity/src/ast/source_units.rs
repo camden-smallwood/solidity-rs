@@ -41,6 +41,7 @@ pub struct SourceUnit {
     pub license: Option<String>,
     pub nodes: Vec<SourceUnitNode>,
     pub exported_symbols: Option<HashMap<String, Vec<NodeID>>>,
+    pub experimental_solidity: Option<bool>,
     pub absolute_path: Option<String>,
     pub id: NodeID,
 

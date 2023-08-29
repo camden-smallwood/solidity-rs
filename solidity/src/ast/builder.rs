@@ -33,6 +33,7 @@ impl AstBuilder {
             license: None,
             nodes: vec![],
             exported_symbols: None,
+            experimental_solidity: None,
             absolute_path: None,
             id: source_unit_id,
             source: None,
