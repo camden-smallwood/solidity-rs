@@ -24,12 +24,12 @@ pub enum TypeName {
 impl Display for TypeName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TypeName::ElementaryTypeName(elementary_type_name) => elementary_type_name.fmt(f),
-            TypeName::UserDefinedTypeName(user_defined_type_name) => user_defined_type_name.fmt(f),
+            TypeName::FunctionTypeName(function_type_name) => function_type_name.type_descriptions.type_string.as_ref().unwrap().fmt(f),
             TypeName::ArrayTypeName(array_type_name) => array_type_name.fmt(f),
             TypeName::Mapping(mapping) => mapping.fmt(f),
+            TypeName::UserDefinedTypeName(user_defined_type_name) => user_defined_type_name.fmt(f),
+            TypeName::ElementaryTypeName(elementary_type_name) => elementary_type_name.fmt(f),
             TypeName::String(string) => string.fmt(f),
-            _ => unimplemented!(),
         }
     }
 }

@@ -2382,6 +2382,23 @@ impl AstVisitor for AstVisitorData<'_> {
                 self.leave_yul_function_definition(&mut context)?;
             }
 
+            YulStatement::YulBlock(yul_block) => {
+                let mut context = YulBlockContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
+                    inline_assembly: context.inline_assembly,
+                    yul_blocks: context.yul_blocks,
+                    yul_block,
+                };
+
+                self.visit_yul_block(&mut context)?;
+                self.leave_yul_block(&mut context)?;
+            }
+
             YulStatement::YulLeave => {
                 self.visit_yul_leave(context)?;
                 self.leave_yul_leave(context)?;
@@ -2589,21 +2606,23 @@ impl AstVisitor for AstVisitorData<'_> {
             visitor.visit_yul_case(context)?;
         }
 
-        let mut value_context = YulExpressionContext {
-            source_units: context.source_units,
-            current_source_unit: context.current_source_unit,
-            contract_definition: context.contract_definition,
-            definition_node: context.definition_node,
-            blocks: context.blocks,
-            statement: context.statement,
-            inline_assembly: context.inline_assembly,
-            yul_blocks: context.yul_blocks,
-            yul_statement: Some(context.yul_statement),
-            yul_expression: &context.yul_case.value,
-        };
-
-        self.visit_yul_expression(&mut value_context)?;
-        self.leave_yul_expression(&mut value_context)?;
+        if let Some(value) = context.yul_case.value.as_ref() {
+            let mut value_context = YulExpressionContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: context.blocks,
+                statement: context.statement,
+                inline_assembly: context.inline_assembly,
+                yul_blocks: context.yul_blocks,
+                yul_statement: Some(context.yul_statement),
+                yul_expression: value,
+            };
+    
+            self.visit_yul_expression(&mut value_context)?;
+            self.leave_yul_expression(&mut value_context)?;
+        }
 
         let mut body_context = YulBlockContext {
             source_units: context.source_units,
@@ -2687,21 +2706,23 @@ impl AstVisitor for AstVisitorData<'_> {
             visitor.visit_yul_variable_declaration(context)?;
         }
 
-        let mut value_context = YulExpressionContext {
-            source_units: context.source_units,
-            current_source_unit: context.current_source_unit,
-            contract_definition: context.contract_definition,
-            definition_node: context.definition_node,
-            blocks: context.blocks,
-            statement: context.statement,
-            inline_assembly: context.inline_assembly,
-            yul_blocks: context.yul_blocks,
-            yul_statement: Some(context.yul_statement),
-            yul_expression: &context.yul_variable_declaration.value,
-        };
-
-        self.visit_yul_expression(&mut value_context)?;
-        self.leave_yul_expression(&mut value_context)?;
+        if let Some(value) = context.yul_variable_declaration.value.as_ref() {
+            let mut value_context = YulExpressionContext {
+                source_units: context.source_units,
+                current_source_unit: context.current_source_unit,
+                contract_definition: context.contract_definition,
+                definition_node: context.definition_node,
+                blocks: context.blocks,
+                statement: context.statement,
+                inline_assembly: context.inline_assembly,
+                yul_blocks: context.yul_blocks,
+                yul_statement: Some(context.yul_statement),
+                yul_expression: value,
+            };
+    
+            self.visit_yul_expression(&mut value_context)?;
+            self.leave_yul_expression(&mut value_context)?;
+        }
 
         Ok(())
     }
@@ -2767,40 +2788,44 @@ impl AstVisitor for AstVisitorData<'_> {
             visitor.visit_yul_function_definition(context)?;
         }
 
-        for parameter in context.yul_function_definition.parameters.iter() {
-            let mut context = YulTypedNameContext {
-                source_units: context.source_units,
-                current_source_unit: context.current_source_unit,
-                contract_definition: context.contract_definition,
-                definition_node: context.definition_node,
-                blocks: context.blocks,
-                statement: context.statement,
-                inline_assembly: context.inline_assembly,
-                yul_blocks: context.yul_blocks,
-                yul_statement: Some(context.yul_statement),
-                yul_typed_name: parameter,
-            };
-
-            self.visit_yul_typed_name(&mut context)?;
-            self.leave_yul_typed_name(&mut context)?;
+        if let Some(parameters) = context.yul_function_definition.parameters.as_ref() {
+            for parameter in parameters.iter() {
+                let mut context = YulTypedNameContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
+                    inline_assembly: context.inline_assembly,
+                    yul_blocks: context.yul_blocks,
+                    yul_statement: Some(context.yul_statement),
+                    yul_typed_name: parameter,
+                };
+    
+                self.visit_yul_typed_name(&mut context)?;
+                self.leave_yul_typed_name(&mut context)?;
+            }
         }
 
-        for parameter in context.yul_function_definition.return_parameters.iter() {
-            let mut context = YulTypedNameContext {
-                source_units: context.source_units,
-                current_source_unit: context.current_source_unit,
-                contract_definition: context.contract_definition,
-                definition_node: context.definition_node,
-                blocks: context.blocks,
-                statement: context.statement,
-                inline_assembly: context.inline_assembly,
-                yul_blocks: context.yul_blocks,
-                yul_statement: Some(context.yul_statement),
-                yul_typed_name: parameter,
-            };
+        if let Some(return_parameters) = context.yul_function_definition.return_parameters.as_ref() {
+            for parameter in return_parameters.iter() {
+                let mut context = YulTypedNameContext {
+                    source_units: context.source_units,
+                    current_source_unit: context.current_source_unit,
+                    contract_definition: context.contract_definition,
+                    definition_node: context.definition_node,
+                    blocks: context.blocks,
+                    statement: context.statement,
+                    inline_assembly: context.inline_assembly,
+                    yul_blocks: context.yul_blocks,
+                    yul_statement: Some(context.yul_statement),
+                    yul_typed_name: parameter,
+                };
 
-            self.visit_yul_typed_name(&mut context)?;
-            self.leave_yul_typed_name(&mut context)?;
+                self.visit_yul_typed_name(&mut context)?;
+                self.leave_yul_typed_name(&mut context)?;
+            }
         }
 
         let mut context = YulBlockContext {
@@ -2938,13 +2963,6 @@ impl AstVisitor for AstVisitorData<'_> {
         
                 self.visit_yul_function_call(&mut function_call_context)?;
                 self.leave_yul_function_call(&mut function_call_context)?;
-            }
-
-            YulExpression::UnhandledYulExpression { node_type, src, id } => {
-                println!(
-                    "WARNING: Unhandled yul expression: {:?} {:?} {:?}",
-                    node_type, src, id
-                );
             }
         }
 

@@ -19,19 +19,26 @@ pub struct ExternalReferenceData {
     value_size: NodeID,
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
+#[derive(Clone, Debug, Eq, Serialize, PartialEq)]
 #[serde(untagged)]
 pub enum YulExpression {
     YulLiteral(YulLiteral),
     YulIdentifier(YulIdentifier),
     YulFunctionCall(YulFunctionCall),
+}
 
-    #[serde(rename_all = "camelCase")]
-    UnhandledYulExpression {
-        node_type: String,
-        src: Option<String>,
-        id: Option<NodeID>,
-    },
+impl<'de> Deserialize<'de> for YulExpression {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let json = serde_json::Value::deserialize(deserializer)?;
+        let node_type = json.get("nodeType").unwrap().as_str().unwrap();
+
+        match node_type {
+            "YulLiteral" => Ok(YulExpression::YulLiteral(serde_json::from_value(json).unwrap())),
+            "YulIdentifier" => Ok(YulExpression::YulIdentifier(serde_json::from_value(json).unwrap())),
+            "YulFunctionCall" => Ok(YulExpression::YulFunctionCall(serde_json::from_value(json).unwrap())),
+            _ => panic!("Invalid yul expression node type: {node_type}"),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
@@ -86,6 +93,7 @@ pub enum YulStatement {
     YulVariableDeclaration(YulVariableDeclaration),
     YulExpressionStatement(YulExpressionStatement),
     YulFunctionDefinition(YulFunctionDefinition),
+    YulBlock(YulBlock),
     YulLeave,
     YulBreak,
     YulContinue,
@@ -104,6 +112,7 @@ impl<'de> Deserialize<'de> for YulStatement {
             "YulVariableDeclaration" => Ok(YulStatement::YulVariableDeclaration(serde_json::from_value(json).unwrap())),
             "YulExpressionStatement" => Ok(YulStatement::YulExpressionStatement(serde_json::from_value(json).unwrap())),
             "YulFunctionDefinition" => Ok(YulStatement::YulFunctionDefinition(serde_json::from_value(json).unwrap())),
+            "YulBlock" => Ok(YulStatement::YulBlock(serde_json::from_value(json).unwrap())),
             "YulLeave" => Ok(YulStatement::YulLeave),
             "YulBreak" => Ok(YulStatement::YulBreak),
             "YulContinue" => Ok(YulStatement::YulContinue),
@@ -126,11 +135,28 @@ pub struct YulSwitch {
     pub expression: YulExpression,
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
+#[derive(Clone, Debug, Eq, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct YulCase {
     pub body: YulBlock,
-    pub value: YulExpression,
+    pub value: Option<YulExpression>,
+}
+
+impl<'de> Deserialize<'de> for YulCase {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let json = serde_json::Value::deserialize(deserializer)?;
+        let body = json.get("body").unwrap();
+        let value = json.get("value").unwrap();
+
+        Ok(YulCase {
+            body: serde_json::from_value(body.clone()).unwrap(),
+            value: if matches!(value.as_str(), Some("default")) {
+                None
+            } else {
+                Some(serde_json::from_value(value.clone()).unwrap())
+            },
+        })
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
@@ -152,7 +178,7 @@ pub struct YulAssignment {
 #[derive(Clone, Debug, Deserialize, Eq, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct YulVariableDeclaration {
-    pub value: YulExpression,
+    pub value: Option<YulExpression>,
     pub variables: Vec<YulTypedName>,
 }
 
@@ -173,7 +199,7 @@ pub struct YulExpressionStatement {
 #[serde(rename_all = "camelCase")]
 pub struct YulFunctionDefinition {
     pub name: String,
-    pub parameters: Vec<YulTypedName>,
-    pub return_parameters: Vec<YulTypedName>,
+    pub parameters: Option<Vec<YulTypedName>>,
+    pub return_parameters: Option<Vec<YulTypedName>>,
     pub body: YulBlock,
 }

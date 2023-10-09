@@ -1868,9 +1868,9 @@ impl AstBuilder {
 
             solang_parser::pt::YulStatement::VariableDeclaration(_loc, variables, value) => {
                 YulStatement::YulVariableDeclaration(YulVariableDeclaration {
-                    value: value.as_ref()
+                    value: Some(value.as_ref()
                         .map(|x| self.build_yul_expression(x))
-                        .unwrap(),
+                        .unwrap()),
                     variables: variables.iter()
                         .map(|x| self.build_yul_typed_name(x))
                         .collect(),
@@ -1967,14 +1967,12 @@ impl AstBuilder {
         match case {
             solang_parser::pt::YulSwitchOptions::Case(_loc, expression, body) => YulCase {
                 body: self.build_yul_block(body),
-                value: self.build_yul_expression(expression),
+                value: Some(self.build_yul_expression(expression)),
             },
 
             solang_parser::pt::YulSwitchOptions::Default(_loc, body) => YulCase {
                 body: self.build_yul_block(body),
-                value: YulExpression::YulIdentifier(YulIdentifier {
-                    name: "default".to_string(),
-                }),
+                value: None,
             },
         }
     }
@@ -1991,12 +1989,12 @@ impl AstBuilder {
     pub fn build_yul_function_definition(&mut self, function: &solang_parser::pt::YulFunctionDefinition) -> YulFunctionDefinition {
         YulFunctionDefinition {
             name: function.id.name.clone(),
-            parameters: function.params.iter()
+            parameters: Some(function.params.iter()
                 .map(|param| self.build_yul_typed_name(param))
-                .collect(),
-            return_parameters: function.returns.iter()
+                .collect()),
+            return_parameters: Some(function.returns.iter()
                 .map(|param| self.build_yul_typed_name(param))
-                .collect(),
+                .collect()),
             body: self.build_yul_block(&function.body),
         }
     }
